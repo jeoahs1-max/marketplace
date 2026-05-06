@@ -1,0 +1,89 @@
+<!-- 
+    admin.html - Centre de Contrôle (Superviseur & Ney IA)
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Centre de Contrôle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #111827; } /* Fond sombre pour l'admin */
+    </style>
+</head>
+<body class="text-gray-200">
+
+    <div class="flex min-h-screen">
+        <!-- Barre de navigation latérale -->
+        <aside class="w-64 bg-gray-900 p-6 flex flex-col justify-between">
+            <div>
+                <h1 class="text-2xl font-extrabold text-white mb-8">JEOAH'S</h1>
+                <nav class="space-y-4">
+                    <a href="#dashboard" class="flex items-center p-3 bg-gray-700 rounded-lg text-white font-bold">
+                        <i class="fas fa-tachometer-alt mr-3"></i> Tableau de Bord
+                    </a>
+                    <a href="#ney-interface" class="flex items-center p-3 hover:bg-gray-700 rounded-lg transition">
+                        <i class="fas fa-robot mr-3"></i> Interface de Ney
+                    </a>
+                    <a href="#users" class="flex items-center p-3 hover:bg-gray-700 rounded-lg transition">
+                        <i class="fas fa-users mr-3"></i> Utilisateurs
+                    </a>
+                    <a href="#analytics" class="flex items-center p-3 hover:bg-gray-700 rounded-lg transition">
+                        <i class="fas fa-chart-line mr-3"></i> Analytics
+                    </a>
+                    <a href="#payments" class="flex items-center p-3 hover:bg-gray-700 rounded-lg transition">
+                        <i class="fas fa-credit-card mr-3"></i> Paiements
+                    </a>
+                </nav>
+            </div>
+            <div class="text-center">
+                <a href="index.html" class="text-sm text-gray-500 hover:text-white">Retour au site</a>
+            </div>
+        </aside>
+
+        <!-- Contenu principal -->
+        <main class="flex-1 p-10">
+            
+            <!-- Section Tableau de Bord (Placeholder) -->
+            <section id="dashboard">
+                <h2 class="text-3xl font-bold text-white mb-6">Tableau de Bord Superviseur</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
+                        <h3 class="font-bold text-lg text-gray-400">Utilisateurs Actifs</h3>
+                        <p class="text-4xl font-extrabold text-white mt-2">--</p>
+                    </div>
+                    <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
+                        <h3 class="font-bold text-lg text-gray-400">Revenus (24h)</h3>
+                        <p class="text-4xl font-extrabold text-white mt-2">-- €</p>
+                    </div>
+                    <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
+                        <h3 class="font-bold text-lg text-gray-400">Nouveaux Affiliés</h3>
+                        <p class="text-4xl font-extrabold text-white mt-2">--</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section Interface de Ney (Placeholder) -->
+            <section id="ney-interface" class="mt-16">
+                <h2 class="text-3xl font-bold text-white mb-6">Interface de Ney <i class="fas fa-robot text-blue-400"></i></h2>
+                <div class="bg-gray-800 p-8 rounded-2xl shadow-lg">
+                    <h3 class="text-xl font-bold mb-4">Rapport Journalier de Ney</h3>
+                    <div class="bg-gray-900 p-4 rounded-lg text-gray-400 font-mono text-sm h-64 overflow-y-auto">
+                        <p>> Initialisation du rapport...</p>
+                        <p>> En attente des données de la journée...</p>
+                    </div>
+                    <div class="mt-6">
+                        <label for="ney-command" class="block text-sm font-semibold mb-2">Donner une instruction à Ney :</label>
+                        <input type="text" id="ney-command" placeholder="Ex: 'Analyse les ventes des 7 derniers jours'" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+</body>
+</html>

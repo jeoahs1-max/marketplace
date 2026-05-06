@@ -1,0 +1,104 @@
+et lz p<!-- 
+    vendor_onboarding.html - Page d'Onboarding pour Vendeur (V2 - Logos Améliorés)
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onboarding Vendeur - JEOAH'S</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f8fc; }
+        .border-red-500 { border-color: #ef4444 !important; }
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, auth, db, userId;
+
+        const socialNetworks = [
+            { id: 'facebook', name: 'Facebook', icon_svg: `https://www.vectorlogo.zone/logos/facebook/facebook-icon.svg`, placeholder: "Lien de votre page Facebook" },
+            { id: 'instagram', name: 'Instagram', icon_svg: `https://www.vectorlogo.zone/logos/instagram/instagram-icon.svg`, placeholder: "Lien de votre profil Instagram" },
+            { id: 'tiktok', name: 'TikTok', icon_svg: `https://www.vectorlogo.zone/logos/tiktok/tiktok-icon.svg`, placeholder: "Lien de votre profil TikTok" },
+            { id: 'youtube', name: 'YouTube', icon_svg: `https://www.vectorlogo.zone/logos/youtube/youtube-icon.svg`, placeholder: "Lien de votre chaîne YouTube" },
+            { id: 'website', name: 'Site Web', icon_svg: `https://www.vectorlogo.zone/logos/google/google-icon.svg`, placeholder: "Lien de votre site web" },
+        ];
+        
+        async function initFirebase() {
+            // ... (existing firebase logic) ...
+        }
+        
+        function renderSocialInputs(existingLinks = {}) {
+            const container = document.getElementById('social-links-container');
+            container.innerHTML = '';
+            socialNetworks.forEach(network => {
+                const existingValue = existingLinks[network.id] || '';
+                container.innerHTML += `
+                    <div class="p-4 rounded-2xl border border-gray-200 bg-white shadow-lg transition hover:shadow-xl flex items-center space-x-4">
+                        <div class="flex-shrink-0">
+                            <img src="${network.icon_svg}" alt="Logo ${network.name}" class="w-10 h-10 object-contain"/>
+                        </div>
+                        <div class="flex-grow">
+                            <label for="${network.id}-input" class="block text-sm font-semibold text-gray-800">${network.name}</label>
+                            <input type="url" id="${network.id}-input" name="${network.id}" placeholder="${network.placeholder}" value="${existingValue}" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-blue-600 focus:border-blue-600 text-base shadow-sm">
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        window.handleOnboardingSubmit = async function(event) {
+            // ... (existing submission logic) ...
+        }
+        
+        function displayMessage(message, type = 'success') {
+            // ... (existing message logic) ...
+        }
+
+        initFirebase();
+        // Fallback for initial render
+        document.addEventListener('DOMContentLoaded', () => renderSocialInputs());
+
+    </script>
+</head>
+<body class="min-h-screen bg-gray-100 p-4 sm:p-8 flex items-center justify-center">
+    <div class="max-w-2xl w-full">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold text-gray-900">Devenez Vendeur !</h1>
+            <p class="text-gray-600 mt-2 text-lg">Configurez votre page publique pour commencer à vendre.</p>
+        </div>
+        
+        <div id="loading-indicator" class="flex justify-center items-center h-32 hidden">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            <p class="ml-4 text-gray-600">Chargement...</p>
+        </div>
+
+        <div id="message-box" class="hidden"></div>
+
+        <div id="form-container" class="bg-white rounded-3xl p-8 shadow-2xl">
+            <form id="onboarding-form" onsubmit="handleOnboardingSubmit(event)" class="space-y-6">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-3">Vos Liens Publics</h2>
+                    <div id="social-links-container" class="space-y-4"></div>
+                </div>
+                <div>
+                    <label for="page-description" class="block text-sm font-semibold text-gray-800 mb-2">Description de votre Boutique</label>
+                    <textarea id="page-description" name="page-description" rows="4" maxlength="250" placeholder="Décrivez votre marque en quelques mots..." class="block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-blue-600 focus:border-blue-600 resize-none shadow-sm"></textarea>
+                </div>
+                <div>
+                    <button type="submit" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-xl hover:bg-green-700 transition duration-300 shadow-lg">🚀 Lancer ma Boutique</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,158 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aide et FAQ - JEOAH'S</title>
+    <link rel="stylesheet" href="styles.min.css">
+    
+    <style>
+        /* Styles pour la navigation, le footer et l'IA (comme dans les autres pages) */
+        .ia-chat-box {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background-color: #007bff;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+        .ia-chat-box img {
+            width: 35px;
+            height: 35px;
+        }
+        
+        /* Styles spécifiques pour la FAQ */
+        .faq-section {
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .faq-item {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+        }
+        .faq-item h3 {
+            cursor: pointer;
+            color: #032C4F;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        .faq-answer {
+            padding-left: 20px;
+            color: #444;
+            /* Le JS gérera l'affichage/masquage */
+            display: block; 
+        }
+        .faq-answer ul {
+            margin-top: 10px;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <span style="font-size: 1.8rem; font-weight: bold; color: #032C4F;">JEOAH'S</span>
+            <div class="menu">
+                <a href="index.html">Home</a>
+                <a href="plans.html">Plans</a>
+                <a href="faq.html" class="active">Aide</a>
+                <a href="contact.html">Contact</a>
+            </div>
+            <a href="inscription.html" class="btn">Get Started</a>
+        </nav>
+    </header>
+
+    <main class="dashboard-content" style="background: #ffffff; min-height: 80vh;">
+        <h1 style="text-align: center;">Foire Aux Questions (FAQ)</h1>
+        <p style="text-align: center; max-width: 600px; margin: 10px auto 30px;">
+            Trouvez rapidement les réponses à vos questions sur les plans, les frais et notre technologie.
+        </p>
+
+        <div class="faq-section">
+            
+            <h2>Comptes et Inscription</h2>
+            <div class="faq-item">
+                <h3>Q : Puis-je passer du rôle d'Acheteur à Détaillant ou Affilié ?</h3>
+                <div class="faq-answer">
+                    <p>Oui ! Vous n'avez pas besoin de vous réinscrire. Une fois connecté, vous pourrez mettre à niveau votre compte vers le plan Détaillant ou Affilié directement depuis votre tableau de bord, sans perdre vos données.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3>Q : Ai-je droit à un essai gratuit ?</h3>
+                <div class="faq-answer">
+                    <p>Oui. Chaque nouvel utilisateur inscrit bénéficie d'une période d'essai de **15 jours gratuits** sur le plan de son choix (Détaillant ou Affilié).</p>
+                </div>
+            </div>
+            
+            <h2>Frais et Paiements</h2>
+            
+            <div class="faq-item">
+                <h3>Q : Quels sont les frais de transaction pour les détaillants (vendeurs) ?</h3>
+                <div class="faq-answer">
+                    <p>Contrairement à d'autres plateformes, **JEOAH'S ne retient aucune commission sur vos ventes.** Les frais de transaction sont inclus dans votre abonnement Détaillant (0% de frais sur les fonds reçus).</p>
+                    <p>Nous appliquons uniquement des **frais de retrait** pour couvrir les coûts de transfert (MonCash, NatCash, PayPal, etc.). Ces frais dépendent du montant et du mode de paiement choisi.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <h3>Q : Quels sont les modes de paiement pris en charge ?</h3>
+                <div class="faq-answer">
+                    <p>Nous prenons en charge les paiements locaux (MonCash, NatCash) ainsi que les paiements globaux pour les achats (PayPal, cartes de crédit/débit).</p>
+                </div>
+            </div>
+
+            <h2>Affiliation et Parrainage</h2>
+            
+            <div class="faq-item">
+                <h3>Q : Quel est le pourcentage de commission pour un Affilié ?</h3>
+                <div class="faq-answer">
+                    <p>Les affiliés gagnent une commission de **10% sur les ventes** générées via leur lien unique. Tous les gains sont traçables dans votre tableau de bord.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3>Q : Comment fonctionne le programme de parrainage et de réduction sur l'abonnement ?</h3>
+                <div class="faq-answer">
+                    <p>Lorsque vous parrainez de nouveaux membres qui s'abonnent à un plan payant (Détaillant ou Affilié) via votre lien unique (disponible dans votre Tableau de Bord), vous gagnez une réduction sur votre propre abonnement :</p>
+                    <ul>
+                        <li>**15 abonnés payants :** Vous bénéficiez de **5% de réduction** sur votre plan.</li>
+                        <li>**25 abonnés payants :** Vous bénéficiez de **10% de réduction** sur votre plan.</li>
+                        <li>**50 abonnés payants :** Vous bénéficiez de **25% de réduction** sur votre plan.</li>
+                        <li>**100 abonnés payants :** Vous bénéficiez de **50% de réduction** sur votre plan.</li>
+                    </ul>
+                    <p>Le montant minimum de retrait et le nombre de retraits journaliers dépendront du palier atteint et sont gérés par le système de compte de l'utilisateur.</p>
+                </div>
+            </div>
+            
+            <h2>Technologie et IA</h2>
+            <div class="faq-item">
+                <h3>Q : Qu'est-ce que l'Assistant IA (Ney) ?</h3>
+                <div class="faq-answer">
+                    <p>Ney est notre assistant IA qui gère le support client 24/7. Pour les affiliés et détaillants, il utilise les données de vos produits/liens pour générer des textes de promotion et des visuels prêts à être publiés sur vos réseaux sociaux (après votre approbation).</p>
+                </div>
+            </div>
+            
+        </div>
+    </main>
+
+    <div class="ia-chat-box" onclick="alert('Bienvenue ! Je suis Ney, l\'Assistant IA de JEOAH\'S. Je suis disponible pour répondre à vos questions 24/7. Le chat sera activé dès le lancement de la version Beta !');">
+        <img src="assets/icon-ai.png" alt="Chat IA">
+    </div>
+
+    <footer>
+        <p>© 2025 JEOAH’S Market Place</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

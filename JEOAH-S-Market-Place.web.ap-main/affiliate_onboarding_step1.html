@@ -1,0 +1,139 @@
+<!-- 
+    affiliate_onboarding_step1.html - Onboarding Affilié, Étape 1 : Liens d'Affiliation (V4 - Logos Améliorés)
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Affilié - Étape 1 : Liens d'Affiliation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        let db, auth, userId;
+        let affiliateLinks = [];
+
+        const initialMerchants = [
+            { name: "Amazon", base_link: "", icon_svg: `https://www.vectorlogo.zone/logos/amazon/amazon-icon.svg`, placeholder: "Votre ID de suivi Amazon", required: true },
+            { name: "Temu", base_link: "", icon_svg: `https://www.vectorlogo.zone/logos/temu/temu-icon.svg`, placeholder: "Votre ID d'affilié Temu", required: true },
+            { name: "Shein", base_link: "", icon_svg: `https://www.vectorlogo.zone/logos/shein/shein-icon.svg`, placeholder: "Votre code de partenaire Shein", required: true },
+            { name: "Walmart", base_link: "", icon_svg: `https://www.vectorlogo.zone/logos/walmart/walmart-icon.svg`, placeholder: "Votre clé de programme Walmart", required: true },
+            { name: "Ebay", base_link: "", icon_svg: `https://www.vectorlogo.zone/logos/ebay/ebay-icon.svg`, placeholder: "ID du réseau de partenaires Ebay", required: true },
+        ];
+        
+        const MAX_LINKS = 10;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initFirebase();
+        });
+
+        async function initFirebase() {
+            // ... (code firebase existant)
+        }
+        
+        async function loadExistingLinks() {
+            // ... (code de chargement existant)
+        }
+
+        window.addAffiliateLink = function() {
+            if (affiliateLinks.length >= MAX_LINKS) {
+                showCustomModal("Limite Atteinte", `Vous ne pouvez pas ajouter plus de ${MAX_LINKS} liens.`);
+                return;
+            }
+            
+            affiliateLinks.push({ 
+                name: "", 
+                base_link: "", 
+                icon_svg: `https://www.vectorlogo.zone/logos/generic/generic-icon.svg`, 
+                placeholder: "Nom du Commerçant",
+                required: false
+            });
+            renderAffiliateLinks();
+        }
+
+        window.removeAffiliateLink = function(index) {
+            if (affiliateLinks[index].required) {
+                showCustomModal("Action Interdite", `Le lien ${affiliateLinks[index].name} est requis.`);
+                return;
+            }
+            affiliateLinks.splice(index, 1);
+            renderAffiliateLinks();
+        }
+
+        window.handleInputChange = function(index, field, value) {
+            affiliateLinks[index][field] = value;
+            if (value.trim()) {
+                 document.getElementById(`${field}-${index}`).classList.remove('border-red-500');
+            }
+        }
+
+        function renderAffiliateLinks() {
+            const container = document.getElementById('affiliate-links-container');
+            container.innerHTML = '';
+            
+            affiliateLinks.forEach((link, index) => {
+                const isRemovable = !link.required;
+                const linkHtml = `
+                    <div id="link-card-${index}" class="p-5 rounded-2xl border border-gray-200 bg-white shadow-lg transition hover:shadow-xl flex items-center space-x-4">
+                        
+                        <!-- LOGO AMÉLIORÉ -->
+                        <div class="flex-shrink-0">
+                             <img src="${link.icon_svg}" alt="Logo ${link.name}" class="w-12 h-12 object-contain"/>
+                        </div>
+
+                        <!-- Champs de Saisie -->
+                        <div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="name-${index}" class="block text-sm font-semibold text-gray-700">Commerçant ${link.required ? '(*)' : ''}</label>
+                                <input type="text" id="name-${index}" value="${link.name}" oninput="handleInputChange(${index}, 'name', this.value)" placeholder="${link.placeholder}" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-blue-600 focus:border-blue-600 text-base shadow-sm">
+                            </div>
+                            <div>
+                                <label for="base_link-${index}" class="block text-sm font-semibold text-gray-700">Votre ID/Lien de base ${link.required ? '(*)' : ''}</label>
+                                <input type="text" id="base_link-${index}" value="${link.base_link}" oninput="handleInputChange(${index}, 'base_link', this.value)" placeholder="ID ou lien de suivi..." class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-blue-600 focus:border-blue-600 text-base shadow-sm">
+                            </div>
+                        </div>
+
+                        <!-- Bouton de Suppression -->
+                        ${isRemovable ? `
+                            <div class="flex-shrink-0">
+                                <button type="button" onclick="removeAffiliateLink(${index})" class="p-3 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition duration-150 shadow-md" title="Supprimer">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        ` : `<div class="w-12"></div>`}
+                    </div>
+                `;
+                container.innerHTML += linkHtml;
+            });
+            // ... (logique pour le bouton d'ajout)
+        }
+
+        window.handleSubmit = async function(event) {
+            // ... (logique de soumission existante)
+        }
+
+        function showCustomModal(title, message) {
+            // ... (logique de la modale existante)
+        }
+
+    </script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f8fc; }
+        .border-red-500 { border-color: #ef4444 !important; }
+    </style>
+</head>
+<body>
+    <!-- ... (HTML du body existant) ... -->
+</body>
+</html>

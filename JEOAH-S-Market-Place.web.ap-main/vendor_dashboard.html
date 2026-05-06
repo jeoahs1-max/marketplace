@@ -1,0 +1,247 @@
+<!-- 
+    vendor_dashboard.html - Tableau de Bord Principal du Vendeur (Marchand)
+    
+    Affiche les métriques clés et un aperçu des fonctionnalités axées sur la gestion des ventes, 
+    des commandes et des produits. (Aucune modification nécessaire - le fichier est conservé tel quel).
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord Vendeur</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        let db, auth, userId;
+        const DEFAULT_PROFILE = { 
+            storeName: 'Ma Boutique', 
+            profilePictureUrl: 'https://placehold.co/100x100/3B82F6/ffffff?text=M', 
+            bio: 'Gérez vos produits et commandes ici !'
+        };
+        let vendorData = { ...DEFAULT_PROFILE };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initFirebase();
+        });
+
+        async function initFirebase() {
+            if (Object.keys(firebaseConfig).length === 0) {
+                // Debug mode without Firebase
+                updateUI(DEFAULT_PROFILE);
+                return;
+            }
+
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Erreur d'authentification:", error);
+                updateUI(DEFAULT_PROFILE);
+                return;
+            }
+
+            onAuthStateChanged(auth, async (user) => {
+                if (!user) {
+                    updateUI(DEFAULT_PROFILE);
+                    return;
+                }
+                userId = user.uid;
+                document.getElementById('user-id-display').textContent = `ID Vendeur: ${userId}`;
+                
+                // Charger les données du vendeur en temps réel
+                const vendorDocRef = doc(db, `artifacts/${appId}/users/${userId}/vendor_data/profile`);
+                onSnapshot(vendorDocRef, (docSnap) => {
+                    vendorData = docSnap.exists() ? docSnap.data() : DEFAULT_PROFILE;
+                    updateUI(vendorData);
+                }, (error) => {
+                    console.error("Erreur onSnapshot pour le profil vendeur:", error);
+                    updateUI(DEFAULT_PROFILE);
+                });
+            });
+        }
+        
+        /**
+         * Met à jour l'interface utilisateur avec les données du vendeur.
+         */
+        function updateUI(profile) {
+            document.getElementById('loading-overlay').classList.add('hidden');
+            document.getElementById('dashboard-container').classList.remove('hidden');
+
+            document.getElementById('welcome-message').textContent = `Bienvenue, ${profile.storeName || DEFAULT_PROFILE.storeName} !`;
+            document.getElementById('profile-picture').src = profile.profilePictureUrl || DEFAULT_PROFILE.profilePictureUrl;
+            document.getElementById('profile-bio').textContent = profile.bio || DEFAULT_PROFILE.bio;
+
+            // Mettre à jour les statistiques (Valeurs simulées)
+            document.getElementById('revenue-total').textContent = formatCurrency(12450.75);
+            document.getElementById('orders-total').textContent = '289';
+            document.getElementById('stock-alert').textContent = '3 produits';
+            document.getElementById('unshipped-orders').textContent = '12 commandes';
+        }
+
+        // Fonction de formatage des nombres (pour les euros)
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
+        }
+
+    </script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .stat-card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 5px solid; /* Pour la couleur thématique */
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        /* Couleurs pour les stat cards */
+        .revenue-border { border-left-color: #10B981; } /* Vert émeraude */
+        .orders-border { border-left-color: #3B82F6; }  /* Bleu */
+        .products-border { border-left-color: #F59E0B; } /* Jaune/Ambre */
+        .pending-border { border-left-color: #EF4444; }  /* Rouge */
+    </style>
+</head>
+<body>
+
+    <!-- Overlay de Chargement -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white flex items-center justify-center z-50">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
+        <p class="ml-4 text-gray-600 text-lg">Chargement du Tableau de Bord Vendeur...</p>
+    </div>
+
+    <!-- Contenu du Tableau de Bord -->
+    <div id="dashboard-container" class="hidden min-h-screen p-4 sm:p-8">
+        <div class="max-w-6xl mx-auto space-y-8">
+
+            <!-- En-tête et Bienvenue -->
+            <header class="bg-white p-6 rounded-2xl shadow-lg flex flex-col sm:flex-row items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <img id="profile-picture" 
+                         src="https://placehold.co/100x100/3B82F6/ffffff?text=M" 
+                         alt="Logo de la Boutique" 
+                         class="w-16 h-16 object-cover rounded-full border-4 border-blue-500 shadow-md">
+                    <div>
+                        <h1 id="welcome-message" class="text-3xl font-extrabold text-[#032C4F]">Bienvenue, Marchand !</h1>
+                        <p id="profile-bio" class="text-gray-600 mt-1 italic">Chargement des informations de la boutique...</p>
+                    </div>
+                </div>
+                <div class="mt-4 sm:mt-0 text-sm text-right">
+                    <p id="user-id-display" class="text-gray-400">ID Vendeur: (Chargement...)</p>
+                    <a href="#" class="text-blue-600 hover:text-blue-800 font-semibold transition mt-1 block">
+                        <i class="fas fa-store mr-1"></i> Gérer ma Boutique
+                    </a>
+                </div>
+            </header>
+
+            <!-- Section des Statistiques Clés -->
+            <section>
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Aperçu des Ventes (Mois en cours)</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+                    <!-- Carte 1: Revenus Totaux -->
+                    <div class="stat-card revenue-border">
+                        <i class="fas fa-chart-line text-4xl text-green-600 mb-3"></i>
+                        <p class="text-sm font-medium text-gray-500">Revenus Bruts</p>
+                        <p class="text-3xl font-extrabold text-gray-900 mt-1">
+                            <span id="revenue-total">0,00 €</span>
+                        </p>
+                    </div>
+
+                    <!-- Carte 2: Commandes Totales -->
+                    <div class="stat-card orders-border">
+                        <i class="fas fa-box-open text-4xl text-blue-600 mb-3"></i>
+                        <p class="text-sm font-medium text-gray-500">Commandes Totales</p>
+                        <p class="text-3xl font-extrabold text-gray-900 mt-1">
+                            <span id="orders-total">0</span>
+                        </p>
+                    </div>
+
+                    <!-- Carte 3: Alerte Stock Faible -->
+                    <div class="stat-card products-border">
+                        <i class="fas fa-warehouse text-4xl text-yellow-600 mb-3"></i>
+                        <p class="text-sm font-medium text-gray-500">Stock Faible</p>
+                        <p class="text-3xl font-extrabold text-gray-900 mt-1">
+                            <span id="stock-alert">0 produit</span>
+                        </p>
+                    </div>
+
+                    <!-- Carte 4: Commandes en Attente d'Expédition -->
+                    <div class="stat-card pending-border">
+                        <i class="fas fa-shipping-fast text-4xl text-red-600 mb-3"></i>
+                        <p class="text-sm font-medium text-gray-500">À Expédier</p>
+                        <p class="text-3xl font-extrabold text-gray-900 mt-1">
+                            <span id="unshipped-orders">0 commande</span>
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section Outils et Actions Rapides -->
+            <section>
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Outils de Gestion de la Boutique</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    
+                    <!-- Outil 1: Gestion des Produits -->
+                    <div class="stat-card p-6 bg-indigo-50 border border-indigo-200 shadow-md">
+                        <h3 class="text-xl font-bold text-indigo-800 mb-2 flex items-center">
+                            <i class="fas fa-cubes mr-2"></i> Mes Produits
+                        </h3>
+                        <p class="text-gray-700 text-sm mb-4">Ajoutez de nouveaux articles, modifiez les prix et gérez les stocks.</p>
+                        <button class="w-full py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition shadow-md">
+                            Ajouter un Produit
+                        </button>
+                    </div>
+                    
+                    <!-- Outil 2: Traitement des Commandes -->
+                    <div class="stat-card p-6 bg-blue-50 border border-blue-200 shadow-md">
+                        <h3 class="text-xl font-bold text-blue-800 mb-2 flex items-center">
+                            <i class="fas fa-clipboard-list mr-2"></i> Gestion des Commandes
+                        </h3>
+                        <p class="text-gray-700 text-sm mb-4">Consultez, traitez et suivez toutes vos commandes en cours.</p>
+                        <button class="w-full py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition shadow-md">
+                            Voir les Commandes
+                        </button>
+                    </div>
+                    
+                    <!-- Outil 3: Rapports & Analyses -->
+                    <div class="stat-card p-6 bg-orange-50 border border-orange-200 shadow-md">
+                        <h3 class="text-xl font-bold text-orange-800 mb-2 flex items-center">
+                            <i class="fas fa-chart-bar mr-2"></i> Analyse de Performance
+                        </h3>
+                        <p class="text-gray-700 text-sm mb-4">Obtenez des rapports détaillés sur les produits les plus vendus et les marges.</p>
+                        <button class="w-full py-2 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-700 transition shadow-md">
+                            Rapports
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </div>
+
+</body>
+</html>
+

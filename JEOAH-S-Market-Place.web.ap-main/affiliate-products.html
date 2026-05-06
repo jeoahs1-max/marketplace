@@ -1,0 +1,170 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord Affilié - JEOAH'S Market Place</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], },
+                    colors: {
+                        'primary-blue': '#1D4ED8',
+                        'accent-orange': '#F97316',
+                        'gray-bg': '#F3F4F6',
+                        'dark-text': '#1F2937',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F3F4F6; }
+        /* Style spécifique pour la barre latérale sur mobile */
+        @media (max-width: 768px) {
+            #sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+                z-index: 50;
+            }
+            #sidebar.open {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-dark-text min-h-screen flex flex-col">
+
+    <header class="sticky top-0 bg-white shadow-md z-40">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <button id="menu-toggle" class="md:hidden text-gray-600 hover:text-primary-blue focus:outline-none">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <span class="text-2xl font-bold text-primary-blue">JEOAH'S <span class="text-green-600">Affilié</span></span>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <button class="text-gray-600 hover:text-primary-blue transition">
+                    <i class="fas fa-bell text-xl"></i>
+                </button>
+                <div class="relative">
+                    <span class="text-sm font-medium text-gray-700">Bonjour, [Nom Affilié]</span>
+                    <button id="profile-menu-button" class="ml-2 w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-primary-blue font-bold focus:outline-none">
+                        A
+                    </button>
+                    </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex flex-1 pt-0">
+
+        <aside id="sidebar" class="fixed md:sticky top-0 md:top-[64px] h-full md:h-screen w-64 bg-white shadow-xl md:shadow-none p-4 flex-shrink-0">
+            <nav class="space-y-2">
+                <a href="#" class="flex items-center space-x-3 p-3 rounded-lg text-white bg-green-600 font-semibold transition duration-200">
+                    <i class="fas fa-chart-bar w-5"></i>
+                    <span>Tableau de Bord</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-200">
+                    <i class="fas fa-link w-5"></i>
+                    <span>Générateur de Liens</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-200">
+                    <i class="fas fa-tags w-5"></i>
+                    <span>Produits Actifs</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-200">
+                    <i class="fas fa-wallet w-5"></i>
+                    <span>Commissions & Retraits</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-200">
+                    <i class="fas fa-cog w-5"></i>
+                    <span>Paramètres</span>
+                </a>
+                <a href="inscription.html" class="flex items-center space-x-3 p-3 rounded-lg text-red-600 hover:bg-red-50 transition duration-200 mt-6 pt-4 border-t border-gray-100">
+                    <i class="fas fa-sign-out-alt w-5"></i>
+                    <span>Déconnexion</span>
+                </a>
+            </nav>
+        </aside>
+
+        <div class="flex-1 p-4 md:p-8 overflow-y-auto">
+            
+            <h2 class="text-3xl font-extrabold text-dark-text mb-6">Aperçu du Compte Affilié</h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                
+                <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-green-600">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-500">Gains Totaux (Ney)</span>
+                        <i class="fas fa-hand-holding-usd text-2xl text-green-600"></i>
+                    </div>
+                    <p class="text-3xl font-bold text-dark-text mt-2">$ 0.00 <span class="text-base font-normal text-gray-400">USD</span></p>
+                    <p class="text-xs text-green-500 mt-1"><i class="fas fa-arrow-up"></i> +0% ce mois-ci</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-primary-blue">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-500">Total Clics sur Liens</span>
+                        <i class="fas fa-mouse-pointer text-2xl text-primary-blue"></i>
+                    </div>
+                    <p class="text-3xl font-bold text-dark-text mt-2">0</p>
+                    <p class="text-xs text-gray-400 mt-1">Nombre de clics uniques sur vos liens</p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-accent-orange">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-500">Taux de Conversion</span>
+                        <i class="fas fa-percent text-2xl text-accent-orange"></i>
+                    </div>
+                    <p class="text-3xl font-bold text-dark-text mt-2">0.00%</p>
+                    <p class="text-xs text-gray-400 mt-1">Ventes par rapport aux clics</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-purple-500">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-500">Produits Recommandés</span>
+                        <i class="fas fa-thumbs-up text-2xl text-purple-500"></i>
+                    </div>
+                    <p class="text-3xl font-bold text-dark-text mt-2">0</p>
+                    <p class="text-xs text-gray-400 mt-1">Produits que vous avez activés pour l'affiliation</p>
+                </div>
+
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-dark-text">Catalogue de Produits pour Affiliation</h3>
+                    <a href="#" class="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-200">
+                        <i class="fas fa-search-plus"></i>
+                        <span>Explorer le Catalogue</span>
+                    </a>
+                </div>
+
+                <div class="text-center py-10">
+                    <i class="fas fa-link text-6xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500 font-medium">Commencez par choisir des produits à promouvoir.</p>
+                    <p class="text-sm text-gray-400 mt-1">Utilisez l'explorateur pour activer les liens d'affiliation.</p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        document.getElementById('menu-toggle').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+            
+            // Logique d'overlay (comme pour le vendeur)
+        });
+    </script>
+    
+</body>
+</html>

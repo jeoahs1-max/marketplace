@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>À Propos - JEOAH'S</title>
+
+    <!-- Config & Styles -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" href="/assets/logo.png" type="image/png">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="/index.html" class="flex items-center text-2xl font-extrabold text-gray-900">
+                <img src="/assets/logo.png" alt="JEOAH'S Logo" class="h-8 mr-3">
+                <span>JEOAH'S</span>
+            </a>
+            <a href="/auth.html" class="bg-purple-600 text-white font-bold py-2 px-4 rounded-full hover:bg-purple-700 transition" data-translate="portal_button"></a>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-6 py-16">
+        <div class="bg-white rounded-lg shadow-xl overflow-hidden">
+            <div class="p-10">
+                <div class="text-center mb-12">
+                    <h1 class="text-4xl font-extrabold text-gray-900 sm:text-5xl" data-translate="about_title"></h1>
+                    <p class="mt-4 text-xl text-gray-600" data-translate="about_subtitle"></p>
+                </div>
+
+                <div class="space-y-8 text-lg text-gray-700">
+                    <p data-translate="about_paragraph_1"></p>
+                    <p data-translate="about_paragraph_2"></p>
+                    <p data-translate="about_paragraph_3"></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- DIV pour le footer -->
+    <div id="footer-container"></div>
+
+    <!-- DIV pour le widget Ney -->
+    <div id="ney-widget-container"></div>
+
+    <script src="/assets/js/translator.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('/footer.html').then(res => res.text()).then(data => document.getElementById('footer-container').innerHTML = data);
+            fetch('/ney-widget.html').then(res => res.text()).then(data => {
+                document.getElementById('ney-widget-container').innerHTML = data;
+                const scriptEl = document.querySelector('#ney-widget-container script');
+                if (scriptEl) {
+                    const newScript = document.createElement('script');
+                    newScript.innerHTML = scriptEl.innerHTML;
+                    document.body.appendChild(newScript);
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>

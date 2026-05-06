@@ -1,0 +1,145 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nos Plans d'Abonnement - JEOAH'S Market Place</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: auto; }
+        header { text-align: center; margin-bottom: 40px; }
+        .plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; }
+        .plan { background: #fff; border-radius: 10px; padding: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); text-align: center; display: flex; flex-direction: column; }
+        .plan h2 { font-size: 1.2em; font-weight: bold; color:white; padding:10px; border-radius:5px; margin-top:0;}
+        .btn { display: inline-block; color: #fff; padding: 12px 25px; border-radius: 5px; text-decoration: none; font-weight: bold; margin-top: auto; transition: background-color 0.3s; border: none; cursor: pointer; }
+        .plan.monthly .btn { background-color: #007bff; }
+        .plan.quarterly .btn { background-color: #8e44ad; }
+        .plan.semi-annual .btn { background-color: #d35400; }
+        .plan.annual .btn { background-color: #f39c12; }
+        #payment-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        #payment-container { background: white; padding: 40px; border-radius: 12px; width: 90%; max-width: 500px; }
+        #payment-element { margin-bottom: 20px; }
+        #error-message { color: red; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header><h1>PLANS JEOAH’S MARKET PLACE – VERSION OFFICIELLE</h1></header>
+    <div class="plans-grid">
+        <!-- PLAN MENSUEL -->
+        <div class="plan monthly">
+            <h2>PLAN MENSUEL</h2>
+            <button class="btn payment-btn" data-plan-id="monthly">Choisir ce plan</button>
+        </div>
+        <!-- PLAN TRIMESTRIEL -->
+        <div class="plan quarterly">
+            <h2>PLAN TRIMESTRIEL</h2>
+            <button class="btn payment-btn" data-plan-id="quarterly">Choisir ce plan</button>
+        </div>
+        <!-- PLAN SEMESTRIEL -->
+        <div class="plan semi-annual">
+            <h2>PLAN SEMESTRIEL</h2>
+            <button class="btn payment-btn" data-plan-id="semi-annual">Choisir ce plan</button>
+        </div>
+        <!-- PLAN ANNUEL -->
+        <div class="plan annual">
+            <h2>PLAN ANNUEL</h2>
+            <button class="btn payment-btn" data-plan-id="annual">Choisir ce plan</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Paiement -->
+<div id="payment-modal">
+    <div id="payment-container">
+        <h3>Finaliser le paiement</h3>
+        <div id="payment-element"></div>
+        <button id="submit-payment-btn" class="btn" style="background-color: #27ae60; width: 100%;">Payer</button>
+        <p id="error-message"></p>
+        <button id="close-modal-btn" style="background: none; border: none; cursor: pointer; margin-top: 10px;">Annuler</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAt0NRbbszX8MSikgsYJngdmWzdfYLoBB0",
+        authDomain: "jeoahs1-max-03326376-49b27.firebaseapp.com",
+        projectId: "jeoahs1-max-03326376-49b27",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const functions = getFunctions(app, 'europe-west1'); // Assurez-vous que la région est correcte
+
+    const stripe = Stripe('pk_test_51SYNGF1alLKcRmX5dZ7YcHe4YIFw9td7eGW2A3Q9nx8e8F3nuA9C2JBc6FasWt16WZwPmbzhKAMZWFsRHD5Xn9uO00v2PUvd0G'); 
+    
+    let elements;
+    let currentUser;
+    let selectedPlanId;
+
+    onAuthStateChanged(auth, (user) => {
+        currentUser = user;
+    });
+
+    const paymentButtons = document.querySelectorAll('.payment-btn');
+    const modal = document.getElementById('payment-modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const submitPaymentBtn = document.getElementById('submit-payment-btn');
+
+    paymentButtons.forEach(button => {
+        button.addEventListener('click', async (e) => {
+            if (!currentUser) {
+                alert("Vous devez être connecté pour choisir un plan.");
+                window.location.href = 'auth.html';
+                return;
+            }
+            selectedPlanId = e.target.dataset.planId;
+            initializeCheckout(selectedPlanId);
+        });
+    });
+
+    async function initializeCheckout(planId) {
+        try {
+            const createPaymentIntent = httpsCallable(functions, 'createPaymentIntent');
+            const result = await createPaymentIntent({ planId: planId });
+            const { clientSecret } = result.data;
+
+            elements = stripe.elements({ clientSecret });
+            const paymentElement = elements.create("payment");
+            paymentElement.mount("#payment-element");
+
+            modal.style.display = 'flex';
+        } catch (error) {
+            console.error("Erreur lors de l'initialisation du paiement:", error);
+            document.getElementById('error-message').textContent = "Erreur: " + error.message;
+        }
+    }
+
+    submitPaymentBtn.addEventListener('click', async () => {
+        const { error } = await stripe.confirmPayment({
+            elements,
+            confirmParams: {
+                // L'URL de redirection après le paiement
+                return_url: window.location.origin + "/dashboard.html?payment=success",
+            },
+        });
+
+        if (error) {
+            document.getElementById('error-message').textContent = error.message;
+        }
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+</script>
+
+</body>
+</html>

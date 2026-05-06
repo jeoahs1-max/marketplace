@@ -1,0 +1,81 @@
+il nlis redte<!-- 
+    affiliate_onboarding_step2.html - Onboarding Affilié, Étape 2 : Réseaux Sociaux (V4 - Logos Améliorés)
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Affilié - Étape 2 : Réseaux Sociaux</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        let db, auth, userId;
+        let socialLinks = {};
+
+        const SOCIAL_PLATFORMS = [
+            { id: 'tiktok', name: 'TikTok', icon_svg: `https://www.vectorlogo.zone/logos/tiktok/tiktok-icon.svg`, placeholder: 'Lien de votre profil TikTok', required: true },
+            { id: 'youtube', name: 'YouTube', icon_svg: `https://www.vectorlogo.zone/logos/youtube/youtube-icon.svg`, placeholder: 'Lien de votre chaîne YouTube', required: true },
+            { id: 'instagram', name: 'Instagram', icon_svg: `https://www.vectorlogo.zone/logos/instagram/instagram-icon.svg`, placeholder: 'Lien de votre profil Instagram', required: true },
+            { id: 'twitter', name: 'X / Twitter', icon_svg: `https://www.vectorlogo.zone/logos/twitter/twitter-icon.svg`, placeholder: 'Lien de votre profil X (Twitter)', required: false },
+            { id: 'twitch', name: 'Twitch', icon_svg: `https://www.vectorlogo.zone/logos/twitch/twitch-icon.svg`, placeholder: 'Lien de votre chaîne Twitch', required: false },
+            { id: 'reddit', name: 'Reddit', icon_svg: `https://www.vectorlogo.zone/logos/reddit/reddit-icon.svg`, placeholder: 'Lien de votre profil Reddit', required: false },
+            { id: 'quora', name: 'Quora', icon_svg: `https://www.vectorlogo.zone/logos/quora/quora-icon.svg`, placeholder: 'Lien de votre profil Quora', required: false }, 
+            { id: 'telegram', name: 'Telegram', icon_svg: `https://www.vectorlogo.zone/logos/telegram/telegram-icon.svg`, placeholder: 'Lien de votre canal/profil Telegram', required: false },
+            { id: 'snapchat', name: 'Snapchat', icon_svg: `https://www.vectorlogo.zone/logos/snapchat/snapchat-icon.svg`, placeholder: 'Lien de votre profil Snapchat', required: false },
+            { id: 'facebook', name: 'Facebook', icon_svg: `https://www.vectorlogo.zone/logos/facebook/facebook-icon.svg`, placeholder: 'Lien de votre page/profil Facebook', required: false }, 
+        ];
+        
+        // ... (code firebase et logique de chargement existants)
+
+        function renderSocialLinks() {
+            const container = document.getElementById('social-links-container');
+            container.innerHTML = '';
+            const requiredPlatforms = SOCIAL_PLATFORMS.filter(p => p.required);
+            const optionalPlatforms = SOCIAL_PLATFORMS.filter(p => !p.required);
+
+            requiredPlatforms.forEach(platform => {
+                container.innerHTML += createSocialLinkHtml(platform, socialLinks[platform.id] || "");
+            });
+
+            container.innerHTML += `<div class="pt-6 pb-2 text-lg font-bold text-gray-800 border-t border-gray-200 mt-6">Autres Réseaux (Optionnels)</div>`;
+            
+            optionalPlatforms.forEach(platform => {
+                container.innerHTML += createSocialLinkHtml(platform, socialLinks[platform.id] || "");
+            });
+        }
+        
+        function createSocialLinkHtml(platform, currentValue) {
+            const isRequired = platform.required;
+            return `
+                <div class="p-5 rounded-2xl border border-gray-200 bg-white shadow-lg transition hover:shadow-xl flex items-center space-x-4">
+                    <div class="flex-shrink-0">
+                        <img src="${platform.icon_svg}" alt="Logo ${platform.name}" class="w-10 h-10 object-contain"/>
+                    </div>
+                    <div class="flex-grow">
+                        <label for="input-${platform.id}" class="block text-sm font-semibold text-gray-800">${platform.name} ${isRequired ? '(*)' : ''}</label>
+                        <input type="url" id="input-${platform.id}" value="${currentValue}" oninput="handleInputChange('${platform.id}', this.value)" placeholder="${platform.placeholder}" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-blue-600 focus:border-blue-600 text-base shadow-sm">
+                    </div>
+                </div>
+            `;
+        }
+
+        // ... (logique de soumission et modale existantes)
+
+    </script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f8fc; }
+        .border-red-500 { border-color: #ef4444 !important; }
+    </style>
+</head>
+<body>
+    <!-- ... (HTML du body existant) ... -->
+</body>
+</html>

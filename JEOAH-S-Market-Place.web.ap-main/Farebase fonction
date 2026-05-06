@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plans et Tarifs - JEOAH’S Market Place</title>
+  <link rel="stylesheet" href="styles.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      margin: 0;
+      background-color: #f9fafc;
+      color: #032C4F;
+    }
+    header {
+      background-color: #032C4F;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+    .plans-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+      gap: 25px;
+      padding: 40px;
+      max-width: 1100px;
+      margin: auto;
+    }
+    .plan {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      padding: 30px 20px;
+      text-align: center;
+      transition: 0.3s;
+    }
+    .plan:hover {
+      transform: translateY(-5px);
+    }
+    .plan h2 {
+      color: #FDC830;
+      margin-bottom: 10px;
+    }
+    .plan .price {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #032C4F;
+      margin: 10px 0;
+    }
+    .plan p {
+      font-size: 0.95rem;
+      color: #555;
+      line-height: 1.5;
+    }
+    .plan .btn {
+      background: linear-gradient(to right, #FDC830, #F37335);
+      color: #fff;
+      padding: 10px 25px;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: bold;
+      display: inline-block;
+      margin-top: 15px;
+    }
+    .plan .btn:hover {
+      opacity: 0.9;
+    }
+
+    .payments {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .payments h3 {
+      color: #032C4F;
+      font-size: 1.4rem;
+      margin-bottom: 15px;
+    }
+    .payments img {
+      height: 40px;
+      margin: 8px;
+      vertical-align: middle;
+    }
+    footer {
+      background-color: #032C4F;
+      color: white;
+      text-align: center;
+      padding: 20px;
+      margin-top: 30px;
+    }
+    
+    /* Styles spécifiques à l'outil Gemini (inspiré de votre style) */
+    .gemini-section {
+        background-color: #e6f7ff; /* Arrière-plan plus clair pour se démarquer */
+        border: 2px solid #032C4F;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        max-width: 1100px;
+        margin: 40px auto;
+        text-align: center;
+    }
+    .gemini-section h3 {
+        color: #032C4F;
+        font-size: 1.8rem;
+        margin-bottom: 15px;
+    }
+    .gemini-input {
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 20px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 1rem;
+        box-sizing: border-box;
+    }
+    .gemini-button {
+        background: linear-gradient(to right, #032C4F, #2d5a80);
+        color: #fff;
+        padding: 12px 30px;
+        border-radius: 25px;
+        text-decoration: none;
+        font-weight: bold;
+        display: block;
+        width: 100%;
+        border: none;
+        cursor: pointer;
+        transition: opacity 0.3s;
+    }
+    .gemini-output {
+        margin-top: 25px;
+        padding: 20px;
+        background: #fff;
+        border: 1px dashed #032C4F;
+        border-radius: 10px;
+        min-height: 100px;
+        text-align: left;
+        white-space: pre-wrap;
+    }
+    .loader {
+        margin-top: 15px;
+        font-size: 1rem;
+        color: #032C4F;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Nos Plans d’Abonnement</h1>
+    <p>Choisissez un plan selon vos besoins — vendeur ou affilié, les avantages sont identiques !</p>
+  </header>
+
+  <main>
+    <section class="plans-container">
+      <div class="plan">
+        <h2>Gratuit</h2>
+        <div class="price">$0</div>
+        <p>🔹 Accès limité<br>
+           🔹 1 publication/jour<br>
+           🔹 Support IA de base<br>
+           🔹 Pas de pub automatique</p>
+        <a href="inscription.html" class="btn" data-plan="free">Choisir ce plan</a>
+      </div>
+
+      <div class="plan">
+        <h2>Journalier</h2>
+        <div class="price">$2</div>
+        <p>🔹 2 pubs (1 texte + 1 visuel)<br>
+           🔹 IA active 24/7<br>
+           🔹 Accès au tableau de bord<br>
+           🔹 Statistiques journalières</p>
+        <a href="inscription.html" class="btn" data-plan="daily">Commencer</a>
+      </div>
+
+      <div class="plan">
+        <h2>Hebdomadaire</h2>
+        <div class="price">$10</div>
+        <p>🔹 6 pubs/semaine (3 texte + 3 visuel)<br>
+           🔹 IA personnalisée<br>
+           🔹 Priorité modérée dans les promotions<br>
+           🔹 Suivi des clics et ventes</p>
+        <a href="inscription.html" class="btn" data-plan="weekly">Commencer</a>
+      </div>
+
+      <div class="plan">
+        <h2>Mensuel</h2>
+        <div class="price">$35</div>
+        <p>🔹 20 pubs/mois (10 texte + 10 visuel)<br>
+           🔹 Publicité sur réseaux sociaux<br>
+           🔹 IA marketing avancée<br>
+           🔹 Support client prioritaire</p>
+        <a href="inscription.html" class="btn" data-plan="monthly">Souscrire</a>
+      </div>
+
+      <div class="plan">
+        <h2>3 Mois</h2>
+        <div class="price">$75</div>
+        <p>🔹 60 pubs (mix texte + visuel)<br>
+           🔹 Boost hebdomadaire sur Facebook/Instagram<br>
+           🔹 Tableau de bord avancé<br>
+           🔹 Parrainage activé</p>
+        <a href="inscription.html" class="btn" data-plan="quarterly">Souscrire</a>
+      </div>
+
+      <div class="plan">
+        <h2>6 Mois</h2>
+        <div class="price">$150</div>
+        <p>🔹 120 pubs<br>
+           🔹 IA ultra-prioritaire<br>
+           🔹 Réduction de 10% sur renouvellement<br>
+           🔹 Accès bêta aux nouvelles fonctions</p>
+        <a href="inscription.html" class="btn" data-plan="semiannual">Souscrire</a>
+      </div>
+
+      <div class="plan">
+        <h2>Annuel</h2>
+        <div class="price">$250 + 1 mois gratuit</div>
+        <p>🔹 365 pubs automatiques (texte + visuel)<br>
+           🔹 Visibilité maximale sur tous les réseaux<br>
+           🔹 Parrainage Premium<br>
+           🔹 IA complète + priorité absolue</p>
+        <a href="inscription.html" class="btn" data-plan="annual">Souscrire</a>
+      </div>
+    </section>
+    
+    <section class="gemini-section">
+        <h3>✨ Outil Gemini : Générateur de Slogans (Réservé aux Plans Payants)</h3>
+        <p>Donnez un coup de pouce à votre créativité ! Entrez le nom ou la description de votre produit et laissez notre IA générer des slogans percutants.</p>
+
+        <div style="max-width: 500px; margin: 25px auto;">
+            <input type="text" id="productInput" placeholder="Ex: Chaussures de course écologiques"
+                   class="gemini-input" required>
+            
+            <button id="generateSloganBtn"
+                    class="gemini-button">
+                <i class="fas fa-sparkles"></i> Générer 3 Idées de Slogans
+            </button>
+            
+            <div id="sloganOutput" class="gemini-output">
+                Les résultats de Gemini s'afficheront ici.
+            </div>
+            <div id="geminiLoader" class="loader hidden">
+                <i class="fas fa-spinner fa-spin"></i> L'IA marketing travaille...
+            </div>
+        </div>
+    </section>
+    <section class="payments">
+      <h3>💳 Moyens de paiement acceptés</h3>
+      <div>
+        <img src="assets/icon-googlepay.png" alt="Google Pay">
+        <img src="assets/icon-paypal.png" alt="PayPal">
+        <img src="assets/icon-zelle.png" alt="Zelle">
+        <img src="assets/icon-alipay.png" alt="Alipay">
+        <img src="assets/icon-cashapp.png" alt="Cash App">
+        <img src="assets/icon-moncash.png" alt="MonCash">
+        <img src="assets/icon-natcash.png" alt="NatCash">
+      </div>
+      <p>Paiements rapides et sécurisés via Zelle, PayPal, Google Pay, Cash App, MonCash, NatCash et Alipay.</p>
+    </section>
+  </main>
+
+  <footer>
+    © 2025 JEOAH’S Market Place — Tous droits réservés.
+  </footer>
+  
+  <script type="module" src="app.js"></script>
+</body>
+</html>
