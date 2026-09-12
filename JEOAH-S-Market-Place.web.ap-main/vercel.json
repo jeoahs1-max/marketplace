@@ -14,10 +14,6 @@
       "use": "@vercel/static"
     },
     {
-      "src": "javascript/**/*",
-      "use": "@vercel/static"
-    },
-    {
       "src": "styles.min.css",
       "use": "@vercel/static"
     },
