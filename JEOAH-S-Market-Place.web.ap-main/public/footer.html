@@ -2,17 +2,31 @@
     <div class="container mx-auto px-6">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-                <h3 class="font-bold text-lg mb-4">JEOAH'S</h3>
-                <p class="text-gray-400" data-translate="footer_description">Votre écosystème de vente et d'affiliation.</p>
+                <a href="/index.html" class="flex items-center gap-3 mb-4">
+                    <img src="/public/assets/logo.png" alt="JEOAH'S Market Place" class="h-12 w-12 object-cover rounded-lg shadow-md">
+                    <span class="font-extrabold text-2xl text-white">JEOAH'S</span>
+                </a>
+                <p class="text-gray-400 text-sm" data-translate="footer_description">La marketplace communautaire intelligente qui connecte acheteurs, vendeurs et affiliés avec l'aide de l'IA.</p>
+                <div class="mt-4 text-xs text-gray-500">
+                    <p>• Vitrines personnalisées</p>
+                    <p>• Suivi intelligent des clics</p>
+                    <p>• Assistant IA JEOAH & NEY</p>
+                </div>
             </div>
             <div>
-                <h3 class="font-bold text-lg mb-4" data-translate="footer_nav">Navigation</h3>
-                <ul class="text-gray-400">
-                    <li class="mb-2"><a href="/index.html#features" class="hover:text-white" data-translate="nav_features">Fonctionnalités</a></li>
-                    <li class="mb-2"><a href="/index.html#pricing" class="hover:text-white" data-translate="nav_plans">Plans</a></li>
-                    <li class="mb-2"><a href="/contact.html" class="hover:text-white" data-translate="nav_contact">Contact</a></li>
-                    <li class="mb-2"><a href="/faq.html" class="hover:text-white" data-translate="nav_faq">FAQ</a></li>
-                    <li class="mb-2"><a href="/terms.html" class="hover:text-white" data-translate="nav_terms">Termes & Conditions</a></li>
+                <h3 class="font-bold text-lg mb-4" data-translate="footer_nav">Services & Navigation</h3>
+                <ul class="text-gray-400 space-y-2 text-sm">
+                    <li><a href="/index.html" class="hover:text-white">Accueil Marketplace</a></li>
+                    <li><a href="/fonctionnalite.html" class="hover:text-white" data-translate="nav_features">Fonctionnalités</a></li>
+                    <li><a href="/showcase.html" class="hover:text-white">Vitrine des Produits</a></li>
+                    <li><a href="/plans.html" class="hover:text-white" data-translate="nav_plans">Plans & Abonnements</a></li>
+                    <li><a href="/about.html" class="hover:text-white" data-translate="nav_about">À propos</a></li>
+                    <li><a href="/shipping.html" class="hover:text-white">Livraison & Retours</a></li>
+                    <li><a href="/contact.html" class="hover:text-white" data-translate="nav_contact">Contact</a></li>
+                    <li><a href="/faq.html" class="hover:text-white" data-translate="nav_faq">FAQ & Aide</a></li>
+                    <li><a href="/avis.html" class="hover:text-white" data-translate="nav_avis">Avis</a></li>
+                    <li><a href="/public/terms.html" class="hover:text-white" data-translate="nav_terms">Termes & Conditions</a></li>
+                    <li><a href="/confidentialite.html" class="hover:text-white" data-translate="nav_privacy">Politique de confidentialité</a></li>
                 </ul>
             </div>
             <div>
@@ -34,10 +48,12 @@
             </div>
             <div>
                 <h3 class="font-bold text-lg mb-4" data-translate="footer_lang">Langue</h3>
-                <div class="lang-switcher flex space-x-2">
-                    <button data-lang="fr" onclick="setLang('fr')" class="px-3 py-1 border border-gray-600 rounded-md text-sm hover:bg-gray-700">FR</button>
-                    <button data-lang="en" onclick="setLang('en')" class="px-3 py-1 border border-gray-600 rounded-md text-sm hover:bg-gray-700">EN</button>
-                    <button data-lang="es" onclick="setLang('es')" class="px-3 py-1 border border-gray-600 rounded-md text-sm hover:bg-gray-700">ES</button>
+                <div class="lang-switcher flex flex-wrap gap-1.5">
+                    <button data-lang="fr" onclick="setLang('fr')" class="px-2.5 py-1 border border-gray-600 rounded-md text-xs hover:bg-gray-700">🇫🇷 FR</button>
+                    <button data-lang="ht" onclick="setLang('ht')" class="px-2.5 py-1 border border-gray-600 rounded-md text-xs hover:bg-gray-700">🇭🇹 HT</button>
+                    <button data-lang="en" onclick="setLang('en')" class="px-2.5 py-1 border border-gray-600 rounded-md text-xs hover:bg-gray-700">🇺🇸 EN</button>
+                    <button data-lang="es" onclick="setLang('es')" class="px-2.5 py-1 border border-gray-600 rounded-md text-xs hover:bg-gray-700">🇪🇸 ES</button>
+                    <button data-lang="zh" onclick="setLang('zh')" class="px-2.5 py-1 border border-gray-600 rounded-md text-xs hover:bg-gray-700">🇨🇳 中文</button>
                 </div>
             </div>
         </div>

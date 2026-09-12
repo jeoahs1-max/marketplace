@@ -6,36 +6,56 @@
 -->
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tableau de Bord Vendeur</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="firebase-config.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
+
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        
+
         let db, auth, userId;
-        const DEFAULT_PROFILE = { 
-            storeName: 'Ma Boutique', 
-            profilePictureUrl: 'https://placehold.co/100x100/3B82F6/ffffff?text=M', 
+        const DEFAULT_PROFILE = {
+            storeName: 'Ma Boutique',
+            profilePictureUrl: 'https://placehold.co/100x100/3B82F6/ffffff?text=M',
             bio: 'Gérez vos produits et commandes ici !'
         };
         let vendorData = { ...DEFAULT_PROFILE };
 
+        function hasActiveSubscription() {
+            const saved = JSON.parse(localStorage.getItem('jeoahs_vendor_subscription') || 'null');
+            if (!saved) return true;
+            if (saved.status === 'inactive' || saved.status === 'expired') return false;
+            return !saved.expiresAt || new Date(saved.expiresAt).getTime() > Date.now();
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('vendor-search').addEventListener('input', event => {
+                const term = event.target.value.trim().toLowerCase();
+                const products = JSON.parse(localStorage.getItem('jeoahs_vendor_products') || '[]');
+                const matches = term ? products.filter(product => `${product.name || ''} ${product.category || ''}`.toLowerCase().includes(term)) : products;
+                event.target.setCustomValidity(matches.length || !term ? '' : 'Aucun produit correspondant.');
+                event.target.title = term && !matches.length ? 'Aucun produit correspondant.' : `${matches.length} produit(s) trouvé(s)`;
+            });
             initFirebase();
         });
 
         async function initFirebase() {
+            if (!localStorage.getItem('jeoahs_auth_user')) {
+                window.location.href = '/public/auth.html';
+                return;
+            }
             if (Object.keys(firebaseConfig).length === 0) {
                 // Debug mode without Firebase
                 updateUI(DEFAULT_PROFILE);
@@ -46,26 +66,14 @@
             auth = getAuth(app);
             db = getFirestore(app);
 
-            try {
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Erreur d'authentification:", error);
-                updateUI(DEFAULT_PROFILE);
-                return;
-            }
-
             onAuthStateChanged(auth, async (user) => {
                 if (!user) {
-                    updateUI(DEFAULT_PROFILE);
+                    window.location.href = '/public/auth.html';
                     return;
                 }
                 userId = user.uid;
                 document.getElementById('user-id-display').textContent = `ID Vendeur: ${userId}`;
-                
+
                 // Charger les données du vendeur en temps réel
                 const vendorDocRef = doc(db, `artifacts/${appId}/users/${userId}/vendor_data/profile`);
                 onSnapshot(vendorDocRef, (docSnap) => {
@@ -77,7 +85,7 @@
                 });
             });
         }
-        
+
         /**
          * Met à jour l'interface utilisateur avec les données du vendeur.
          */
@@ -89,42 +97,188 @@
             document.getElementById('profile-picture').src = profile.profilePictureUrl || DEFAULT_PROFILE.profilePictureUrl;
             document.getElementById('profile-bio').textContent = profile.bio || DEFAULT_PROFILE.bio;
 
-            // Mettre à jour les statistiques (Valeurs simulées)
-            document.getElementById('revenue-total').textContent = formatCurrency(12450.75);
-            document.getElementById('orders-total').textContent = '289';
-            document.getElementById('stock-alert').textContent = '3 produits';
-            document.getElementById('unshipped-orders').textContent = '12 commandes';
+            const subscriptionActive = hasActiveSubscription();
+            document.getElementById('subscription-status').textContent = subscriptionActive ? 'Abonnement actif' : 'Abonnement expiré · Produits masqués';
+            document.getElementById('subscription-status').className = subscriptionActive ? 'text-sm font-semibold text-green-700' : 'text-sm font-semibold text-red-700';
+
+            const localOrders = JSON.parse(localStorage.getItem('jeoahs_vendor_orders') || '[]');
+            const localProducts = JSON.parse(localStorage.getItem('jeoahs_vendor_products') || '[]');
+            const grossRevenue = localOrders.reduce((total, order) => total + Number(order.total || 0), 0);
+            const platformFees = grossRevenue * 0.03;
+            const pendingOrders = localOrders.filter(order => !['delivered', 'cancelled'].includes(order.status));
+            const lateOrders = localOrders.filter(order => order.status === 'late');
+            const lowStock = localProducts.filter(product => Number(product.stock) <= 5).length;
+
+            document.getElementById('revenue-total').textContent = formatCurrency(grossRevenue);
+            document.getElementById('orders-total').textContent = String(localOrders.length);
+            document.getElementById('stock-alert').textContent = `${lowStock} produit${lowStock === 1 ? '' : 's'}`;
+            document.getElementById('unshipped-orders').textContent = `${pendingOrders.length} commande${pendingOrders.length === 1 ? '' : 's'}`;
+            document.getElementById('clicks-total').textContent = localStorage.getItem('jeoahs_vendor_clicks') || '0';
+            document.getElementById('available-balance').textContent = formatCurrency(Math.max(0, grossRevenue - platformFees));
+            document.getElementById('late-delivery-count').textContent = String(lateOrders.length);
+            document.getElementById('late-delivery-status').textContent = lateOrders.length >= 3 ? 'Compte à vérifier' : `${3 - lateOrders.length} retard avant examen`;
+
+            renderOrderTracking(localOrders);
         }
+
+        function renderOrderTracking(orders) {
+            const container = document.getElementById('order-tracking-list');
+            if (!orders.length) {
+                container.innerHTML = '<p class="text-sm text-gray-500">Aucune commande à suivre pour le moment.</p>';
+                return;
+            }
+            container.innerHTML = orders.slice(-8).reverse().map(order => `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 py-3">
+                    <div>
+                        <p class="font-bold text-gray-800">Commande ${order.id || 'sans numéro'}</p>
+                        <p class="text-sm text-gray-500">${order.customerName || 'Client'} · ${formatCurrency(Number(order.total || 0))}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-semibold ${order.status === 'late' ? 'text-red-600' : 'text-blue-700'}">${formatOrderStatus(order.status)}</span>
+                        <button type="button" onclick="updateOrderStatus('${String(order.id || '').replace(/'/g, '')}')" class="px-3 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">Mettre à jour</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function formatOrderStatus(status) {
+            return ({ pending: 'À préparer', shipped: 'Expédiée', delivered: 'Livrée', late: 'En retard', cancelled: 'Annulée' })[status] || 'À confirmer';
+        }
+
+        window.updateOrderStatus = function (orderId) {
+            const orders = JSON.parse(localStorage.getItem('jeoahs_vendor_orders') || '[]');
+            const order = orders.find(item => item.id === orderId);
+            if (!order) return;
+            const statuses = ['pending', 'shipped', 'delivered', 'late'];
+            order.status = statuses[(statuses.indexOf(order.status) + 1) % statuses.length];
+            localStorage.setItem('jeoahs_vendor_orders', JSON.stringify(orders));
+            updateUI(vendorData);
+        };
 
         // Fonction de formatage des nombres (pour les euros)
         function formatCurrency(amount) {
             return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
         }
 
+        window.activateAffiliateRole = function () {
+            const account = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+            if (!account) {
+                window.location.href = '/public/auth.html';
+                return;
+            }
+            account.roles = Array.from(new Set([...(account.roles || [account.role]), 'vendeur', 'affilie']));
+            localStorage.setItem('jeoahs_auth_user', JSON.stringify(account));
+            window.location.href = '/affiliate_onboarding_step1.html?upgrade=affiliate';
+        };
+
+        window.showVendorReport = function () {
+            const orders = JSON.parse(localStorage.getItem('jeoahs_vendor_orders') || '[]');
+            const products = JSON.parse(localStorage.getItem('jeoahs_vendor_products') || '[]');
+            const revenue = orders.reduce((total, order) => total + Number(order.total || 0), 0);
+            window.alert(`Rapport de votre boutique\n\n${products.length} produit(s)\n${orders.length} commande(s)\n${formatCurrency(revenue)} de revenus bruts`);
+        };
+
     </script>
-    
+
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(145deg, #edf2ff 0%, #f8fafc 52%, #fff7ed 100%);
+        }
+
+        .vendor-shell {
+            display: grid;
+            grid-template-columns: 220px minmax(0, 1fr);
+            gap: 1.5rem;
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        .vendor-sidebar {
+            background: #fff;
+            border: 1px solid #dbe4f4;
+            border-radius: 1.25rem;
+            padding: 1.25rem;
+            box-shadow: 0 12px 28px rgba(15, 39, 74, .08);
+        }
+
+        .vendor-sidebar a {
+            display: flex;
+            align-items: center;
+            gap: .7rem;
+            padding: .75rem;
+            border-radius: .7rem;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        .vendor-sidebar a:hover,
+        .vendor-sidebar a.active {
+            color: #1d4ed8;
+            background: #eaf1ff;
+        }
+
+        @media (max-width: 800px) {
+            .vendor-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .vendor-sidebar {
+                display: flex;
+                overflow-x: auto;
+                gap: .35rem;
+            }
+
+            .vendor-sidebar a {
+                white-space: nowrap;
+            }
+        }
+
         .stat-card {
             background-color: white;
             padding: 1.5rem;
             border-radius: 1rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             transition: transform 0.2s, box-shadow 0.2s;
-            border-left: 5px solid; /* Pour la couleur thématique */
+            border-left: 5px solid;
+            /* Pour la couleur thématique */
         }
+
         .stat-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
         }
+
         /* Couleurs pour les stat cards */
-        .revenue-border { border-left-color: #10B981; } /* Vert émeraude */
-        .orders-border { border-left-color: #3B82F6; }  /* Bleu */
-        .products-border { border-left-color: #F59E0B; } /* Jaune/Ambre */
-        .pending-border { border-left-color: #EF4444; }  /* Rouge */
+        .revenue-border {
+            border-left-color: #10B981;
+        }
+
+        /* Vert émeraude */
+        .orders-border {
+            border-left-color: #3B82F6;
+        }
+
+        /* Bleu */
+        .products-border {
+            border-left-color: #F59E0B;
+        }
+
+        /* Jaune/Ambre */
+        .pending-border {
+            border-left-color: #EF4444;
+        }
+
+        /* Rouge */
     </style>
 </head>
+
 <body>
+
+    <div
+        class="fixed top-3 right-3 z-40 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-800 shadow-sm">
+        Mode test · Aucun paiement réel
+    </div>
 
     <!-- Overlay de Chargement -->
     <div id="loading-overlay" class="fixed inset-0 bg-white flex items-center justify-center z-50">
@@ -134,114 +288,189 @@
 
     <!-- Contenu du Tableau de Bord -->
     <div id="dashboard-container" class="hidden min-h-screen p-4 sm:p-8">
-        <div class="max-w-6xl mx-auto space-y-8">
+        <div class="mb-6 flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-lg sm:flex-row sm:items-center sm:justify-between">
+            <a href="/showcase.html" class="flex items-center gap-3 font-extrabold text-[#032C4F]">
+                <img src="/public/assets/logo.png" alt="JEOAH'S" class="h-12 w-12 rounded-xl object-cover">
+                <span>JEOAH'S <small class="block text-xs font-semibold text-blue-600">Espace vendeur</small></span>
+            </a>
+            <label class="w-full sm:max-w-md">
+                <span class="sr-only">Rechercher dans ma boutique</span>
+                <input id="vendor-search" type="search" placeholder="Rechercher dans ma boutique..." class="w-full rounded-full border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none">
+            </label>
+        </div>
+        <div class="vendor-shell">
+            <aside class="vendor-sidebar h-fit">
+                <a href="vendor_dashboard.html" class="active"><i class="fas fa-chart-pie"></i> Tableau de bord</a>
+                <a href="vendor-products.html"><i class="fas fa-box"></i> Produits</a>
+                <a href="vendor_orders.html"><i class="fas fa-clipboard-list"></i> Commandes</a>
+                <a href="#report" onclick="showVendorReport(); return false;"><i class="fas fa-chart-line"></i> Statistiques</a>
+                <a href="vendor-setup.html"><i class="fas fa-cog"></i> Paramètres</a>
+            </aside>
+            <div class="min-w-0 space-y-8">
 
-            <!-- En-tête et Bienvenue -->
-            <header class="bg-white p-6 rounded-2xl shadow-lg flex flex-col sm:flex-row items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <img id="profile-picture" 
-                         src="https://placehold.co/100x100/3B82F6/ffffff?text=M" 
-                         alt="Logo de la Boutique" 
-                         class="w-16 h-16 object-cover rounded-full border-4 border-blue-500 shadow-md">
-                    <div>
-                        <h1 id="welcome-message" class="text-3xl font-extrabold text-[#032C4F]">Bienvenue, Marchand !</h1>
-                        <p id="profile-bio" class="text-gray-600 mt-1 italic">Chargement des informations de la boutique...</p>
+                <!-- En-tête et Bienvenue -->
+                <header
+                    class="bg-white p-6 rounded-2xl shadow-lg flex flex-col sm:flex-row items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <img id="profile-picture" src="https://placehold.co/100x100/3B82F6/ffffff?text=M"
+                            alt="Logo de la Boutique"
+                            class="w-16 h-16 object-cover rounded-full border-4 border-blue-500 shadow-md">
+                        <div>
+                            <h1 id="welcome-message" class="text-3xl font-extrabold text-[#032C4F]">Bienvenue, Marchand
+                                !</h1>
+                            <p id="profile-bio" class="text-gray-600 mt-1 italic">Chargement des informations de la
+                                boutique...</p>
+                        </div>
                     </div>
-                </div>
-                <div class="mt-4 sm:mt-0 text-sm text-right">
-                    <p id="user-id-display" class="text-gray-400">ID Vendeur: (Chargement...)</p>
-                    <a href="#" class="text-blue-600 hover:text-blue-800 font-semibold transition mt-1 block">
-                        <i class="fas fa-store mr-1"></i> Gérer ma Boutique
-                    </a>
-                </div>
-            </header>
-
-            <!-- Section des Statistiques Clés -->
-            <section>
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">Aperçu des Ventes (Mois en cours)</h2>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-
-                    <!-- Carte 1: Revenus Totaux -->
-                    <div class="stat-card revenue-border">
-                        <i class="fas fa-chart-line text-4xl text-green-600 mb-3"></i>
-                        <p class="text-sm font-medium text-gray-500">Revenus Bruts</p>
-                        <p class="text-3xl font-extrabold text-gray-900 mt-1">
-                            <span id="revenue-total">0,00 €</span>
+                    <div class="mt-4 sm:mt-0 text-sm text-right">
+                        <p id="user-id-display" class="text-gray-400">ID Vendeur: (Chargement...)</p>
+                        <a href="vendor-setup.html" class="text-blue-600 hover:text-blue-800 font-semibold transition mt-1 block">
+                            <i class="fas fa-store mr-1"></i> Gérer ma Boutique
+                        </a>
+                        <p id="subscription-status" class="text-sm font-semibold text-green-700 mt-2">Abonnement actif
                         </p>
-                    </div>
-
-                    <!-- Carte 2: Commandes Totales -->
-                    <div class="stat-card orders-border">
-                        <i class="fas fa-box-open text-4xl text-blue-600 mb-3"></i>
-                        <p class="text-sm font-medium text-gray-500">Commandes Totales</p>
-                        <p class="text-3xl font-extrabold text-gray-900 mt-1">
-                            <span id="orders-total">0</span>
-                        </p>
-                    </div>
-
-                    <!-- Carte 3: Alerte Stock Faible -->
-                    <div class="stat-card products-border">
-                        <i class="fas fa-warehouse text-4xl text-yellow-600 mb-3"></i>
-                        <p class="text-sm font-medium text-gray-500">Stock Faible</p>
-                        <p class="text-3xl font-extrabold text-gray-900 mt-1">
-                            <span id="stock-alert">0 produit</span>
-                        </p>
-                    </div>
-
-                    <!-- Carte 4: Commandes en Attente d'Expédition -->
-                    <div class="stat-card pending-border">
-                        <i class="fas fa-shipping-fast text-4xl text-red-600 mb-3"></i>
-                        <p class="text-sm font-medium text-gray-500">À Expédier</p>
-                        <p class="text-3xl font-extrabold text-gray-900 mt-1">
-                            <span id="unshipped-orders">0 commande</span>
-                        </p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Section Outils et Actions Rapides -->
-            <section>
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">Outils de Gestion de la Boutique</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    
-                    <!-- Outil 1: Gestion des Produits -->
-                    <div class="stat-card p-6 bg-indigo-50 border border-indigo-200 shadow-md">
-                        <h3 class="text-xl font-bold text-indigo-800 mb-2 flex items-center">
-                            <i class="fas fa-cubes mr-2"></i> Mes Produits
-                        </h3>
-                        <p class="text-gray-700 text-sm mb-4">Ajoutez de nouveaux articles, modifiez les prix et gérez les stocks.</p>
-                        <button class="w-full py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition shadow-md">
-                            Ajouter un Produit
+                        <button type="button" onclick="activateAffiliateRole()"
+                            class="text-purple-600 hover:text-purple-800 font-semibold transition mt-2 block">
+                            <i class="fas fa-link mr-1"></i> Devenir affilié
                         </button>
                     </div>
-                    
-                    <!-- Outil 2: Traitement des Commandes -->
-                    <div class="stat-card p-6 bg-blue-50 border border-blue-200 shadow-md">
-                        <h3 class="text-xl font-bold text-blue-800 mb-2 flex items-center">
-                            <i class="fas fa-clipboard-list mr-2"></i> Gestion des Commandes
-                        </h3>
-                        <p class="text-gray-700 text-sm mb-4">Consultez, traitez et suivez toutes vos commandes en cours.</p>
-                        <button class="w-full py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition shadow-md">
-                            Voir les Commandes
-                        </button>
-                    </div>
-                    
-                    <!-- Outil 3: Rapports & Analyses -->
-                    <div class="stat-card p-6 bg-orange-50 border border-orange-200 shadow-md">
-                        <h3 class="text-xl font-bold text-orange-800 mb-2 flex items-center">
-                            <i class="fas fa-chart-bar mr-2"></i> Analyse de Performance
-                        </h3>
-                        <p class="text-gray-700 text-sm mb-4">Obtenez des rapports détaillés sur les produits les plus vendus et les marges.</p>
-                        <button class="w-full py-2 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-700 transition shadow-md">
-                            Rapports
-                        </button>
-                    </div>
-                </div>
-            </section>
+                </header>
 
+                <!-- Section des Statistiques Clés -->
+                <section>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Aperçu des Ventes (Mois en cours)</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+                        <!-- Carte 1: Revenus Totaux -->
+                        <div class="stat-card revenue-border">
+                            <i class="fas fa-chart-line text-4xl text-green-600 mb-3"></i>
+                            <p class="text-sm font-medium text-gray-500">Revenus Bruts</p>
+                            <p class="text-3xl font-extrabold text-gray-900 mt-1">
+                                <span id="revenue-total">0,00 €</span>
+                            </p>
+                        </div>
+
+                        <!-- Carte 2: Commandes Totales -->
+                        <div class="stat-card orders-border">
+                            <i class="fas fa-box-open text-4xl text-blue-600 mb-3"></i>
+                            <p class="text-sm font-medium text-gray-500">Commandes Totales</p>
+                            <p class="text-3xl font-extrabold text-gray-900 mt-1">
+                                <span id="orders-total">0</span>
+                            </p>
+                        </div>
+
+                        <!-- Carte 3: Alerte Stock Faible -->
+                        <div class="stat-card products-border">
+                            <i class="fas fa-warehouse text-4xl text-yellow-600 mb-3"></i>
+                            <p class="text-sm font-medium text-gray-500">Stock Faible</p>
+                            <p class="text-3xl font-extrabold text-gray-900 mt-1">
+                                <span id="stock-alert">0 produit</span>
+                            </p>
+                        </div>
+
+                        <!-- Carte 4: Commandes en Attente d'Expédition -->
+                        <div class="stat-card pending-border">
+                            <i class="fas fa-shipping-fast text-4xl text-red-600 mb-3"></i>
+                            <p class="text-sm font-medium text-gray-500">À Expédier</p>
+                            <p class="text-3xl font-extrabold text-gray-900 mt-1">
+                                <span id="unshipped-orders">0 commande</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
+                        <div class="stat-card border-l-4 border-cyan-500">
+                            <p class="text-sm text-gray-500">Clics produits</p>
+                            <p id="clicks-total" class="text-2xl font-extrabold text-gray-900 mt-1">0</p>
+                        </div>
+                        <div class="stat-card border-l-4 border-emerald-500">
+                            <p class="text-sm text-gray-500">Solde vendeur</p>
+                            <p id="available-balance" class="text-2xl font-extrabold text-gray-900 mt-1">0,00 €</p>
+                        </div>
+                        <div class="stat-card border-l-4 border-orange-500">
+                            <p class="text-sm text-gray-500">Retards livraison</p>
+                            <p id="late-delivery-count" class="text-2xl font-extrabold text-gray-900 mt-1">0</p>
+                        </div>
+                        <div class="stat-card border-l-4 border-violet-500">
+                            <p class="text-sm text-gray-500">Retraits</p>
+                            <p class="text-2xl font-extrabold text-gray-900 mt-1">À configurer</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 rounded-xl border border-orange-200 bg-orange-50 p-4">
+                        <p class="font-bold text-orange-800">Suivi de fiabilité</p>
+                        <p id="late-delivery-status" class="text-sm text-orange-700 mt-1">3 retards avant examen</p>
+                        <p class="text-xs text-orange-700 mt-2">Un retard doit être justifié et mis à jour avec une
+                            preuve d’expédition. Toute sanction doit respecter une procédure de vérification et
+                            permettre au vendeur de répondre.</p>
+                    </div>
+                </section>
+
+                <section class="bg-white p-6 rounded-2xl shadow-lg">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800">Suivi des commandes</h2>
+                            <p class="text-sm text-gray-500">Le vendeur confirme l’expédition et la livraison; JEOAH’S
+                                conserve l’historique.</p>
+                        </div>
+                        <a href="vendor_orders.html"
+                            class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Toutes
+                            les commandes</a>
+                    </div>
+                    <div id="order-tracking-list"></div>
+                </section>
+
+                <!-- Section Outils et Actions Rapides -->
+                <section>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Outils de Gestion de la Boutique</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                        <!-- Outil 1: Gestion des Produits -->
+                        <div class="stat-card p-6 bg-indigo-50 border border-indigo-200 shadow-md">
+                            <h3 class="text-xl font-bold text-indigo-800 mb-2 flex items-center">
+                                <i class="fas fa-cubes mr-2"></i> Mes Produits
+                            </h3>
+                            <p class="text-gray-700 text-sm mb-4">Ajoutez de nouveaux articles, modifiez les prix et
+                                gérez les stocks.</p>
+                            <a href="vendor_product_submission.html"
+                                class="block text-center w-full py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition shadow-md">
+                                Ajouter un Produit
+                            </a>
+                        </div>
+
+                        <!-- Outil 2: Traitement des Commandes -->
+                        <div class="stat-card p-6 bg-blue-50 border border-blue-200 shadow-md">
+                            <h3 class="text-xl font-bold text-blue-800 mb-2 flex items-center">
+                                <i class="fas fa-clipboard-list mr-2"></i> Gestion des Commandes
+                            </h3>
+                            <p class="text-gray-700 text-sm mb-4">Consultez, traitez et suivez toutes vos commandes en
+                                cours.</p>
+                            <a href="vendor_orders.html"
+                                class="block text-center w-full py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition shadow-md">
+                                Voir les Commandes
+                            </a>
+                        </div>
+
+                        <!-- Outil 3: Rapports & Analyses -->
+                        <div class="stat-card p-6 bg-orange-50 border border-orange-200 shadow-md">
+                            <h3 class="text-xl font-bold text-orange-800 mb-2 flex items-center">
+                                <i class="fas fa-chart-bar mr-2"></i> Analyse de Performance
+                            </h3>
+                            <p class="text-gray-700 text-sm mb-4">Obtenez des rapports détaillés sur les produits les
+                                plus vendus et les marges.</p>
+                            <button type="button" onclick="showVendorReport()"
+                                class="w-full py-2 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-700 transition shadow-md">
+                                Rapports
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
         </div>
     </div>
 
-</body>
-</html>
+    <div id="footer-container"></div>
 
+    <script src="/public/jeoah-loader.js" defer></script>
+</body>
+
+</html>

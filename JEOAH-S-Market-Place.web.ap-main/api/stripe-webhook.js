@@ -17,7 +17,7 @@ const db = admin.firestore();
 
 // Le corps de la requête doit être brut (Buffer) pour la vérification de la signature Stripe
 // Vercel fournit une configuration pour cela.
-export const config = {
+module.exports.config = {
   api: {
     bodyParser: false,
   },

@@ -1,0 +1,118 @@
+<div id="ney-widget" style="position:fixed;right:20px;bottom:20px;z-index:9999;font-family:Arial,sans-serif">
+  <section id="ney-panel" hidden aria-label="Assistant Ney" style="width:min(390px,calc(100vw - 32px));height:520px;background:#fff;border:1px solid #d7e2e8;border-radius:16px;box-shadow:0 12px 35px rgba(16,42,67,.25);display:none;flex-direction:column;overflow:hidden">
+    <header style="padding:14px 16px;background:#102a43;color:#fff;display:flex;align-items:center;justify-content:space-between">
+      <strong>Ney, assistant JEOAH'S</strong>
+      <button id="ney-close" type="button" aria-label="Fermer Ney" style="border:0;background:transparent;color:#fff;font-size:24px;cursor:pointer">&times;</button>
+    </header>
+    <div style="padding:8px 12px;border-bottom:1px solid #d7e2e8;background:#f5f8fa;display:flex;justify-content:space-between;gap:8px">
+      <label for="ney-language" style="font-size:12px;color:#334e68">Langue
+        <select id="ney-language" style="margin-left:4px;padding:4px;border:1px solid #c9d6df;border-radius:6px">
+          <option value="fr">Francais</option>
+          <option value="ht">Kreyol ayisyen</option>
+          <option value="en">English</option>
+          <option value="es">Espanol</option>
+        </select>
+      </label>
+      <button id="ney-voice" type="button" aria-pressed="false" title="Activer la lecture vocale" style="border:1px solid #c9d6df;background:#fff;border-radius:6px;padding:4px 8px;cursor:pointer">Voix: non</button>
+    </div>
+    <div id="ney-messages" aria-live="polite" style="flex:1;padding:14px;overflow:auto;background:#f5f8fa"></div>
+    <form id="ney-form" style="display:flex;gap:8px;padding:12px;border-top:1px solid #d7e2e8">
+      <input id="ney-input" required placeholder="Ecrivez votre question" style="min-width:0;flex:1;padding:10px;border:1px solid #c9d6df;border-radius:8px">
+      <button type="submit" style="border:0;border-radius:8px;padding:10px 14px;background:#1665d8;color:#fff;font-weight:700;cursor:pointer">Envoyer</button>
+    </form>
+  </section>
+  <button id="ney-open" type="button" aria-label="Ouvrir Ney" style="width:58px;height:58px;border:0;border-radius:50%;background:#1665d8;color:#fff;font-size:22px;box-shadow:0 8px 20px rgba(16,42,67,.25);cursor:pointer">N</button>
+</div>
+<script>
+(function () {
+  const panel = document.getElementById('ney-panel');
+  const openButton = document.getElementById('ney-open');
+  const closeButton = document.getElementById('ney-close');
+  const form = document.getElementById('ney-form');
+  const input = document.getElementById('ney-input');
+  const messages = document.getElementById('ney-messages');
+  const language = document.getElementById('ney-language');
+  const voiceButton = document.getElementById('ney-voice');
+  let voiceEnabled = false;
+  const conversation = [];
+
+  const welcome = { fr: 'Bonjour, je suis Ney. Comment puis-je vous aider ?', ht: 'Bonjou, mwen se Ney. Kijan mwen ka ede ou?', en: 'Hello, I am Ney. How can I help?', es: 'Hola, soy Ney. Como puedo ayudarte?' };
+  const locale = { fr: 'fr-FR', ht: 'fr-FR', en: 'en-US', es: 'es-ES' };
+  const labels = {
+    fr: { you: 'Vous', unavailable: 'Le service est temporairement indisponible.' },
+    ht: { you: 'Ou', unavailable: 'Sèvis la pa disponib pou kounye a.' },
+    en: { you: 'You', unavailable: 'The service is temporarily unavailable.' },
+    es: { you: 'Tu', unavailable: 'El servicio no esta disponible temporalmente.' }
+  };
+
+  function appendMessage(sender, text, user) {
+    const message = document.createElement('p');
+    message.style.cssText = 'margin:0 0 10px;padding:10px;border-radius:8px;line-height:1.45;' + (user ? 'background:#1665d8;color:#fff;margin-left:24px' : 'background:#fff;color:#102a43;margin-right:24px');
+    const name = document.createElement('strong');
+    name.textContent = sender + ': ';
+    message.append(name, document.createTextNode(text));
+    messages.appendChild(message);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function speak(text) {
+    if (!voiceEnabled || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = locale[language.value] || 'fr-FR';
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function openChat() {
+    panel.hidden = false;
+    panel.style.display = 'flex';
+    openButton.hidden = true;
+    input.focus();
+  }
+
+  function closeChat() {
+    panel.hidden = true;
+    panel.style.display = 'none';
+    openButton.hidden = false;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  }
+
+  openButton.addEventListener('click', openChat);
+  closeButton.addEventListener('click', closeChat);
+  voiceButton.addEventListener('click', () => {
+    voiceEnabled = !voiceEnabled;
+    voiceButton.setAttribute('aria-pressed', String(voiceEnabled));
+    voiceButton.textContent = voiceEnabled ? 'Voix: oui' : 'Voix: non';
+    if (!voiceEnabled && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+  });
+  language.addEventListener('change', () => {
+    localStorage.setItem('jeoahs-lang', language.value);
+    appendMessage('Ney', welcome[language.value] || welcome.fr, false);
+  });
+
+  const savedLanguage = localStorage.getItem('jeoahs-lang');
+  if (savedLanguage && locale[savedLanguage]) language.value = savedLanguage;
+  appendMessage('Ney', welcome[language.value] || welcome.fr, false);
+
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    const prompt = input.value.trim();
+    if (!prompt) return;
+    appendMessage((labels[language.value] || labels.fr).you, prompt, true);
+    conversation.push({ role: 'user', content: prompt });
+    input.value = '';
+    try {
+      const response = await fetch('/api/ney-admin.js', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, language: language.value }) });
+      const data = await response.json();
+      const reply = data.reply || (labels[language.value] || labels.fr).unavailable;
+      appendMessage('Ney', reply, false);
+      conversation.push({ role: 'assistant', content: reply });
+      speak(reply);
+    } catch (error) {
+      const reply = (labels[language.value] || labels.fr).unavailable;
+      appendMessage('Ney', reply, false);
+      speak(reply);
+    }
+  });
+})();
+</script>

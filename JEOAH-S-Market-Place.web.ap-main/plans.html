@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plans - JEOAH'S</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/public/assets/js/translator.js"></script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900">
+    <main class="mx-auto max-w-7xl px-5 py-12">
+        <header class="mb-10 max-w-3xl">
+            <a href="/index.html" class="text-sm font-semibold text-indigo-700 hover:underline">JEOAH'S Market Place</a>
+            <h1 class="mt-3 text-4xl font-extrabold tracking-normal">Plans et quotas</h1>
+            <p class="mt-3 text-slate-600">Choisissez le niveau adapté à votre activité. Les créations IA et les publications sont toujours soumises à validation avant exécution.</p>
+        </header>
+        <section class="mb-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm" aria-labelledby="currency-title">
+            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div>
+                    <h2 id="currency-title" class="text-xl font-bold">Convertisseur de devises</h2>
+                    <p class="mt-1 text-sm text-slate-600">Estimation indicative avant paiement. Le paiement Stripe reste traité en USD.</p>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-3">
+                    <label class="text-sm font-semibold text-slate-700">Montant
+                        <input id="currency-amount" type="number" min="0" step="0.01" value="19.99" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 font-normal focus:border-indigo-600 focus:outline-none">
+                    </label>
+                    <label class="text-sm font-semibold text-slate-700">De
+                        <select id="currency-from" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 font-normal focus:border-indigo-600 focus:outline-none"><option>USD</option><option>EUR</option><option>HTG</option><option>CAD</option><option>GBP</option></select>
+                    </label>
+                    <label class="text-sm font-semibold text-slate-700">Vers
+                        <select id="currency-to" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 font-normal focus:border-indigo-600 focus:outline-none"><option>HTG</option><option>USD</option><option>EUR</option><option>CAD</option><option>GBP</option></select>
+                    </label>
+                </div>
+            </div>
+            <div class="mt-5 rounded-md border border-indigo-100 bg-indigo-50 p-4"><span id="currency-result-label" class="text-sm font-semibold text-indigo-900">19.99 USD en HTG</span><strong id="currency-result" class="mt-1 block text-3xl text-indigo-950">Calcul en cours...</strong></div>
+            <p id="currency-rate-status" class="mt-4 text-xs text-slate-500">Chargement du taux du jour...</p>
+        </section>
+        <section class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            <article class="flex flex-col rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 class="text-xl font-bold">Free</h2><p class="mt-2 text-3xl font-extrabold">$0 <span class="text-sm font-medium text-slate-500">/ mois</span></p>
+                <p class="mt-4 text-sm text-slate-600">Pour découvrir la communauté et créer un profil simple.</p>
+                <ul class="mt-5 space-y-2 text-sm text-slate-700"><li>5 produits dans l'espace privé</li><li>Vitrine basique</li><li>Sans assistant IA</li><li>Sans publication IA</li></ul>
+                <button id="free" data-plan="free" class="plan-button mt-6 w-full rounded-md border border-slate-300 px-4 py-2 font-semibold hover:bg-slate-50">Commencer gratuitement</button>
+            </article>
+            <article class="flex flex-col rounded-lg border border-indigo-200 bg-white p-6 shadow-sm">
+                <h2 class="text-xl font-bold">Starter</h2><p class="mt-2 text-3xl font-extrabold">$9.99 <span class="text-sm font-medium text-slate-500">/ mois</span></p>
+                <p class="mt-4 text-sm text-slate-600">Pour lancer une vitrine et une communication régulière.</p>
+                <ul class="mt-5 space-y-2 text-sm text-slate-700"><li>25 produits</li><li>30 descriptions et traductions IA / mois</li><li>10 publicités texte IA / mois</li><li>5 images IA et 3 vidéos IA / mois</li></ul>
+                <button id="starter" data-plan="starter" class="plan-button mt-6 w-full rounded-md bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700">Choisir Starter</button>
+            </article>
+            <article class="flex flex-col rounded-lg border-2 border-indigo-600 bg-white p-6 shadow-sm">
+                <p class="text-xs font-bold uppercase tracking-wide text-indigo-700">Recommandé</p><h2 class="mt-1 text-xl font-bold">Pro</h2><p class="mt-2 text-3xl font-extrabold">$19.99 <span class="text-sm font-medium text-slate-500">/ mois</span></p>
+                <p class="mt-4 text-sm text-slate-600">Pour les vendeurs et affiliés actifs.</p>
+                <ul class="mt-5 space-y-2 text-sm text-slate-700"><li>100 produits</li><li>100 descriptions et traductions IA / mois</li><li>30 publicités texte IA / mois</li><li>10 images IA et 5 vidéos IA / mois</li><li>Statistiques avancées</li></ul>
+                <button id="pro" data-plan="pro" class="plan-button mt-6 w-full rounded-md bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700">Choisir Pro</button>
+            </article>
+            <article class="flex flex-col rounded-lg border border-fuchsia-200 bg-white p-6 shadow-sm">
+                <h2 class="text-xl font-bold">Premium</h2><p class="mt-2 text-3xl font-extrabold">$39.99 <span class="text-sm font-medium text-slate-500">/ mois</span></p>
+                <p class="mt-4 text-sm text-slate-600">Pour une activité soutenue et prioritaire.</p>
+                <ul class="mt-5 space-y-2 text-sm text-slate-700"><li>Produits et descriptions selon usage raisonnable</li><li>50 publicités texte IA / mois</li><li>30 images IA et 10 vidéos IA / mois</li><li>Statistiques complètes et support prioritaire</li></ul>
+                <button id="premium" data-plan="premium" class="plan-button mt-6 w-full rounded-md bg-fuchsia-700 px-4 py-2 font-semibold text-white hover:bg-fuchsia-800">Choisir Premium</button>
+            </article>
+        </section>
+        <section class="mt-6 flex flex-col justify-between gap-4 rounded-lg border border-slate-200 bg-white p-6 md:flex-row md:items-center">
+            <div><h2 class="text-xl font-bold">Entreprise</h2><p class="mt-1 text-sm text-slate-600">A partir de $99 / mois. Multi-utilisateurs, API avancée, support prioritaire et hébergement privé selon devis.</p></div>
+            <button id="enterprise" data-plan="enterprise" class="plan-button shrink-0 rounded-md bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-700">Demander un devis</button>
+        </section>
+        <p id="plan-status" class="mt-5 text-sm text-slate-600" aria-live="polite"></p>
+        <nav class="mt-10 flex items-center justify-between border-t border-slate-200 pt-6 text-sm font-semibold"><a href="/fonctionnalite.html" class="text-indigo-700 hover:underline">← Fonctionnalités</a><a href="/faq.html" class="text-indigo-700 hover:underline">FAQ →</a></nav>
+    </main>
+    <script>
+        const fallbackRates = { USD: 1, EUR: 0.92, HTG: 131, CAD: 1.36, GBP: 0.79 };
+        let currencyRates = { ...fallbackRates };
+        const currencyAmount = document.getElementById('currency-amount');
+        const currencyFrom = document.getElementById('currency-from');
+        const currencyTo = document.getElementById('currency-to');
+        const currencyResult = document.getElementById('currency-result');
+        const currencyResultLabel = document.getElementById('currency-result-label');
+        const currencyRateStatus = document.getElementById('currency-rate-status');
+        function renderCurrencyTable() {
+            const amount = Math.max(0, Number(currencyAmount.value) || 0);
+            const from = currencyFrom.value;
+            const to = currencyTo.value;
+            const converted = amount / currencyRates[from] * currencyRates[to];
+            currencyResultLabel.textContent = `${amount.toFixed(2)} ${from} en ${to}`;
+            currencyResult.textContent = `${converted.toFixed(to === 'HTG' ? 0 : 2)} ${to}`;
+        }
+        currencyAmount.addEventListener('input', renderCurrencyTable);
+        currencyFrom.addEventListener('change', renderCurrencyTable);
+        currencyTo.addEventListener('change', renderCurrencyTable);
+        renderCurrencyTable();
+        fetch('https://open.er-api.com/v6/latest/USD').then(response => response.json()).then(data => {
+            if (data.result === 'success' && data.rates) {
+                currencyRates = { USD: 1, EUR: data.rates.EUR, HTG: data.rates.HTG, CAD: data.rates.CAD, GBP: data.rates.GBP };
+                currencyRateStatus.textContent = `Taux du jour récupéré le ${new Date().toLocaleDateString('fr-FR')}. Le paiement Stripe reste traité en USD.`;
+                renderCurrencyTable();
+            }
+        }).catch(() => { currencyRateStatus.textContent = 'Taux indicatifs hors ligne. Le paiement Stripe reste traité en USD.'; });
+        document.querySelectorAll('.plan-button').forEach(button => button.addEventListener('click', () => {
+            const plan = button.dataset.plan;
+            localStorage.setItem('jeoahs_selected_plan', plan);
+            document.getElementById('plan-status').textContent = plan === 'free' ? 'Plan Free sélectionné. Créez votre compte pour commencer.' : 'Plan sélectionné. Connectez-vous pour poursuivre.';
+            window.location.href = `/public/auth.html?plan=${encodeURIComponent(plan)}`;
+        }));
+    </script>
+    <script src="/public/jeoah-loader.js" defer></script>
+</body>
+</html>

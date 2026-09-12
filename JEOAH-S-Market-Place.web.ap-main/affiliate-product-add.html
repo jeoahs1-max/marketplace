@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ajouter un produit affilié - JEOAH'S</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/firebase-config.js"></script>
+    <script src="/public/jeoah-loader.js" defer></script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900">
+    <main class="mx-auto max-w-3xl px-5 py-10">
+        <a href="/affiliate-storefront.html" class="font-bold text-purple-700 hover:underline">Retour à ma vitrine</a>
+        <h1 class="mt-6 text-3xl font-extrabold">Ajouter un produit affilié</h1>
+        <p class="mt-2 text-sm text-slate-600">Ajoutez l’offre et son lien officiel. L’acheteur sera redirigé vers le site partenaire.</p>
+        <form id="affiliate-product-form" class="mt-8 space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="grid gap-5 sm:grid-cols-2">
+                <label class="text-sm font-bold">Nom du produit<input id="product-name" required class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" placeholder="Ex. Écouteurs sans fil"></label>
+                <label class="text-sm font-bold">Catégorie<input id="product-category" required class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" placeholder="Ex. Électronique"></label>
+                <label class="text-sm font-bold">Prix affiché<input id="product-price" required class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" placeholder="Ex. 25 USD"></label>
+                <label class="text-sm font-bold">Image du produit<input id="product-image" required type="url" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" placeholder="https://..."></label>
+            </div>
+            <label class="block text-sm font-bold">Lien affilié officiel<input id="product-url" required type="url" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" placeholder="https://amazon... ou https://ebay..."></label>
+            <label class="block text-sm font-bold">Description<textarea id="product-description" rows="4" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" placeholder="Présentez brièvement le produit"></textarea></label>
+            <p id="form-status" class="hidden rounded-lg px-4 py-3 text-sm font-semibold" role="status"></p>
+            <button class="w-full rounded-lg bg-purple-700 px-5 py-3 font-bold text-white hover:bg-purple-800" type="submit">Ajouter à ma vitrine</button>
+        </form>
+    </main>
+    <script type="module">
+        import { getApps, initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { doc, getFirestore, setDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        const form = document.getElementById('affiliate-product-form');
+        const status = document.getElementById('form-status');
+        let currentUser;
+        let db;
+        const account = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+        const config = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : null;
+        if (!account) location.href = '/public/auth.html';
+        if (config?.apiKey) {
+            const app = getApps()[0] || initializeApp(config);
+            db = getFirestore(app);
+            onAuthStateChanged(getAuth(app), user => { currentUser = user; });
+        }
+        form.addEventListener('submit', async event => {
+            event.preventDefault();
+            if (!currentUser || !account) {
+                status.textContent = 'Connectez-vous avec votre compte affilié avant de continuer.';
+                status.className = 'rounded-lg bg-red-50 px-4 py-3 text-sm font-semibold text-red-800';
+                return;
+            }
+            const product = {
+                id: `affiliate-${Date.now()}`,
+                affiliateId: currentUser.uid,
+                name: document.getElementById('product-name').value.trim(),
+                category: document.getElementById('product-category').value.trim(),
+                price: document.getElementById('product-price').value.trim(),
+                imageUrl: document.getElementById('product-image').value.trim(),
+                url: document.getElementById('product-url').value.trim(),
+                description: document.getElementById('product-description').value.trim(),
+                createdAt: new Date().toISOString()
+            };
+            const products = JSON.parse(localStorage.getItem('jeoahs_affiliate_products') || '[]');
+            products.push(product);
+            localStorage.setItem('jeoahs_affiliate_products', JSON.stringify(products));
+            try {
+                if (db) {
+                    await setDoc(doc(db, `artifacts/jeoahs1-max-03326376-49b27/public/data/affiliate_products`, product.id), product);
+                }
+            } catch (error) {
+                status.textContent = 'Le produit a été conservé localement. La synchronisation centrale sera traitée par JEOAH.';
+                status.className = 'rounded-lg bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800';
+            }
+            status.textContent = 'Produit ajouté à votre vitrine.';
+            status.className = 'rounded-lg bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800';
+            setTimeout(() => { location.href = '/affiliate-storefront.html'; }, 700);
+        });
+    </script>
+</body>
+</html>

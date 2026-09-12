@@ -1,89 +1,541 @@
-<!-- 
-    admin.html - Centre de Contrôle (Superviseur & Ney IA)
--->
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Centre de Contrôle</title>
+    <title>Administration - JEOAH'S Market Place</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="firebase-config.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script type="module">
+        import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { collection, doc, getFirestore, onSnapshot, query, serverTimestamp, updateDoc, where } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const app = firebaseConfig ? (getApps()[0] || initializeApp(firebaseConfig)) : null;
+        const auth = app ? getAuth(app) : null;
+        const db = app ? getFirestore(app) : null;
+        let administrator = null;
+
+        if (auth) onAuthStateChanged(auth, user => {
+            administrator = user;
+            if (user?.email?.toLowerCase() === 'jeoahs1@gmail.com' && db) loadPendingWithdrawals();
+        });
+        window.getNeyAdminToken = async function () {
+            if (!administrator) throw new Error('ADMIN_SESSION_REQUIRED');
+            return administrator.getIdToken();
+        };
+
+        function loadPendingWithdrawals() {
+            const list = document.getElementById('admin-withdrawals-list');
+            if (!list) return;
+            const withdrawals = query(collection(db, 'artifacts/jeoahs1-max-03326376-49b27/public/data/withdrawals'), where('status', '==', 'pending'));
+            onSnapshot(withdrawals, snapshot => {
+                list.innerHTML = snapshot.empty ? '<p class="text-sm text-slate-500">Aucun retrait en attente.</p>' : snapshot.docs.map(item => {
+                    const withdrawal = item.data();
+                    const amount = Number(withdrawal.amountUsd || 0);
+                    const blocked = amount > 500;
+                    return `<div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 py-3"><span class="text-sm"><strong>$${amount.toFixed(2)}</strong> · ${item.id.slice(0, 8)}...</span><button type="button" ${blocked ? 'disabled' : ''} onclick="window.authorizeWithdrawal('${item.id}')" class="rounded-lg px-3 py-2 text-xs font-bold text-white ${blocked ? 'bg-slate-300 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}">${blocked ? 'Validation > 500 USD' : 'Autoriser manuellement'}</button></div>`;
+                }).join('');
+            });
+        }
+
+        window.authorizeWithdrawal = async function (withdrawalId) {
+            const withdrawalRef = doc(db, 'artifacts/jeoahs1-max-03326376-49b27/public/data/withdrawals', withdrawalId);
+            await updateDoc(withdrawalRef, { status: 'approved_pending_payout', payoutAuthorized: true, approvedBy: administrator.uid, approvedAt: serverTimestamp() });
+        };
+    </script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #111827; } /* Fond sombre pour l'admin */
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #0f172a; }
+        .admin-sidebar { background: #0f172a; color: #94a3b8; }
+        .admin-nav-active { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; font-weight: 700; }
+        .admin-stat-card { transition: transform 0.2s, box-shadow 0.2s; }
+        .admin-stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08); }
     </style>
 </head>
-<body class="text-gray-200">
+<body class="flex min-h-screen">
 
-    <div class="flex min-h-screen">
-        <!-- Barre de navigation latérale -->
-        <aside class="w-64 bg-gray-900 p-6 flex flex-col justify-between">
-            <div>
-                <h1 class="text-2xl font-extrabold text-white mb-8">JEOAH'S</h1>
-                <nav class="space-y-4">
-                    <a href="#dashboard" class="flex items-center p-3 bg-gray-700 rounded-lg text-white font-bold">
-                        <i class="fas fa-tachometer-alt mr-3"></i> Tableau de Bord
-                    </a>
-                    <a href="#ney-interface" class="flex items-center p-3 hover:bg-gray-700 rounded-lg transition">
-                        <i class="fas fa-robot mr-3"></i> Interface de Ney
-                    </a>
-                    <a href="#users" class="flex items-center p-3 hover:bg-gray-700 rounded-lg transition">
-                        <i class="fas fa-users mr-3"></i> Utilisateurs
-                    </a>
-                    <a href="#analytics" class="flex items-center p-3 hover:bg-gray-700 rounded-lg transition">
-                        <i class="fas fa-chart-line mr-3"></i> Analytics
-                    </a>
-                    <a href="#payments" class="flex items-center p-3 hover:bg-gray-700 rounded-lg transition">
-                        <i class="fas fa-credit-card mr-3"></i> Paiements
-                    </a>
-                </nav>
-            </div>
-            <div class="text-center">
-                <a href="index.html" class="text-sm text-gray-500 hover:text-white">Retour au site</a>
-            </div>
-        </aside>
+    <!-- 1. SIDEBAR NAVIGATION (Exactement comme la maquette Image 1) -->
+    <aside class="w-64 admin-sidebar flex flex-col justify-between flex-shrink-0 p-5 border-r border-slate-800">
+        <div class="space-y-6">
+            <!-- Brand Logo -->
+            <a href="/index.html" class="flex items-center gap-3">
+                <img src="/public/assets/logo.png" alt="JEOAH'S" class="h-9 w-9 object-cover rounded-xl border border-slate-700 shadow-sm">
+                <div>
+                    <strong class="text-white text-base font-extrabold tracking-tight block">JEOAH'S</strong>
+                    <span class="text-[9px] font-bold text-indigo-400 tracking-widest block uppercase">MARKET PLACE</span>
+                </div>
+            </a>
 
-        <!-- Contenu principal -->
-        <main class="flex-1 p-10">
+            <!-- Admin Profile Badge -->
+            <div class="flex items-center gap-3 p-3 bg-slate-800/80 rounded-2xl border border-slate-700/60">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Admin" class="w-10 h-10 rounded-full object-cover border-2 border-purple-500">
+                <div class="min-w-0 flex-1">
+                    <span class="text-[10px] text-slate-400 block font-medium">Bienvenue,</span>
+                    <strong class="text-xs text-white font-bold flex items-center gap-1">Ney's <i class="fas fa-check-circle text-blue-400 text-[10px]"></i></strong>
+                    <span class="text-[9px] font-semibold text-purple-300 bg-purple-900/60 px-1.5 py-0.5 rounded-full mt-0.5 inline-block">Administrateur</span>
+                </div>
+            </div>
+
+            <!-- Menu Principal -->
+            <div class="space-y-1">
+                <p class="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 px-3 pb-1">MENU PRINCIPAL</p>
+                <a href="#dashboard" class="admin-nav-active flex items-center justify-between p-3 rounded-xl text-xs transition">
+                    <span class="flex items-center gap-3"><i class="fas fa-tachometer-alt"></i> Tableau de bord</span>
+                </a>
+                <a href="/showcase.html" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <span class="flex items-center gap-3"><i class="fas fa-store"></i> Vitrines</span>
+                    <span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full text-[10px] font-bold">12</span>
+                </a>
+                <a href="/affiliate-dashboard.html" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <span class="flex items-center gap-3"><i class="fas fa-boxes"></i> Produits</span>
+                    <span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full text-[10px] font-bold">248</span>
+                </a>
+                <a href="#commandes" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <span class="flex items-center gap-3"><i class="fas fa-shopping-bag"></i> Commandes</span>
+                    <span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full text-[10px] font-bold">34</span>
+                </a>
+                <a href="#affiliations" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <span class="flex items-center gap-3"><i class="fas fa-link"></i> Affiliations</span>
+                </a>
+                <a href="#utilisateurs" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <span class="flex items-center gap-3"><i class="fas fa-users"></i> Utilisateurs</span>
+                </a>
+                <a href="#vendeurs" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <span class="flex items-center gap-3"><i class="fas fa-user-tag"></i> Vendeurs</span>
+                </a>
+                <a href="#finances" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <span class="flex items-center gap-3"><i class="fas fa-wallet"></i> Finances</span>
+                </a>
+                <a href="/plans.html" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <span class="flex items-center gap-3"><i class="fas fa-crown"></i> Abonnements</span>
+                </a>
+                <a href="#rapports" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <span class="flex items-center gap-3"><i class="fas fa-chart-pie"></i> Rapports</span>
+                </a>
+                <a href="#parametres" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <span class="flex items-center gap-3"><i class="fas fa-cog"></i> Paramètres</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Footer Sidebar -->
+        <div class="pt-6 border-t border-slate-800 text-[11px] text-slate-500 space-y-2">
+            <p>© 2026 JEOAH'S Market Place<br>Tous droits réservés.</p>
+        </div>
+    </aside>
+
+    <!-- 2. MAIN CONTENT AREA -->
+    <div class="flex-1 flex flex-col min-w-0">
+        
+        <!-- Topbar -->
+        <header class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between gap-4 sticky top-0 z-30 shadow-sm">
+            <div class="flex items-center gap-3 flex-1 max-w-lg">
+                <i class="fas fa-bars text-slate-400 cursor-pointer"></i>
+                <div class="relative w-full">
+                    <input type="text" placeholder="Rechercher un produit, une commande, un utilisateur..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-full text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 text-xs font-bold text-slate-700">
+                <button class="relative text-slate-500 hover:text-indigo-600"><i class="fas fa-bell text-base"></i><span class="absolute -top-1.5 -right-1.5 bg-pink-600 text-white text-[9px] px-1 rounded-full">5</span></button>
+                <button class="relative text-slate-500 hover:text-indigo-600"><i class="fas fa-comment-dots text-base"></i></button>
+                <div class="flex items-center gap-2 pl-3 border-l border-slate-200">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Admin" class="w-7 h-7 rounded-full object-cover">
+                    <span class="text-xs font-bold text-slate-800">Admin Central</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Dashboard Content (Conforme à l'image 1) -->
+        <main class="p-6 space-y-6 max-w-7xl mx-auto w-full">
+            <section class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div><h2 class="font-extrabold text-slate-900">Validation des retraits</h2><p class="text-xs text-slate-500 mt-1">Aucun paiement n’est envoyé sans votre autorisation.</p></div>
+                    <span class="text-xs font-bold text-amber-700 bg-amber-50 px-3 py-1.5 rounded-full">Plafond automatique : 500 USD</span>
+                </div>
+                <div id="admin-withdrawals-list" class="mt-3"><p class="text-sm text-slate-500">Chargement des demandes...</p></div>
+            </section>
             
-            <!-- Section Tableau de Bord (Placeholder) -->
-            <section id="dashboard">
-                <h2 class="text-3xl font-bold text-white mb-6">Tableau de Bord Superviseur</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-                        <h3 class="font-bold text-lg text-gray-400">Utilisateurs Actifs</h3>
-                        <p class="text-4xl font-extrabold text-white mt-2">--</p>
-                    </div>
-                    <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-                        <h3 class="font-bold text-lg text-gray-400">Revenus (24h)</h3>
-                        <p class="text-4xl font-extrabold text-white mt-2">-- €</p>
-                    </div>
-                    <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-                        <h3 class="font-bold text-lg text-gray-400">Nouveaux Affiliés</h3>
-                        <p class="text-4xl font-extrabold text-white mt-2">--</p>
-                    </div>
+            <!-- Welcome Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+                        Tableau de bord 👋
+                    </h1>
+                    <p class="text-xs text-slate-500 mt-0.5">Voici un aperçu global de votre activité sur JEOAH'S Market Place.</p>
                 </div>
-            </section>
+                <div class="inline-flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 shadow-sm">
+                    <i class="far fa-calendar-alt text-indigo-600"></i>
+                    <span>12 août – 18 août 2026</span>
+                </div>
+            </div>
 
-            <!-- Section Interface de Ney (Placeholder) -->
-            <section id="ney-interface" class="mt-16">
-                <h2 class="text-3xl font-bold text-white mb-6">Interface de Ney <i class="fas fa-robot text-blue-400"></i></h2>
-                <div class="bg-gray-800 p-8 rounded-2xl shadow-lg">
-                    <h3 class="text-xl font-bold mb-4">Rapport Journalier de Ney</h3>
-                    <div class="bg-gray-900 p-4 rounded-lg text-gray-400 font-mono text-sm h-64 overflow-y-auto">
-                        <p>> Initialisation du rapport...</p>
-                        <p>> En attente des données de la journée...</p>
+            <!-- Top Stat KPI Cards (5 Cards comme la maquette) -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                
+                <div class="admin-stat-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="w-8 h-8 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-sm font-bold"><i class="fas fa-shopping-cart"></i></span>
+                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i class="fas fa-arrow-up text-[9px]"></i> 18.6%</span>
                     </div>
-                    <div class="mt-6">
-                        <label for="ney-command" class="block text-sm font-semibold mb-2">Donner une instruction à Ney :</label>
-                        <input type="text" id="ney-command" placeholder="Ex: 'Analyse les ventes des 7 derniers jours'" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 focus:ring-blue-500 focus:border-blue-500">
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Ventes totales</p>
+                        <strong class="text-xl font-extrabold text-slate-900 block mt-0.5">$28,560.45</strong>
                     </div>
                 </div>
-            </section>
+
+                <div class="admin-stat-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold"><i class="fas fa-shopping-bag"></i></span>
+                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i class="fas fa-arrow-up text-[9px]"></i> 12.4%</span>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Commandes</p>
+                        <strong class="text-xl font-extrabold text-slate-900 block mt-0.5">342</strong>
+                    </div>
+                </div>
+
+                <div class="admin-stat-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm font-bold"><i class="fas fa-users"></i></span>
+                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i class="fas fa-arrow-up text-[9px]"></i> 15.7%</span>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Utilisateurs</p>
+                        <strong class="text-xl font-extrabold text-slate-900 block mt-0.5">1,248</strong>
+                    </div>
+                </div>
+
+                <div class="admin-stat-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-sm font-bold"><i class="fas fa-store"></i></span>
+                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i class="fas fa-arrow-up text-[9px]"></i> 9.1%</span>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Vitrines actives</p>
+                        <strong class="text-xl font-extrabold text-slate-900 block mt-0.5">12</strong>
+                    </div>
+                </div>
+
+                <div class="admin-stat-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="w-8 h-8 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center text-sm font-bold"><i class="fas fa-percent"></i></span>
+                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i class="fas fa-arrow-up text-[9px]"></i> 14.3%</span>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Commissions</p>
+                        <strong class="text-xl font-extrabold text-slate-900 block mt-0.5">$6,245.30</strong>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Graphiques & Assistant IA (3 Colonnes : 8 cols Gauche / 4 cols Droite) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- 8 Cols : Graphiques + Top Vitrines -->
+                <div class="lg:col-span-8 space-y-6">
+                    
+                    <!-- Graphique Évolution des ventes & Ventes par catégorie -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-900 text-sm">Évolution des ventes</h3>
+                                <span class="text-xs text-slate-400 font-semibold">7 derniers jours</span>
+                            </div>
+                            <div class="h-44 flex items-end justify-between gap-2 pt-6 px-2">
+                                <div class="flex-1 flex flex-col items-center gap-2"><div class="w-full bg-indigo-200 hover:bg-indigo-500 rounded-t-lg transition" style="height: 45px"></div><span class="text-[10px] text-slate-400">12</span></div>
+                                <div class="flex-1 flex flex-col items-center gap-2"><div class="w-full bg-indigo-300 hover:bg-indigo-500 rounded-t-lg transition" style="height: 70px"></div><span class="text-[10px] text-slate-400">13</span></div>
+                                <div class="flex-1 flex flex-col items-center gap-2"><div class="w-full bg-indigo-400 hover:bg-indigo-500 rounded-t-lg transition" style="height: 100px"></div><span class="text-[10px] text-slate-400">14</span></div>
+                                <div class="flex-1 flex flex-col items-center gap-2"><div class="w-full bg-indigo-300 hover:bg-indigo-500 rounded-t-lg transition" style="height: 80px"></div><span class="text-[10px] text-slate-400">15</span></div>
+                                <div class="flex-1 flex flex-col items-center gap-2"><div class="w-full bg-indigo-400 hover:bg-indigo-500 rounded-t-lg transition" style="height: 95px"></div><span class="text-[10px] text-slate-400">16</span></div>
+                                <div class="flex-1 flex flex-col items-center gap-2"><div class="w-full bg-indigo-500 hover:bg-indigo-600 rounded-t-lg transition" style="height: 110px"></div><span class="text-[10px] text-slate-400">17</span></div>
+                                <div class="flex-1 flex flex-col items-center gap-2"><div class="w-full bg-indigo-600 hover:bg-indigo-700 rounded-t-lg transition" style="height: 135px"></div><span class="text-[10px] text-slate-400">18</span></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                            <h3 class="font-bold text-slate-900 text-sm mb-4">Ventes par catégorie</h3>
+                            <div class="space-y-2.5 text-xs">
+                                <div>
+                                    <div class="flex justify-between font-semibold mb-1"><span class="text-slate-600">Électronique</span><span class="text-slate-900 font-bold">35%</span></div>
+                                    <div class="w-full bg-slate-100 rounded-full h-2"><div class="bg-purple-600 h-2 rounded-full" style="width: 35%"></div></div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between font-semibold mb-1"><span class="text-slate-600">Mode & Accessoires</span><span class="text-slate-900 font-bold">25%</span></div>
+                                    <div class="w-full bg-slate-100 rounded-full h-2"><div class="bg-pink-500 h-2 rounded-full" style="width: 25%"></div></div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between font-semibold mb-1"><span class="text-slate-600">Maison & Déco</span><span class="text-slate-900 font-bold">18%</span></div>
+                                    <div class="w-full bg-slate-100 rounded-full h-2"><div class="bg-emerald-500 h-2 rounded-full" style="width: 18%"></div></div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between font-semibold mb-1"><span class="text-slate-600">Beauté & Soins</span><span class="text-slate-900 font-bold">12%</span></div>
+                                    <div class="w-full bg-slate-100 rounded-full h-2"><div class="bg-amber-500 h-2 rounded-full" style="width: 12%"></div></div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Top Vitrines & Sources de trafic -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                            <div class="flex items-center justify-between">
+                                <h3 class="font-bold text-slate-900 text-sm">Top vitrines</h3>
+                                <a href="/showcase.html" class="text-xs font-bold text-indigo-600 hover:underline">Voir tout</a>
+                            </div>
+                            <div class="space-y-2 text-xs">
+                                <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50"><span class="font-semibold text-slate-800">1. TechStore</span><strong class="text-indigo-600 font-bold">$8,560.45</strong></div>
+                                <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50"><span class="font-semibold text-slate-800">2. Beauty by Carel</span><strong class="text-indigo-600 font-bold">$6,420.30</strong></div>
+                                <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50"><span class="font-semibold text-slate-800">3. Fashion House</span><strong class="text-indigo-600 font-bold">$4,250.00</strong></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                            <h3 class="font-bold text-slate-900 text-sm">Sources de trafic</h3>
+                            <div class="space-y-2 text-xs">
+                                <div class="flex justify-between font-semibold"><span class="text-slate-600">Recherche Google</span><span>45.2%</span></div>
+                                <div class="flex justify-between font-semibold"><span class="text-slate-600">Réseaux sociaux</span><span>28.5%</span></div>
+                                <div class="flex justify-between font-semibold"><span class="text-slate-600">Accès direct</span><span>26.3%</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- 4 Cols : Activité récente + Assistant IA JEOAH -->
+                <div class="lg:col-span-4 space-y-6">
+                    
+                    <!-- Activité récente -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-slate-900 text-sm">Activité récente</h3>
+                            <span class="text-xs text-slate-400">En direct</span>
+                        </div>
+                        <div class="space-y-3 text-xs text-slate-600">
+                            <div class="flex items-start gap-2.5">
+                                <span class="p-1.5 bg-purple-100 text-purple-600 rounded-lg"><i class="fas fa-shopping-bag"></i></span>
+                                <div><p class="font-semibold text-slate-800">Nouvelle commande #4587</p><span class="text-[10px] text-slate-400">Il y a 2 min • $125.50</span></div>
+                            </div>
+                            <div class="flex items-start gap-2.5">
+                                <span class="p-1.5 bg-blue-100 text-blue-600 rounded-lg"><i class="fas fa-user-plus"></i></span>
+                                <div><p class="font-semibold text-slate-800">Nouvel affilié inscrit</p><span class="text-[10px] text-slate-400">Il y a 15 min • @MarieLou</span></div>
+                            </div>
+                            <div class="flex items-start gap-2.5">
+                                <span class="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg"><i class="fas fa-store"></i></span>
+                                <div><p class="font-semibold text-slate-800">Vitrine mise à jour</p><span class="text-[10px] text-slate-400">Il y a 1h • TechStore</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ASSISTANTE IA PRIVEE - NEY -->
+                    <div class="bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white p-5 rounded-3xl shadow-xl space-y-4">
+                        <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm"><i class="fas fa-robot text-pink-300"></i></span>
+                                <strong class="text-sm">Ney, assistante administrative</strong>
+                            </div>
+                            <span class="text-[10px] font-bold bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-full">Actif</span>
+                        </div>
+
+                        <div class="p-3 bg-white/10 rounded-2xl backdrop-blur-md text-xs leading-relaxed">
+                            <p class="font-bold text-pink-200">Bonjour.</p>
+                            <p class="mt-1 text-slate-200">Je suis Ney. Je peux préparer vos rapports, analyser les vitrines et vous assister dans les tâches administratives.</p>
+                        </div>
+
+                        <!-- Actions Rapides Assistant -->
+                        <div class="grid grid-cols-2 gap-2 text-[11px] font-bold">
+                            <a href="/affiliate_onboarding_step1.html" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition block">Créer une vitrine</a>
+                            <a href="/vendor_product_submission.html" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition block">Ajouter un produit</a>
+                            <button onclick="generateDailyReport()" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition">Générer un rapport</button>
+                            <button onclick="openJack()" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition">Ouvrir Jack</button>
+                            <a href="/faq.html" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition block">Aide & support</a>
+                        </div>
+
+                        <div class="flex gap-2 pt-1">
+                            <select id="admin-ai-language" aria-label="Langue de Ney" class="w-24 rounded-xl border border-white/20 bg-white/15 px-2 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-pink-400">
+                                <option value="auto" class="text-slate-900">Auto</option>
+                                <option value="fr" class="text-slate-900">FR</option>
+                                <option value="ht" class="text-slate-900">HT</option>
+                                <option value="en" class="text-slate-900">EN</option>
+                                <option value="es" class="text-slate-900">ES</option>
+                            </select>
+                            <input type="text" id="admin-ai-input" placeholder="Demandez à Ney..." class="flex-1 px-3 py-2 bg-white/15 border border-white/20 rounded-xl text-xs text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-pink-400">
+                            <button type="button" id="admin-ai-mic" title="Parler à Ney" aria-label="Parler à Ney" class="px-3 py-2 bg-white/15 hover:bg-white/20 rounded-xl text-xs font-bold text-white"><i class="fas fa-microphone"></i></button>
+                            <button onclick="sendAdminAi()" class="px-3.5 py-2 bg-pink-600 hover:bg-pink-700 rounded-xl text-xs font-bold text-white shadow"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <p id="admin-ai-response" class="hidden text-xs leading-relaxed text-pink-100"></p>
+                            <button type="button" id="admin-ai-speak" title="Lire la réponse de Ney" aria-label="Lire la réponse de Ney" class="hidden shrink-0 px-2 py-1 bg-white/15 hover:bg-white/20 rounded-lg text-xs text-white"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
 
         </main>
     </div>
 
+    <script>
+        function showAdminResult(title, message) {
+            let result = document.getElementById('admin-action-result');
+            if (!result) {
+                result = document.createElement('section');
+                result.id = 'admin-action-result';
+                result.className = 'rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-slate-700';
+                document.querySelector('main').prepend(result);
+            }
+            result.innerHTML = `<strong class="text-indigo-800">${title}</strong><p class="mt-1">${message}</p>`;
+            result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function generateDailyReport() {
+            const products = JSON.parse(localStorage.getItem('jeoahs_vendor_products') || '[]');
+            const orders = JSON.parse(localStorage.getItem('jeoahs_vendor_orders') || '[]');
+            const revenue = orders.reduce((total, order) => total + Number(order.total || 0), 0);
+            const report = `Rapport du ${new Date().toLocaleDateString('fr-FR')}\n\nProduits locaux : ${products.length}\nCommandes locales : ${orders.length}\nRevenus locaux : ${revenue.toFixed(2)} EUR\n\nLes statistiques globales affichées restent indicatives tant que les données serveur ne sont pas connectées.`;
+            showAdminResult('Rapport quotidien', report.replaceAll('\n', '<br>') + '<br><button type="button" onclick="downloadDailyReport()" class="mt-3 rounded-lg bg-indigo-700 px-3 py-2 text-xs font-bold text-white">Télécharger le rapport</button>');
+        }
+
+        function downloadDailyReport() {
+            const products = JSON.parse(localStorage.getItem('jeoahs_vendor_products') || '[]');
+            const orders = JSON.parse(localStorage.getItem('jeoahs_vendor_orders') || '[]');
+            const revenue = orders.reduce((total, order) => total + Number(order.total || 0), 0);
+            const text = `Rapport JEOAH'S\nDate : ${new Date().toLocaleString('fr-FR')}\nProduits locaux : ${products.length}\nCommandes locales : ${orders.length}\nRevenus locaux : ${revenue.toFixed(2)} EUR`;
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+            link.download = `rapport-jeoahs-${new Date().toISOString().slice(0, 10)}.txt`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+
+        const neyAdminMemory = [];
+        const adminVoiceLocales = { auto: navigator.language || 'fr-FR', fr: 'fr-FR', ht: 'fr-FR', en: 'en-US', es: 'es-ES' };
+        const neyLanguageLabels = { auto: 'Auto', fr: 'FR', ht: 'HT', en: 'EN', es: 'ES' };
+        let lastNeyReply = '';
+
+        function setupNeyVoice() {
+            const mic = document.getElementById('admin-ai-mic');
+            const speak = document.getElementById('admin-ai-speak');
+            const input = document.getElementById('admin-ai-input');
+            const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (Recognition) {
+                const recognition = new Recognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.onstart = () => {
+                    mic.classList.add('bg-pink-600');
+                    mic.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+                };
+                recognition.onend = () => {
+                    mic.classList.remove('bg-pink-600');
+                    mic.innerHTML = '<i class="fas fa-microphone"></i>';
+                };
+                recognition.onerror = () => showAdminResult('Ney - microphone', 'Autorisez le microphone dans le navigateur puis réessayez.');
+                recognition.onresult = event => { input.value = event.results[0][0].transcript; sendAdminAi(); };
+                mic.addEventListener('click', () => {
+                    recognition.lang = adminVoiceLocales[document.getElementById('admin-ai-language').value] || 'fr-FR';
+                    try { recognition.start(); } catch (_) {}
+                });
+            } else {
+                mic.disabled = true;
+                mic.title = 'La saisie vocale nécessite Chrome ou Edge';
+                mic.classList.add('opacity-50');
+            }
+            speak.addEventListener('click', () => {
+                if (!lastNeyReply || !('speechSynthesis' in window)) return;
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(lastNeyReply);
+                utterance.lang = adminVoiceLocales[document.getElementById('admin-ai-language').value] || 'fr-FR';
+                window.speechSynthesis.speak(utterance);
+            });
+        }
+        setupNeyVoice();
+
+        function localNeyReply(prompt) {
+            const text = prompt.toLowerCase();
+            const language = document.getElementById('admin-ai-language').value;
+            const replies = {
+                fr: { report: 'Je peux préparer un rapport à partir des ventes, commandes, utilisateurs, vitrines et commissions.', store: 'Les vendeurs se gèrent depuis leur tableau de bord et leur vitrine.', payment: 'Les commandes sont suivies dans les espaces vendeurs. Les paiements réels restent désactivés en test.', other: 'Je peux vous aider avec les rapports, vitrines, vendeurs, commandes et réglages.' },
+                ht: { report: 'Mwen ka prepare yon rapò sou lavant, kòmand, itilizatè, vitrin ak komisyon yo.', store: 'Vandè yo jere kont yo ak vitrin yo nan tablo vandè a.', payment: 'Kòmand yo swiv nan espas vandè yo. Peman reyèl yo toujou dezaktive nan tès la.', other: 'Mwen ka ede ou ak rapò, vitrin, vandè, kòmand ak paramèt yo.' },
+                en: { report: 'I can prepare a report from sales, orders, users, storefronts, and commissions.', store: 'Sellers manage their account and storefront from the seller dashboard.', payment: 'Orders are tracked in seller spaces. Real payments remain disabled in testing.', other: 'I can help with reports, storefronts, sellers, orders, and settings.' },
+                es: { report: 'Puedo preparar un informe con ventas, pedidos, usuarios, vitrinas y comisiones.', store: 'Los vendedores gestionan su cuenta y vitrina desde el panel de vendedor.', payment: 'Los pedidos se siguen en los espacios de vendedores. Los pagos reales siguen desactivados en pruebas.', other: 'Puedo ayudarte con informes, vitrinas, vendedores, pedidos y configuracion.' }
+            }[language] || null;
+            if (!replies) return 'Choose a language and tell me what you need.';
+            if (text.includes('rapport') || text.includes('statistique') || text.includes('report')) return replies.report;
+            if (text.includes('vendeur') || text.includes('vitrine') || text.includes('seller') || text.includes('store')) return replies.store;
+            if (text.includes('commande') || text.includes('paiement') || text.includes('order') || text.includes('payment')) return replies.payment;
+            return replies.other;
+        }
+
+        async function sendAdminAi() {
+            const input = document.getElementById('admin-ai-input');
+            const language = document.getElementById('admin-ai-language').value;
+            const prompt = input.value.trim();
+            if (!prompt) return;
+            const output = document.getElementById('admin-ai-response');
+            output.classList.remove('hidden');
+            output.textContent = 'Ney analyse votre demande...';
+            input.value = '';
+            neyAdminMemory.push({ role: 'user', content: prompt });
+            try {
+                const token = await window.getNeyAdminToken();
+                const response = await fetch('/api/ney-admin.js', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ prompt, language, task: 'administration', memory: neyAdminMemory.slice(0, -1).slice(-10) }) });
+                const data = await response.json();
+                const reply = data.reply || localNeyReply(prompt);
+                output.textContent = reply;
+                lastNeyReply = reply;
+                document.getElementById('admin-ai-speak').classList.remove('hidden');
+                neyAdminMemory.push({ role: 'assistant', content: reply });
+            } catch (error) {
+                const reply = error.message === 'ADMIN_SESSION_REQUIRED' ? 'Connectez-vous avec votre session administrateur pour utiliser Ney.' : localNeyReply(prompt);
+                output.textContent = reply;
+                lastNeyReply = reply;
+                document.getElementById('admin-ai-speak').classList.remove('hidden');
+            }
+        }
+
+        const savedNeyLanguage = localStorage.getItem('jeoahs-ney-language');
+        const neyLanguageSelect = document.getElementById('admin-ai-language');
+        if (savedNeyLanguage && neyLanguageLabels[savedNeyLanguage]) neyLanguageSelect.value = savedNeyLanguage;
+        neyLanguageSelect.addEventListener('change', () => localStorage.setItem('jeoahs-ney-language', neyLanguageSelect.value));
+
+        async function openJack() {
+            const prompt = window.prompt('Que voulez-vous faire analyser par Jack ?', 'Analyse la configuration actuelle du site et propose les tests a effectuer.');
+            if (!prompt) return;
+            showAdminResult('Jack analyse...', 'Vérification de votre session administrateur et préparation de l’analyse technique.');
+            try {
+                const token = await window.getNeyAdminToken();
+                const response = await fetch('/api/jack.js', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ prompt, task: 'diagnostic', environment: 'staging', action: 'analyze', testsPassed: false }) });
+                const data = await response.json();
+                showAdminResult('Jack, ingénieur IA', data.reply || data.error || 'Aucune analyse disponible.');
+            } catch (error) {
+                showAdminResult('Jack, ingénieur IA', error.message === 'ADMIN_SESSION_REQUIRED' ? 'Connectez-vous avec votre session administrateur pour utiliser Jack.' : 'Jack est temporairement indisponible. Vérifiez la configuration serveur.');
+            }
+        }
+
+        const adminSections = {
+            commandes: 'Commandes: les commandes sont gerees depuis les espaces vendeurs.',
+            affiliations: 'Affiliations: consultez les liens et produits depuis le tableau de bord affilie.',
+            utilisateurs: 'Utilisateurs: les profils sont accessibles via Firebase Administration.',
+            vendeurs: 'Vendeurs: consultez les vitrines pour verifier leur statut.',
+            finances: 'Finances: les paiements partenaires restent geres par les plateformes concernees.',
+            rapports: 'Rapports: utilisez le bouton Generer un rapport pour l apercu quotidien.',
+            parametres: 'Parametres: les reglages plateforme sont proteges et geres par Firebase.'
+        };
+        document.querySelectorAll('a[href^="#"]').forEach(link => link.addEventListener('click', event => {
+            const section = link.getAttribute('href').slice(1);
+            if (!adminSections[section]) return;
+            event.preventDefault();
+            history.replaceState(null, '', `#${section}`);
+            showAdminResult(link.textContent.trim(), adminSections[section]);
+        }));
+    </script>
 </body>
 </html>

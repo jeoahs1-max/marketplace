@@ -353,10 +353,10 @@
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 text-sm font-medium text-gray-900">${withdrawal.id.substring(0, 8)}...</td>
                         <td class="px-6 py-4 text-sm text-gray-500">${withdrawal.userId.substring(0, 8)}...</td>
-                        <td class="px-6 py-4 text-sm font-bold text-gray-700">$${(withdrawal.amountUsd || 0).toFixed(2)}</td>
+                        <td class="px-6 py-4 text-sm font-bold text-gray-700">$${(withdrawal.amountUsd || 0).toFixed(2)}${Number(withdrawal.amountUsd || 0) > 500 ? '<span class="block text-xs font-semibold text-red-600">Validation renforcée requise</span>' : ''}</td>
                         <td class="px-6 py-4 text-sm text-gray-500">${date}</td>
                         <td class="px-6 py-4 text-sm font-medium space-x-2">
-                            <button onclick="openModal('Approver le retrait', 'Êtes-vous sûr de vouloir approuver et payer le retrait de $${withdrawal.amountUsd.toFixed(2)} pour ${withdrawal.userId.substring(0, 8)}... ?', () => approveWithdrawal('${withdrawal.id}'))" class="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-1 px-3 rounded-full transition">Approuver</button>
+                            <button onclick="openModal('Valider le retrait', 'Confirmez-vous manuellement le retrait de $${Number(withdrawal.amountUsd || 0).toFixed(2)} pour ${withdrawal.userId.substring(0, 8)}... ?', () => approveWithdrawal('${withdrawal.id}'))" class="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-1 px-3 rounded-full transition">Valider</button>
                         </td>
                     </tr>
                 `;
@@ -417,21 +417,27 @@
             });
         };
         
-        // Approuve un retrait (met à jour le statut à 'paid' - la logique de paiement externe est simulée)
-        window.approveWithdrawal = (withdrawalId) => {
+        // La validation humaine enregistre l'autorisation, sans déclencher de paiement externe.
+        window.approveWithdrawal = async (withdrawalId) => {
             showLoading();
             try {
                 const withdrawalRef = doc(db, `artifacts/${appId}/public/data/withdrawals`, withdrawalId);
-                // Dans un cas réel, vous déclencheriez ici une API de Payouts (Stripe, MonCash, etc.)
-                // Une fois le paiement externe confirmé:
-                updateDoc(withdrawalRef, { 
-                    status: 'paid', 
+                const withdrawalSnap = await getDoc(withdrawalRef);
+                if (!withdrawalSnap.exists()) throw new Error('Retrait introuvable.');
+                const withdrawal = withdrawalSnap.data();
+                if (Number(withdrawal.amountUsd || 0) > 500) {
+                    throw new Error('Un retrait supérieur à 500 USD nécessite une validation renforcée avant paiement.');
+                }
+                await updateDoc(withdrawalRef, { 
+                    status: 'approved_pending_payout',
                     approvedAt: serverTimestamp(),
-                    adminId: userId 
+                    approvedBy: userId,
+                    payoutAuthorized: true
                 });
-                console.log(`Retrait ${withdrawalId} approuvé et marqué comme payé.`);
+                console.log(`Retrait ${withdrawalId} validé humainement; aucun paiement externe déclenché.`);
             } catch (error) {
                 console.error(`Erreur lors de l'approbation du retrait ${withdrawalId}:`, error);
+                alert(error.message || 'Impossible de valider ce retrait.');
             } finally {
                 hideLoading();
             }

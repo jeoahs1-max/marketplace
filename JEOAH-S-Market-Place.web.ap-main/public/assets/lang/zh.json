@@ -1,0 +1,20 @@
+{
+    "lang_fr": "Français",
+    "lang_en": "English",
+    "lang_es": "Español",
+    "lang_ht": "Kreyòl",
+    "lang_zh": "中文",
+    "portal_button": "登录 / 注册",
+
+    "hero_title": "欢迎来到 JEOAH'S",
+    "hero_subtitle": "JEOAH'S 是一个连接卖家、联盟会员和买家的一体化智能社区电商平台。",
+    "features_title": "一个平台，三大核心角色",
+    "feature_sellers_title": "对于卖家",
+    "feature_sellers_text": "只需点击几下即可开设您的商店。导入产品、管理库存并通过统一的仪表板跟踪销售。",
+    "feature_affiliates_title": "对于联盟会员",
+    "feature_affiliates_text": "利用您的受众获利。获取优质产品目录，生成独特的推广链接并实时跟踪佣金。",
+    "feature_buyers_title": "对于买家",
+    "feature_buyers_text": "发现并购买值得信赖的创作者推荐的高品质产品。",
+    "footer_description": "连接人、产品和社区的智能电商生态系统。",
+    "footer_rights": "版权所有。"
+}

@@ -1,310 +1,48 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JEOAH'S - Vitrine des Produits</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; }
-        .product-card {
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
-        }
-    </style>
-    <!-- Import pour les icônes -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-    <script type="module">
-        // Import des librairies Firebase
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, collection, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-
-        // IMPORTANT : Variables globales fournies par l'environnement
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        let app;
-        let auth;
-        let db;
-        let currentUserId = null;
-        let currentUserRole = null;
-        let isAuthReady = false;
-        
-        // Simuler un ID de trace d'affilié si l'utilisateur vient d'un lien traqué
-        const urlParams = new URLSearchParams(window.location.search);
-        const affiliateTraceId = urlParams.get('ref') || null;
-
-        // --- Fonctions d'UI ---
-
-        function displayMessage(message, type = 'success') {
-            const messageBox = document.getElementById('message-box');
-            messageBox.textContent = message;
-            messageBox.className = 'p-3 rounded-xl font-semibold mb-4 mx-auto';
-            if (type === 'error') {
-                messageBox.classList.add('bg-red-100', 'text-red-700');
-            } else if (type === 'warning') {
-                messageBox.classList.add('bg-yellow-100', 'text-yellow-700');
-            } else {
-                messageBox.classList.add('bg-green-100', 'text-green-700');
-            }
-            messageBox.classList.remove('hidden');
-        }
-        
-        // --- Initialisation Firebase ---
-        async function initFirebase() {
-            try {
-                if (Object.keys(firebaseConfig).length === 0) {
-                    return console.error("Firebase config is empty. Cannot initialize.");
-                }
-                setLogLevel('Debug'); 
-
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                // Authentification initiale : essentielle pour l'accès public
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    // Les visiteurs publics/anonymes peuvent explorer
-                    await signInAnonymously(auth);
-                }
-
-                // Écoute des changements d'état d'authentification
-                onAuthStateChanged(auth, (user) => {
-                    currentUserId = user ? user.uid : null;
-                    isAuthReady = true;
-                    // L'interface est prête, nous pouvons charger les données
-                    loadShowcaseData(); 
-                    
-                    if (currentUserId) {
-                        listenToUserProfile(currentUserId);
-                    }
-                });
-
-            } catch (error) {
-                console.error("Erreur lors de l'initialisation de Firebase:", error);
-                displayMessage(`Erreur d'initialisation: ${error.message}`, 'error');
-            }
-        }
-
-        // --- Écoute du Profil Utilisateur pour la Modalité Sociale ---
-
-        function listenToUserProfile(userId) {
-            const profileRef = doc(db, `artifacts/${appId}/users/${userId}/user_data/profile`);
-            
-            onSnapshot(profileRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const profile = docSnap.data();
-                    currentUserRole = profile.role;
-                    
-                    // Afficher la modale si c'est un Acheteur et qu'il n'a pas encore partagé
-                    if (profile.role === 'Acheteur' && !profile.socialsShared) {
-                        document.getElementById('social-modal').classList.remove('hidden');
-                        document.body.classList.add('overflow-hidden'); 
-                        displayMessage("Veuillez partager vos liens pour accéder aux fonctionnalités complètes.", 'warning');
-                    } else {
-                        document.getElementById('social-modal').classList.add('hidden');
-                        document.body.classList.remove('overflow-hidden');
-                        if (profile.email) {
-                            displayMessage(`Bienvenue, ${profile.fullName} (${profile.role})!`, 'success');
-                        }
-                    }
-                }
-            }, (error) => {
-                console.error("Erreur d'écoute du profil:", error);
-            });
-        }
-        
-        // --- Gestion du Partage Social (Modalité) ---
-
-        window.handleSocialShare = async function() {
-            // ... (logique du partage social inchangée)
-            const facebook = document.getElementById('social-facebook').value.trim();
-            const twitter = document.getElementById('social-twitter').value.trim();
-            const instagram = document.getElementById('social-instagram').value.trim();
-            
-            if (!facebook && !twitter && !instagram) {
-                return displayMessage("Veuillez entrer au moins un lien de réseau social.", 'error');
-            }
-
-            if (!currentUserId || !db) {
-                return displayMessage("Utilisateur non authentifié ou Firebase non prêt.", 'error');
-            }
-
-            try {
-                const profileRef = doc(db, `artifacts/${appId}/users/${currentUserId}/user_data/profile`);
-                
-                await updateDoc(profileRef, {
-                    socialsShared: true,
-                    socialLinks: { facebook, twitter, instagram },
-                    socialShareDate: new Date()
-                });
-
-                displayMessage("Merci pour votre partage ! Vous pouvez maintenant explorer librement.", 'success');
-            } catch (error) {
-                console.error("Erreur lors de la mise à jour des liens sociaux:", error);
-                displayMessage(`Erreur lors du partage: ${error.message}`, 'error');
-            }
-        }
-
-        // --- Redirection vers le Détail ou le Site Affilié ---
-
-        window.goToProductDetail = function(product) {
-            // 1. Logique pour les Affiliés (Redirection Externe)
-            if (product.isExternalAffiliateLink && product.externalUrl) {
-                let urlToRedirect = product.externalUrl;
-                
-                // Ajouter le paramètre de traçabilité (si nous en avions un, nous utiliserions l'ID de l'affilié)
-                // Pour l'instant, nous redirigeons directement
-                window.open(urlToRedirect, '_blank');
-            } 
-            // 2. Logique pour les Vendeurs (Page Produit Interne)
-            else {
-                // Redirection vers la page de détail du produit interne
-                window.location.href = `product_detail.html?product_id=${product.id}`;
-            }
-        }
-
-
-        // --- Chargement et Affichage des Produits ---
-
-        function renderProducts(products) {
-            const container = document.getElementById('product-grid');
-            container.innerHTML = ''; 
-
-            if (products.length === 0) {
-                container.innerHTML = '<p class="col-span-full text-center text-gray-500 p-10">Aucun produit n\'est disponible pour le moment. Revenez bientôt !</p>';
-                return;
-            }
-
-            products.forEach(product => {
-                const buttonText = product.isExternalAffiliateLink ? 'Acheter sur le Site' : 'Voir les Détails';
-                const buttonIcon = product.isExternalAffiliateLink ? 'fas fa-external-link-alt' : 'fas fa-chevron-right';
-                const priceDisplay = product.price ? `${product.price} €` : 'Prix sur Site Externe';
-
-                const html = `
-                    <div class="product-card bg-white rounded-xl overflow-hidden shadow-lg p-4 flex flex-col cursor-pointer" onclick="goToProductDetail(${JSON.stringify(product).replace(/"/g, '&quot;')})">
-                        <!-- Image du produit (Placeholder pour l'instant) -->
-                        <div class="h-48 bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center mb-4">
-                            <img src="${product.images && product.images[0] ? product.images[0] : `https://placehold.co/400x300/4F46E5/ffffff?text=${product.name.substring(0, 10)}`}" alt="${product.name}" class="w-full h-full object-cover">
-                        </div>
-                        
-                        <h2 class="text-xl font-bold text-gray-900 truncate mb-1">${product.name}</h2>
-                        <p class="text-gray-600 text-sm mb-3 line-clamp-2">${product.description}</p>
-                        
-                        <div class="mt-auto flex justify-between items-center">
-                            <span class="text-2xl font-extrabold text-blue-600">${priceDisplay}</span>
-                            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
-                                ${buttonText} <i class="${buttonIcon} ml-1 text-xs"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-                container.innerHTML += html;
-            });
-        }
-        
-        // --- Chargement des Produits Filtrés ---
-
-        function loadShowcaseData() {
-            if (!db) return;
-
-            // Collection des produits publics
-            const productsCollectionRef = collection(db, `artifacts/${appId}/public/data/products`);
-            
-            // FILTRAGE : Le produit doit avoir 'subscriptionActive' à true pour s'afficher
-            // On ajoute aussi une condition pour simuler la distinction Affilié/Vendeur
-            const q = query(
-                productsCollectionRef, 
-                where('subscriptionActive', '==', true)
-                // Note : Firestore n'autorise qu'une seule clause 'where' sur la même collection 
-                // sans indexation complexe. Nous devons donc filtrer côté client si nous avions 
-                // d'autres conditions (comme le type de rôle ou le tri).
-            );
-            
-            onSnapshot(q, (snapshot) => {
-                const products = [];
-                snapshot.forEach(doc => {
-                    products.push({ id: doc.id, ...doc.data() });
-                });
-
-                renderProducts(products);
-            }, (error) => {
-                console.error("Erreur lors du chargement des produits:", error);
-                // Si la requête échoue à cause d'un index manquant, on tente de charger sans filtre (moins sûr)
-                displayMessage("Impossible de charger la vitrine. Vérifiez les règles de sécurité Firestore ou les index.", 'error');
-            });
-        }
-
-        // Initialisation de l'application au chargement
-        document.addEventListener('DOMContentLoaded', initFirebase);
-        
-    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JEOAH'S Market Place</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/firebase-config.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
-<body class="min-h-screen">
-    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
-        
-        <!-- En-tête de la Vitrine -->
-        <header class="text-center py-10">
-            <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-2">JEOAH'S Vitrine</h1>
-            <p class="text-lg text-gray-600">Découvrez les produits de nos Vendeurs et Affiliés. Accès libre à tous.</p>
-            <a href="auth.html" class="mt-4 inline-block text-blue-600 hover:text-blue-800 font-semibold transition">
-                <i class="fas fa-user-circle mr-1"></i> Se connecter / S'inscrire
-            </a>
-        </header>
-
-        <!-- Messages Dynamiques -->
-        <div id="message-box" class="hidden w-full max-w-xl"></div>
-
-        <!-- Grille des Produits -->
-        <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            <!-- Les produits seront injectés ici par JavaScript -->
-            <p class="col-span-full text-center text-gray-400 p-10">Chargement des produits...</p>
-        </div>
-
-        <!-- Pied de page basique -->
-        <footer class="text-center text-gray-500 text-sm mt-12 py-4 border-t border-gray-200">
-            © 2024 JEOAH'S Marketplace. Tous droits réservés.
-        </footer>
+<body class="min-h-screen bg-slate-50 text-slate-900">
+  <div class="bg-indigo-950 px-5 py-2 text-center text-xs font-semibold text-white">Bienvenue sur JEOAH'S Market Place - Achetez local, vendez global.</div>
+  <header class="sticky top-0 z-40 border-b border-slate-200 bg-white shadow-sm">
+    <div class="mx-auto flex max-w-7xl items-center gap-5 px-5 py-3">
+      <a href="/index.html" class="flex shrink-0 items-center gap-2"><img src="/public/assets/logo.png" alt="JEOAH'S" class="h-11 w-11 rounded-lg object-cover"><span class="font-extrabold leading-tight">JEOAH'S<span class="block text-[10px] tracking-wider text-fuchsia-600">MARKET PLACE</span></span></a>
+      <label class="relative hidden flex-1 md:block"><i class="fas fa-search absolute left-4 top-3.5 text-slate-400"></i><input id="market-search" class="w-full rounded-full border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none focus:border-fuchsia-500" placeholder="Rechercher un produit, une boutique, une catégorie..."></label>
+      <nav class="ml-auto flex items-center gap-4 text-sm font-semibold"><a href="/index.html" class="hidden sm:block">Accueil</a><a href="#categories" class="hidden sm:block">Catégories</a><a href="/public/auth.html" title="Messages"><i class="fas fa-comment-dots"></i></a><a href="/panier.html" title="Panier"><i class="fas fa-shopping-cart"></i></a><a href="/public/auth.html" class="rounded-lg bg-fuchsia-600 px-3 py-2 text-white">Mon compte</a></nav>
     </div>
-    
-    <!-- Modalité de Partage Social (Bloquante pour les Acheteurs non-partagés) -->
-    <div id="social-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl w-full max-w-md p-6 sm:p-8 shadow-2xl transform scale-100 transition-all duration-300">
-            <h2 class="text-3xl font-extrabold text-blue-600 mb-4">Partage Social Requis</h2>
-            <p class="text-gray-700 mb-6">
-                En tant qu'Acheteur, veuillez partager au moins un de vos liens de réseaux sociaux pour valider votre profil et accéder aux fonctionnalités complètes.
-            </p>
-            
-            <div class="space-y-4">
-                <div>
-                    <label for="social-facebook" class="flex items-center text-sm font-medium text-gray-700 mb-1"><i class="fab fa-facebook-square mr-2 text-blue-600"></i> Lien Facebook</label>
-                    <input type="url" id="social-facebook" placeholder="https://facebook.com/votrepage" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div>
-                    <label for="social-twitter" class="flex items-center text-sm font-medium text-gray-700 mb-1"><i class="fab fa-twitter-square mr-2 text-blue-400"></i> Lien X (Twitter)</label>
-                    <input type="url" id="social-twitter" placeholder="https://x.com/votrenom" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div>
-                    <label for="social-instagram" class="flex items-center text-sm font-medium text-gray-700 mb-1"><i class="fab fa-instagram-square mr-2 text-pink-500"></i> Lien Instagram</label>
-                    <input type="url" id="social-instagram" placeholder="https://instagram.com/votreprofil" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500">
-                </div>
-            </div>
-
-            <button onclick="handleSocialShare()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition duration-300 shadow-lg mt-6">
-                Partager et Continuer
-            </button>
-        </div>
-    </div>
-
+  </header>
+  <main class="mx-auto max-w-7xl px-5 py-6">
+    <section class="grid gap-5 lg:grid-cols-[210px_1fr]">
+      <aside id="categories" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><h2 class="font-bold">Catégories</h2><div id="category-list" class="mt-3 space-y-1 text-sm"></div></aside>
+      <div class="space-y-5">
+        <section class="overflow-hidden rounded-xl bg-gradient-to-r from-indigo-950 via-purple-800 to-fuchsia-700 p-7 text-white shadow-lg"><p class="font-semibold text-fuchsia-200">BIENVENUE SUR</p><h1 class="mt-1 text-4xl font-extrabold sm:text-5xl">JEOAH'S<br>MARKET PLACE</h1><p class="mt-3 max-w-lg text-sm text-indigo-100">Comparez les offres des vendeurs et affiliés. Choisissez le produit qui vous convient puis achetez sur la plateforme indiquée.</p><div class="mt-6 flex flex-wrap gap-3 text-xs font-bold"><span class="rounded-lg bg-white/15 px-3 py-2">Paiement sécurisé par JEOAH'S</span><span class="rounded-lg bg-white/15 px-3 py-2">Frais de service 3%</span><span class="rounded-lg bg-white/15 px-3 py-2">Suivi de livraison</span></div></section>
+        <section><div class="mb-3 flex items-center justify-between"><h2 class="text-xl font-extrabold">Boutiques en vedette</h2><a href="#products" class="text-sm font-bold text-fuchsia-700">Voir tout</a></div><div id="stores" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"></div></section>
+        <section id="products"><div class="mb-3 flex flex-wrap items-center justify-between gap-3"><div><h2 class="text-xl font-extrabold">Produits populaires</h2><p id="market-status" class="mt-1 text-xs text-slate-500">Chargement des offres JEOAH'S...</p></div><select id="currency" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold"><option value="USD">USD</option><option value="EUR">EUR</option><option value="HTG">HTG</option><option value="CAD">CAD</option></select></div><div id="products-grid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div></section>
+      </div>
+    </section>
+  </main>
+  <script type="module">
+    import { getApps, initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+    import { collection, getDocs, getFirestore } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+    const categories = ['Toutes les catégories', 'Mode & Accessoires', 'Beauté & Soins', 'Maison & Décoration', 'Électronique', 'Alimentation'];
+    const rates = { USD: 1, EUR: .92, HTG: 131, CAD: 1.36 };
+    let products = [];
+    let selectedCategory = 'Toutes les catégories';
+    const escape = value => String(value || '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
+    function renderCategories() { document.getElementById('category-list').innerHTML = categories.map(category => `<button data-category="${escape(category)}" class="category w-full rounded-lg px-3 py-2 text-left ${category === selectedCategory ? 'bg-fuchsia-50 font-bold text-fuchsia-700' : 'hover:bg-slate-50'}">${category}</button>`).join(''); document.querySelectorAll('.category').forEach(button => button.onclick = () => { selectedCategory = button.dataset.category; renderCategories(); renderProducts(); }); }
+    function price(product) { const raw = Number(String(product.price || product.priceUsd || '0').replace(/[^0-9.]/g, '')) || 0; const code = document.getElementById('currency').value; return new Intl.NumberFormat(code === 'HTG' ? 'fr-HT' : 'fr-FR', { style:'currency', currency:code, maximumFractionDigits:code === 'HTG' ? 0 : 2 }).format(raw * rates[code]); }
+    function matches(product) { const text = document.getElementById('market-search').value.trim().toLowerCase(); const categoryMatch = selectedCategory === 'Toutes les catégories' || String(product.category || '').toLowerCase().includes(selectedCategory.split(' ')[0].toLowerCase()); return categoryMatch && (!text || `${product.name || product.title || ''} ${product.category || ''} ${product.source || ''}`.toLowerCase().includes(text)); }
+    function renderProducts() { const visible = products.filter(matches); document.getElementById('products-grid').innerHTML = visible.length ? visible.map(product => { const name = product.name || product.title || 'Produit JEOAH'S'; const image = product.imageUrl || product.image || 'https://placehold.co/600x600/e2e8f0/334155?text=Produit'; const link = product.url || product.redirection || '#'; const platform = product.source || product.platform || 'Partenaire'; return `<article class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><img src="${escape(image)}" alt="${escape(name)}" class="h-44 w-full object-cover"><div class="p-4"><p class="text-xs font-bold uppercase text-fuchsia-700">${escape(platform)}</p><h3 class="mt-1 min-h-10 font-bold">${escape(name)}</h3><div class="mt-3 flex items-center justify-between gap-2"><strong>${price(product)}</strong><a href="/api/affiliate-click.js?affiliate_id=${encodeURIComponent(product.affiliateId || product.ownerId || 'marketplace')}&url=${encodeURIComponent(link)}" class="rounded-lg bg-fuchsia-600 px-3 py-2 text-xs font-bold text-white">Voir l'offre</a></div></div></article>`; }).join('') : '<p class="col-span-full rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">Aucun produit ne correspond à cette recherche.</p>'; }
+    function renderStores() { const stores = [...new Set(products.map(product => product.storeName || product.sellerName || product.affiliateName || product.source).filter(Boolean))].slice(0, 4); document.getElementById('stores').innerHTML = stores.length ? stores.map(store => `<a href="#products" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-fuchsia-300"><p class="font-bold">${escape(store)}</p><p class="mt-1 text-xs text-slate-500">Voir les offres disponibles</p></a>`).join('') : '<p class="text-sm text-slate-500">Les boutiques apparaîtront lorsque les produits seront publiés par JEOAH.</p>'; }
+    async function loadProducts() { try { const config = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : null; if (!config?.apiKey) throw new Error('Configuration Firebase indisponible'); const app = getApps()[0] || initializeApp(config); const db = getFirestore(app); const [vendorSnap, affiliateSnap, profilesSnap] = await Promise.all([ getDocs(collection(db, 'products')), getDocs(collection(db, 'artifacts/jeoahs1-max-03326376-49b27/public/data/affiliate_products')), getDocs(collection(db, 'profiles')) ]); const planByUid = new Map(); profilesSnap.docs.forEach(item => planByUid.set(item.id, item.data().selectedPlan || 'free')); const hasActivePlan = uid => { const plan = planByUid.get(uid); return Boolean(plan) && plan !== 'free'; }; const vendorProducts = vendorSnap.docs.map(item => ({ id: item.id, source: 'Vendeur', ...item.data() })).filter(product => product.subscriptionActive !== false && hasActivePlan(product.ownerId)); const affiliateProducts = affiliateSnap.docs.map(item => ({ id: item.id, source: 'Affilié', ...item.data() })).filter(product => product.subscriptionActive !== false && hasActivePlan(product.affiliateId)); products = [...vendorProducts, ...affiliateProducts]; document.getElementById('market-status').textContent = `${products.length} offre(s) disponible(s) (vendeurs et affiliés avec un plan actif). Prix convertis à titre indicatif.`; } catch (error) { document.getElementById('market-status').textContent = 'Les offres seront disponibles dès que la connexion sécurisée est établie.'; } renderStores(); renderProducts(); }
+    document.getElementById('market-search').addEventListener('input', renderProducts); document.getElementById('currency').addEventListener('change', renderProducts); renderCategories(); loadProducts();
+  </script>
+  <script src="/public/jeoah-loader.js" defer></script>
 </body>
 </html>
-

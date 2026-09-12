@@ -11,12 +11,132 @@ const stripe = require('stripe')(functions.config().stripe.key);
 admin.initializeApp();
 const db = admin.firestore();
 
+/**
+ * Suspend les publications des abonnements expirés sans supprimer les données.
+ * La tâche s'exécute périodiquement côté serveur, même si aucun administrateur
+ * n'est connecté.
+ */
+exports.expireSubscriptions = functions.pubsub.schedule('every 15 minutes').onRun(async () => {
+  const now = admin.firestore.Timestamp.now();
+  const warningLimit = admin.firestore.Timestamp.fromMillis(now.toMillis() + (3 * 24 * 60 * 60 * 1000));
+  const expiredSnapshot = await db.collectionGroup('subscription_data')
+    .where('expiresAt', '<=', now)
+    .where('status', '==', 'active')
+    .get();
+
+  const warningSnapshot = await db.collectionGroup('subscription_data')
+    .where('expiresAt', '>', now)
+    .where('expiresAt', '<=', warningLimit)
+    .where('status', '==', 'active')
+    .get();
+
+  const warningWrites = warningSnapshot.docs.map(subscriptionSnapshot => {
+    const userRef = subscriptionSnapshot.ref.parent.parent;
+    if (!userRef) return null;
+    return db.collection('subscription_warnings').doc(`${userRef.id}_${subscriptionSnapshot.id}`).set({
+      userId: userRef.id,
+      subscriptionId: subscriptionSnapshot.id,
+      type: 'renewal_due_in_3_days',
+      expiresAt: subscriptionSnapshot.data().expiresAt,
+      createdAt: now
+    }, { merge: true });
+  }).filter(Boolean);
+  await Promise.all(warningWrites);
+
+  if (expiredSnapshot.empty) return null;
+
+  let batch = db.batch();
+  let operationCount = 0;
+  const commits = [];
+
+  const queueUpdate = (ref, data) => {
+    batch.update(ref, data);
+    operationCount += 1;
+    if (operationCount === 450) {
+      commits.push(batch.commit());
+      batch = db.batch();
+      operationCount = 0;
+    }
+  };
+
+  for (const subscriptionSnapshot of expiredSnapshot.docs) {
+    const subscriptionRef = subscriptionSnapshot.ref;
+    const userRef = subscriptionRef.parent.parent;
+    if (!userRef) continue;
+
+    queueUpdate(subscriptionRef, {
+      status: 'expired',
+      isPremium: false,
+      expiredAt: now,
+      publicationsSuspended: true
+    });
+
+    const appId = admin.app().options.projectId;
+    const productsSnapshot = await db.collection(`artifacts/${appId}/public/data/products`)
+      .where('ownerId', '==', userRef.id)
+      .get();
+    productsSnapshot.forEach(productSnapshot => {
+      queueUpdate(productSnapshot.ref, {
+        subscriptionActive: false,
+        publicationStatus: 'suspended_subscription_expired',
+        updatedAt: now
+      });
+    });
+
+    const affiliatePromosSnapshot = await db.collection(`artifacts/${appId}/public/data/affiliate_promos`)
+      .where('vendorId', '==', userRef.id)
+      .get();
+    affiliatePromosSnapshot.forEach(promoSnapshot => {
+      queueUpdate(promoSnapshot.ref, {
+        subscriptionActive: false,
+        publicationStatus: 'suspended_subscription_expired',
+        updatedAt: now
+      });
+    });
+  }
+
+  if (operationCount > 0) commits.push(batch.commit());
+  await Promise.all(commits);
+  return null;
+});
+
+exports.publishAffiliateProduct = functions.firestore
+  .document('artifacts/{appId}/public/data/affiliate_products/{productId}')
+  .onCreate(async (snapshot, context) => {
+    const product = snapshot.data();
+    const ownerId = product.affiliateId;
+    if (!ownerId) return null;
+
+    const profileSnapshot = await db.doc(`profiles/${ownerId}`).get();
+    const profile = profileSnapshot.exists ? profileSnapshot.data() : {};
+    const expiresAt = profile.expiresAt?.toDate ? profile.expiresAt.toDate() : (profile.expiresAt ? new Date(profile.expiresAt) : null);
+    const eligible = profile.testAccount === true || (profile.selectedPlan && profile.selectedPlan !== 'free' && (!expiresAt || expiresAt > new Date()));
+    if (!eligible) return null;
+
+    const appId = context.params.appId;
+    const centralProduct = {
+      ...product,
+      title: product.title || product.name,
+      type: 'affiliate',
+      source: product.url ? new URL(product.url).hostname : 'affiliation',
+      ownerId,
+      vendorId: ownerId,
+      redirection: product.url || '#',
+      subscriptionActive: true,
+      publicationStatus: 'published_by_jeoah',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    await db.doc(`artifacts/${appId}/public/data/products/${snapshot.id}`).set(centralProduct, { merge: true });
+    await db.doc(`artifacts/${appId}/public/data/affiliate_promos/${snapshot.id}`).set(centralProduct, { merge: true });
+    return null;
+  });
+
 // Définition des plans d'abonnement (en centimes)
 const plans = {
-    monthly: { amount: 1999, currency: 'usd', name: 'Plan Mensuel' },
-    quarterly: { amount: 4999, currency: 'usd', name: 'Plan Trimestriel' },
-    'semi-annual': { amount: 9999, currency: 'usd', name: 'Plan Semestriel' },
-    annual: { amount: 25000, currency: 'usd', name: 'Plan Annuel' }
+  starter: { amount: 999, currency: 'usd', name: 'Plan Starter' },
+  pro: { amount: 1999, currency: 'usd', name: 'Plan Pro' },
+  premium: { amount: 3999, currency: 'usd', name: 'Plan Premium' },
+  enterprise: { amount: 9900, currency: 'usd', name: 'Plan Entreprise' }
 };
 
 /*

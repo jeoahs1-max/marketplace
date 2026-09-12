@@ -32,7 +32,25 @@ il nlis redte<!--
             { id: 'facebook', name: 'Facebook', icon_svg: `https://www.vectorlogo.zone/logos/facebook/facebook-icon.svg`, placeholder: 'Lien de votre page/profil Facebook', required: false }, 
         ];
         
-        // ... (code firebase et logique de chargement existants)
+        document.addEventListener('DOMContentLoaded', () => {
+            const account = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+            if (!account) {
+                window.location.href = '/public/auth.html';
+                return;
+            }
+            if (account.role === 'affilie' && account.onboardingComplete) {
+                window.location.href = '/affiliate-storefront.html';
+                return;
+            }
+            socialLinks = JSON.parse(localStorage.getItem('jeoahs_social_links') || '{}');
+            renderSocialLinks();
+            document.getElementById('loading-indicator').classList.add('hidden');
+            document.getElementById('onboarding-content').classList.remove('hidden');
+        });
+
+        window.handleInputChange = function(platformId, value) {
+            socialLinks[platformId] = value.trim();
+        };
 
         function renderSocialLinks() {
             const container = document.getElementById('social-links-container');
@@ -66,7 +84,27 @@ il nlis redte<!--
             `;
         }
 
-        // ... (logique de soumission et modale existantes)
+        window.handleSubmit = function(event) {
+            event.preventDefault();
+            const missing = SOCIAL_PLATFORMS.filter(platform => platform.required && !socialLinks[platform.id]);
+            if (missing.length) {
+                showMessage('Profils manquants', `Ajoutez un lien pour : ${missing.map(platform => platform.name).join(', ')}.`);
+                return;
+            }
+            const invalid = Object.values(socialLinks).some(value => value && !/^https?:\/\//i.test(value));
+            if (invalid) {
+                showMessage('Lien invalide', 'Chaque lien doit commencer par http:// ou https://.');
+                return;
+            }
+            localStorage.setItem('jeoahs_social_links', JSON.stringify(socialLinks));
+            window.location.href = 'affiliate_onboarding_step3.html';
+        };
+
+        function showMessage(title, message) {
+            document.getElementById('message-title').textContent = title;
+            document.getElementById('message-text').textContent = message;
+            document.getElementById('message-modal').classList.remove('hidden');
+        }
 
     </script>
     
@@ -76,6 +114,50 @@ il nlis redte<!--
     </style>
 </head>
 <body>
-    <!-- ... (HTML du body existant) ... -->
+    <div id="loading-indicator" class="fixed inset-0 bg-white flex items-center justify-center z-50">
+        <p class="text-gray-600 text-lg">Préparation de votre profil...</p>
+    </div>
+
+    <main id="onboarding-content" class="hidden min-h-screen p-4 sm:p-8">
+        <div class="max-w-4xl mx-auto">
+            <header class="mb-8">
+                <p class="text-sm font-bold uppercase tracking-wide text-blue-700" data-i18n="stepTwo">Étape 2 sur 3</p>
+                <h1 class="mt-2 text-3xl sm:text-4xl font-extrabold text-gray-900" data-i18n="socialTitle">Présentez vos réseaux sociaux</h1>
+                <p class="mt-3 max-w-2xl text-gray-600" data-i18n="socialText">Ces profils seront visibles sur votre vitrine afin que les visiteurs puissent découvrir votre contenu.</p>
+            </header>
+
+            <form onsubmit="handleSubmit(event)" class="space-y-4">
+                <div id="social-links-container" class="space-y-4"></div>
+                <div class="flex justify-between pt-4">
+                    <a href="affiliate_onboarding_step1.html" class="px-5 py-3 text-gray-700 font-bold rounded-xl border border-gray-300 hover:bg-gray-50" data-i18n="back">Retour</a>
+                    <button type="submit" class="px-6 py-3 bg-blue-700 text-white font-bold rounded-xl hover:bg-blue-800" data-i18n="saveContinue">Enregistrer et continuer</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <div id="message-modal" class="hidden fixed inset-0 bg-gray-900/70 items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h2 id="message-title" class="text-xl font-bold text-gray-900"></h2>
+            <p id="message-text" class="mt-3 text-gray-600"></p>
+            <button type="button" onclick="document.getElementById('message-modal').classList.add('hidden')" class="mt-6 w-full py-3 bg-blue-700 text-white font-bold rounded-xl">Compris</button>
+        </div>
+    </div>
+
+    <div id="ney-widget-container"></div>
+    <script src="/public/assets/js/page-language.js"></script>
+    <script>
+        fetch('/jeoah-widget.html').then(r => r.text()).then(html => {
+            const container = document.getElementById('ney-widget-container');
+            if (container) {
+                container.innerHTML = html;
+                container.querySelectorAll('script').forEach(s => {
+                    const n = document.createElement('script');
+                    n.textContent = s.textContent;
+                    document.body.appendChild(n);
+                });
+            }
+        });
+    </script>
 </body>
 </html>

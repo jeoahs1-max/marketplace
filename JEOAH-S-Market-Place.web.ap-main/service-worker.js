@@ -1,15 +1,15 @@
 // service-worker.js
 // Fichier nécessaire pour enregistrer la Progressive Web App (PWA)
 
-const CACHE_NAME = 'jeoahs-cache-v1';
+const CACHE_NAME = 'jeoahs-cache-v4';
 const urlsToCache = [
-  './',
-  './index.html',
-  './auth.html',
-  './affiliate_dashboard.html',
-  'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css'
+  '/',
+  '/index.html',
+  '/plans.html',
+  '/jeoah-widget.html',
+  '/public/jeoah-loader.js',
+  '/public/manifest.json',
+  '/public/assets/logo.png'
 ];
 
 // Événement d'installation: Met en cache les fichiers de base
@@ -21,6 +21,7 @@ self.addEventListener('install', event => {
         console.log('[Service Worker] Mise en cache des ressources principales.');
         return cache.addAll(urlsToCache);
       })
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -37,15 +38,21 @@ self.addEventListener('activate', event => {
             return caches.delete(cacheName);
           }
         })
-      );
+      ).then(() => self.clients.claim());
     })
   );
 });
 
 // Événement fetch: Sert les ressources depuis le cache si possible, sinon réseau
 self.addEventListener('fetch', event => {
-  // Ignorer les requêtes API (Firebase, Google APIs) pour le cache
-  if (event.request.url.includes('googleapis.com') || event.request.url.includes('gstatic.com')) {
+  // Les APIs et les données Firebase doivent toujours atteindre le réseau.
+  if (event.request.url.includes('/api/') || event.request.url.includes('googleapis.com') || event.request.url.includes('gstatic.com')) {
+    return;
+  }
+
+  // Les documents HTML restent à jour, avec repli hors-ligne sur le cache.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request).catch(() => caches.match('/index.html')));
     return;
   }
 

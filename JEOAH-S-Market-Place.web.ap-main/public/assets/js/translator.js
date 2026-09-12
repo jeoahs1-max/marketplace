@@ -1,39 +1,32 @@
 const LANG_KEY = 'jeoahs-lang';
 const DEFAULT_LANG = 'fr';
 
-// Fonction globale pour changer la langue
 window.setLang = function(lang) {
     localStorage.setItem(LANG_KEY, lang);
     location.reload();
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // --- 1. Déterminer la langue ---
+window.initializeTranslator = async function() {
     let currentLang = localStorage.getItem(LANG_KEY) || DEFAULT_LANG;
-
-    // --- 2. Charger le fichier de langue ---
     let translations = {};
     try {
-        const response = await fetch(`/assets/lang/${currentLang}.json`);
+        const languageFile = `${currentLang}.json`;
+        let response = await fetch(`/public/assets/lang/${languageFile}`);
         if (!response.ok) {
-            console.warn(`Fichier de langue pour '${currentLang}' non trouvé. Utilisation de la langue par défaut.`);
-            currentLang = DEFAULT_LANG;
-            const defaultResponse = await fetch(`/assets/lang/${DEFAULT_LANG}.json`);
-            translations = await defaultResponse.json();
-        } else {
-            translations = await response.json();
+            response = await fetch(`/assets/lang/${languageFile}`);
         }
+        if (!response.ok) throw new Error(`Fichier de langue ${languageFile} introuvable.`);
+        const translationSource = await response.text();
+        translations = JSON.parse(translationSource.replace(/\\'/g, "'"));
     } catch (error) {
         console.error('Erreur lors du chargement du fichier de langue:', error);
-        // Continuer sans traductions si le chargement échoue
         return;
     }
 
-    // --- 3. Appliquer les traductions ---
+    document.documentElement.lang = currentLang;
     document.querySelectorAll('[data-translate]').forEach(element => {
         const key = element.getAttribute('data-translate');
         if (translations[key]) {
-            // Gérer les cas spéciaux comme les placeholders ou les valeurs
             if (element.hasAttribute('placeholder')) {
                 element.setAttribute('placeholder', translations[key]);
             } else if (element.hasAttribute('value')) {
@@ -44,11 +37,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Mettre à jour la classe active sur le sélecteur de langue actuel
     const langSelectors = document.querySelectorAll('[data-lang]');
     langSelectors.forEach(selector => {
+        selector.classList.remove('active-lang');
         if (selector.getAttribute('data-lang') === currentLang) {
-            selector.classList.add('active-lang'); // Ajoutez un style pour la langue active
+            selector.classList.add('active-lang');
         }
     });
-});
+};
+
+document.addEventListener('DOMContentLoaded', () => window.initializeTranslator());

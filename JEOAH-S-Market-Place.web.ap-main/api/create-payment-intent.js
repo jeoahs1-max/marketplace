@@ -14,10 +14,10 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
 const db = admin.firestore();
 
 const plans = {
-    monthly: { amount: 1999, currency: 'usd', name: 'Plan Mensuel' },
-    quarterly: { amount: 4999, currency: 'usd', name: 'Plan Trimestriel' },
-    'semi-annual': { amount: 9999, currency: 'usd', name: 'Plan Semestriel' },
-    annual: { amount: 25000, currency: 'usd', name: 'Plan Annuel' }
+    starter: { amount: 999, currency: 'usd', name: 'Plan Starter' },
+    pro: { amount: 1999, currency: 'usd', name: 'Plan Pro' },
+    premium: { amount: 3999, currency: 'usd', name: 'Plan Premium' },
+    enterprise: { amount: 9900, currency: 'usd', name: 'Plan Entreprise' }
 };
 
 module.exports = async (req, res) => {

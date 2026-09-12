@@ -1,4 +1,3 @@
-
 {
   "name": "jeoahs-vercel",
   "version": "1.0.0",
@@ -8,11 +7,12 @@
     "deploy": "vercel --prod"
   },
   "dependencies": {
-    "firebase-admin": "^11.11.1", 
+    "firebase-admin": "^11.11.1",
     "node-fetch": "^2.6.7",
-    "stripe": "^14.0.0"
+    "stripe": "^14.0.0",
+    "twilio": "^5.0.0"
   },
   "devDependencies": {
-    "vercel": "^32.3.0" 
+    "vercel": "^32.7.2"
   }
 }

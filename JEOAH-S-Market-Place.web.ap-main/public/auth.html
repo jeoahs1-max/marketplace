@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - JEOAH'S</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/firebase-config.js"></script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900">
+    <main class="mx-auto flex min-h-screen max-w-md items-center px-5 py-10">
+        <section class="w-full rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <a href="/index.html" class="text-sm font-bold text-indigo-700 hover:underline">JEOAH'S Market Place</a>
+            <h1 id="form-title" class="mt-5 text-3xl font-extrabold">Connexion</h1>
+            <p id="form-description" class="mt-2 text-sm text-slate-600">Retrouvez votre vitrine et votre espace personnel.</p>
+
+            <form id="auth-form" class="mt-7 space-y-5">
+                <label class="block text-sm font-bold text-slate-700">Adresse e-mail
+                    <input id="email" type="email" autocomplete="email" required class="mt-2 w-full rounded-md border border-slate-300 px-3 py-2.5 font-normal focus:border-indigo-600 focus:outline-none">
+                </label>
+                <label class="block text-sm font-bold text-slate-700">Mot de passe
+                    <input id="password" type="password" autocomplete="current-password" minlength="6" required class="mt-2 w-full rounded-md border border-slate-300 px-3 py-2.5 font-normal focus:border-indigo-600 focus:outline-none">
+                </label>
+                <label id="password-confirm-field" class="hidden block text-sm font-bold text-slate-700">Confirmer le mot de passe
+                    <input id="password-confirm" type="password" autocomplete="new-password" minlength="6" class="mt-2 w-full rounded-md border border-slate-300 px-3 py-2.5 font-normal focus:border-indigo-600 focus:outline-none">
+                </label>
+                <label id="role-field" class="hidden block text-sm font-bold text-slate-700">Je rejoins JEOAH'S comme
+                    <select id="role" class="mt-2 w-full rounded-md border border-slate-300 px-3 py-2.5 font-normal focus:border-indigo-600 focus:outline-none">
+                        <option value="acheteur">Acheteur</option>
+                        <option value="vendeur">Vendeur</option>
+                        <option value="affilie">Affilié</option>
+                    </select>
+                </label>
+                <p id="auth-status" class="hidden rounded-md px-3 py-2 text-sm" role="status"></p>
+                <button id="submit-button" type="submit" class="w-full rounded-md bg-indigo-700 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-800">Se connecter</button>
+            </form>
+
+            <div class="my-5 flex items-center gap-3 text-xs text-slate-400"><span class="h-px flex-1 bg-slate-200"></span><span>ou</span><span class="h-px flex-1 bg-slate-200"></span></div>
+            <button id="google-button" type="button" class="w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">Continuer avec Google</button>
+
+            <button id="mode-button" type="button" class="mt-5 w-full text-sm font-bold text-indigo-700 hover:underline">Créer un compte</button>
+        </section>
+    </main>
+
+    <script type="module">
+        import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { browserLocalPersistence, createUserWithEmailAndPassword, getAuth, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, setPersistence, signInWithEmailAndPassword, signInWithPopup, signInWithRedirect } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        const form = document.getElementById('auth-form');
+        const modeButton = document.getElementById('mode-button');
+        const roleField = document.getElementById('role-field');
+        const title = document.getElementById('form-title');
+        const description = document.getElementById('form-description');
+        const submitButton = document.getElementById('submit-button');
+        const googleButton = document.getElementById('google-button');
+        const passwordConfirmField = document.getElementById('password-confirm-field');
+        const status = document.getElementById('auth-status');
+        const selectedPlan = new URLSearchParams(location.search).get('plan');
+        const referralCode = new URLSearchParams(location.search).get('ref');
+        const testerEmails = new Set([
+            'ff1986fredlin11@gmail.com', 'fleuricotamy@gmail.com',
+            'stephaniejeancharles95@gmail.com', 'physiotherapeutejoseph@gmail.com',
+            'vernetloveson509@gmail.com', 'jeanlouislynseykeren@gmail.com',
+            'ramecey30@gmail.com', 'jeanlouisardyyy@gmail.com',
+            'jjeanlouis96@gmail.com'
+        ]);
+        let isRegistration = false;
+        let auth;
+        let db;
+        let submitting = false;
+
+        function setStatus(message, type = 'error') {
+            status.textContent = message;
+            status.className = `rounded-md px-3 py-2 text-sm ${type === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`;
+        }
+
+        function setMode(register) {
+            isRegistration = register;
+            title.textContent = register ? 'Créer un compte' : 'Connexion';
+            description.textContent = register ? 'Configurez votre rôle une seule fois. Vos prochains accès iront directement à votre espace.' : 'Retrouvez votre vitrine et votre espace personnel.';
+            roleField.classList.toggle('hidden', !register);
+            passwordConfirmField.classList.toggle('hidden', !register);
+            document.getElementById('password-confirm').required = register;
+            submitButton.textContent = register ? 'Créer mon compte' : 'Se connecter';
+            modeButton.textContent = register ? 'J’ai déjà un compte' : 'Créer un compte';
+            document.getElementById('password').autocomplete = register ? 'new-password' : 'current-password';
+            status.classList.add('hidden');
+        }
+
+        function destination(profile) {
+            if (profile.role === 'affilie') return profile.onboardingComplete ? '/affiliate-storefront.html' : '/affiliate_onboarding_step1.html';
+            if (profile.role === 'vendeur') return '/vendor_dashboard.html';
+            return '/index.html';
+        }
+
+        async function loadProfile(user) {
+            const profileSnapshot = await getDoc(doc(db, 'profiles', user.uid));
+            if (profileSnapshot.exists()) return profileSnapshot.data();
+            const legacySnapshot = await getDoc(doc(db, 'artifacts/jeoahs1-max-03326376-49b27/public/data/users', user.uid));
+            return legacySnapshot.exists() ? legacySnapshot.data() : null;
+        }
+
+        async function continueToSpace(user) {
+            let profile = await loadProfile(user);
+            if (user.email && user.email.toLowerCase() === 'jeoahs1@gmail.com') {
+                localStorage.setItem('jeoahs_auth_user', JSON.stringify({ uid: user.uid, email: user.email, role: 'admin', roles: ['admin'], onboardingComplete: true }));
+                location.href = '/admin.html';
+                return;
+            }
+            if (!profile) {
+                setStatus('Compte reconnu, mais profil introuvable. Contactez le support pour restaurer votre accès.');
+                return;
+            }
+            const normalizedRole = { seller: 'vendeur', vendor: 'vendeur', affiliate: 'affilie', buyer: 'acheteur' }[profile.role] || profile.role || 'acheteur';
+            if (profile.role !== normalizedRole) profile = { ...profile, role: normalizedRole };
+            if (testerEmails.has((user.email || '').toLowerCase()) && !profile.testAccount) {
+                profile = { ...profile, selectedPlan: 'tester', testAccount: true };
+                await setDoc(doc(db, 'profiles', user.uid), { selectedPlan: 'tester', testAccount: true, updatedAt: serverTimestamp() }, { merge: true });
+            }
+            const identity = await saveAccountIdentity(user, profile);
+            localStorage.setItem('jeoahs_auth_user', JSON.stringify({
+                uid: user.uid,
+                email: user.email || '',
+                role: profile.role,
+                roles: [profile.role],
+                onboardingComplete: Boolean(profile.onboardingComplete),
+                accountCode: identity.code,
+                referralLink: identity.link,
+                testAccount: Boolean(profile.testAccount)
+            }));
+            location.href = destination(profile);
+        }
+
+        function createAccountIdentity(user) {
+            const code = `JEOAH-${user.uid.slice(0, 8).toUpperCase()}`;
+            return { code, link: `${location.origin}/public/auth.html?ref=${encodeURIComponent(code)}` };
+        }
+
+        function profileFor(user, role = 'acheteur') {
+            const identity = createAccountIdentity(user);
+            const email = (user.email || '').toLowerCase();
+            return {
+                role,
+                onboardingComplete: role !== 'affilie',
+                selectedPlan: testerEmails.has(email) ? 'tester' : (selectedPlan || 'free'),
+                testAccount: testerEmails.has(email),
+                accountCode: identity.code,
+                referralLink: identity.link,
+                referredByCode: referralCode || null,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            };
+        }
+
+        async function saveAccountIdentity(user, profile) {
+            const identity = profile.accountCode && profile.referralLink ? { code: profile.accountCode, link: profile.referralLink } : createAccountIdentity(user);
+            if (!profile.accountCode || !profile.referralLink || (referralCode && !profile.referredByCode)) {
+                await setDoc(doc(db, 'profiles', user.uid), {
+                    accountCode: identity.code,
+                    referralLink: identity.link,
+                    ...(referralCode && !profile.referredByCode ? { referredByCode: referralCode } : {}),
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+            }
+            return identity;
+        }
+
+        function messageFor(error) {
+            const messages = {
+                'auth/email-already-in-use': 'Cette adresse e-mail possède déjà un compte. Connectez-vous.',
+                'auth/invalid-credential': 'Adresse e-mail ou mot de passe incorrect.',
+                'auth/weak-password': 'Le mot de passe doit contenir au moins 6 caractères.',
+                'auth/operation-not-allowed': 'La connexion par e-mail doit être activée dans Firebase Authentication.',
+                'auth/popup-blocked': 'La fenêtre Google a été bloquée. Réessayez : une page Google va s’ouvrir.',
+                'auth/popup-closed-by-user': 'La fenêtre Google a été fermée avant la connexion.',
+                'auth/unauthorized-domain': 'Ce domaine n’est pas autorisé dans Firebase. Ajoutez www.jeoahs.com dans les domaines autorisés Firebase.',
+                'auth/configuration-not-found': 'La connexion Google n’est pas activée dans Firebase Authentication.'
+            };
+            return messages[error.code] || `Impossible de poursuivre (${error.code || 'erreur inconnue'}). Vérifiez votre connexion puis réessayez.`;
+        }
+
+        modeButton.addEventListener('click', () => setMode(!isRegistration));
+
+        googleButton.addEventListener('click', async () => {
+            if (!auth || submitting) return;
+            submitting = true;
+            googleButton.disabled = true;
+            setStatus('Connexion Google en cours...', 'success');
+            try {
+                const user = (await signInWithPopup(auth, new GoogleAuthProvider())).user;
+                let profile = await loadProfile(user);
+                if (!profile) {
+                    profile = profileFor(user, isRegistration ? document.getElementById('role').value : 'acheteur');
+                    await setDoc(doc(db, 'profiles', user.uid), profile);
+                }
+                await continueToSpace(user);
+            } catch (error) {
+                if (error.code === 'auth/popup-blocked') {
+                    setStatus('Ouverture de Google...', 'success');
+                    await signInWithRedirect(auth, new GoogleAuthProvider());
+                    return;
+                }
+                setStatus(messageFor(error));
+            } finally {
+                submitting = false;
+                googleButton.disabled = false;
+            }
+        });
+
+        form.addEventListener('submit', async event => {
+            event.preventDefault();
+            if (submitting) return;
+            submitting = true;
+            submitButton.disabled = true;
+            setStatus('Connexion en cours...', 'success');
+            try {
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+                let user;
+                if (isRegistration) {
+                    if (password !== document.getElementById('password-confirm').value) {
+                        setStatus('Les deux mots de passe doivent être identiques.');
+                        return;
+                    }
+                    const credential = await createUserWithEmailAndPassword(auth, email, password);
+                    user = credential.user;
+                    const role = document.getElementById('role').value;
+                    const profile = profileFor(user, role);
+                    const identity = createAccountIdentity(user);
+                    await setDoc(doc(db, 'profiles', user.uid), profile);
+                    localStorage.setItem('jeoahs_auth_user', JSON.stringify({ uid: user.uid, email, role, roles: [role], onboardingComplete: profile.onboardingComplete, accountCode: identity.code, referralLink: identity.link }));
+                    setStatus(`Inscription réussie. Votre code unique est ${identity.code}.`, 'success');
+                    location.href = destination(profile);
+                    return;
+                }
+                user = (await signInWithEmailAndPassword(auth, email, password)).user;
+                await continueToSpace(user);
+                setStatus('Votre profil doit être finalisé avant de continuer.');
+            } catch (error) {
+                console.error('Erreur de connexion:', error);
+                setStatus(messageFor(error));
+            } finally {
+                submitting = false;
+                submitButton.disabled = false;
+            }
+        });
+
+        try {
+            const config = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : null;
+            if (!config || !config.apiKey) throw new Error('Firebase non configuré');
+            const app = getApps()[0] || initializeApp(config);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            await setPersistence(auth, browserLocalPersistence);
+            const redirectResult = await getRedirectResult(auth);
+            if (redirectResult?.user) await continueToSpace(redirectResult.user);
+            onAuthStateChanged(auth, user => {
+                if (user && !submitting) continueToSpace(user).catch(() => setStatus('Votre session est active, mais le profil ne peut pas être chargé.'));
+            });
+        } catch (error) {
+            setStatus('La connexion est temporairement indisponible.');
+            submitButton.disabled = true;
+        }
+    </script>
+    <script src="/public/jeoah-loader.js" defer></script>
+</body>
+</html>

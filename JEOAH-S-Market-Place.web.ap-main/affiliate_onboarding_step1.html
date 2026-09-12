@@ -22,13 +22,14 @@
         
         let db, auth, userId;
         let affiliateLinks = [];
+        const isRoleUpgrade = new URLSearchParams(window.location.search).get('upgrade') === 'affiliate';
 
         const initialMerchants = [
-            { name: "Amazon", base_link: "", icon_svg: `https://www.vectorlogo.zone/logos/amazon/amazon-icon.svg`, placeholder: "Votre ID de suivi Amazon", required: true },
-            { name: "Temu", base_link: "", icon_svg: `https://www.vectorlogo.zone/logos/temu/temu-icon.svg`, placeholder: "Votre ID d'affilié Temu", required: true },
-            { name: "Shein", base_link: "", icon_svg: `https://www.vectorlogo.zone/logos/shein/shein-icon.svg`, placeholder: "Votre code de partenaire Shein", required: true },
-            { name: "Walmart", base_link: "", icon_svg: `https://www.vectorlogo.zone/logos/walmart/walmart-icon.svg`, placeholder: "Votre clé de programme Walmart", required: true },
-            { name: "Ebay", base_link: "", icon_svg: `https://www.vectorlogo.zone/logos/ebay/ebay-icon.svg`, placeholder: "ID du réseau de partenaires Ebay", required: true },
+            { name: "Amazon", base_link: "", icon_svg: `https://www.vectorlogo.zone/logos/amazon/amazon-icon.svg`, placeholder: "Votre ID de suivi Amazon", required: false },
+            { name: "Temu", base_link: "", icon_svg: `https://www.vectorlogo.zone/logos/temu/temu-icon.svg`, placeholder: "Votre ID d'affilié Temu", required: false },
+            { name: "Shein", base_link: "", icon_svg: `https://www.vectorlogo.zone/logos/shein/shein-icon.svg`, placeholder: "Votre code de partenaire Shein", required: false },
+            { name: "Walmart", base_link: "", icon_svg: `https://www.vectorlogo.zone/logos/walmart/walmart-icon.svg`, placeholder: "Votre clé de programme Walmart", required: false },
+            { name: "Ebay", base_link: "", icon_svg: `https://www.vectorlogo.zone/logos/ebay/ebay-icon.svg`, placeholder: "ID du réseau de partenaires Ebay", required: false },
         ];
         
         const MAX_LINKS = 10;
@@ -38,11 +39,24 @@
         });
 
         async function initFirebase() {
-            // ... (code firebase existant)
+            const account = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+            if (!account) {
+                window.location.href = '/public/auth.html';
+                return;
+            }
+            if (account.role === 'affilie' && account.onboardingComplete) {
+                window.location.href = '/affiliate-storefront.html';
+                return;
+            }
+            affiliateLinks = JSON.parse(localStorage.getItem('jeoahs_affiliate_links') || 'null') || initialMerchants.map(link => ({ ...link }));
+            renderAffiliateLinks();
+            document.getElementById('loading-indicator').classList.add('hidden');
+            document.getElementById('onboarding-content').classList.remove('hidden');
         }
         
         async function loadExistingLinks() {
-            // ... (code de chargement existant)
+            affiliateLinks = JSON.parse(localStorage.getItem('jeoahs_affiliate_links') || 'null') || initialMerchants.map(link => ({ ...link }));
+            renderAffiliateLinks();
         }
 
         window.addAffiliateLink = function() {
@@ -115,15 +129,36 @@
                 `;
                 container.innerHTML += linkHtml;
             });
-            // ... (logique pour le bouton d'ajout)
+            const configuredLinks = affiliateLinks.filter(link => link.name.trim() && link.base_link.trim()).length;
+            document.getElementById('link-count').textContent = `${configuredLinks} / ${MAX_LINKS}`;
         }
 
         window.handleSubmit = async function(event) {
-            // ... (logique de soumission existante)
+            event.preventDefault();
+            const completedLinks = affiliateLinks.filter(link => link.name.trim() && link.base_link.trim());
+            const incomplete = affiliateLinks.find(link => Boolean(link.name.trim()) !== Boolean(link.base_link.trim()));
+            if (!completedLinks.length) {
+                showCustomModal('Ajoutez au moins un lien', "Vous pouvez commencer avec Amazon uniquement ou ajouter plusieurs plateformes.");
+                return;
+            }
+            if (incomplete) {
+                showCustomModal('Lien incomplet', `Complétez ou effacez la ligne ${incomplete.name || 'personnalisée'}.`);
+                return;
+            }
+            localStorage.setItem('jeoahs_affiliate_links', JSON.stringify(affiliateLinks));
+            if (isRoleUpgrade) {
+                localStorage.setItem('jeoahs_affiliate_enabled', 'true');
+                window.location.href = 'affiliate-storefront.html';
+                return;
+            }
+            window.location.href = 'affiliate_onboarding_step2.html';
         }
 
         function showCustomModal(title, message) {
-            // ... (logique de la modale existante)
+            const modal = document.getElementById('message-modal');
+            document.getElementById('message-title').textContent = title;
+            document.getElementById('message-text').textContent = message;
+            modal.classList.remove('hidden');
         }
 
     </script>
@@ -131,9 +166,80 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f7f8fc; }
         .border-red-500 { border-color: #ef4444 !important; }
+        .brand-logo-wrap {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            border-radius: 1rem;
+            background: linear-gradient(135deg, #0b2f63, #072147);
+            box-shadow: 0 12px 26px rgba(7, 33, 71, 0.22);
+        }
+        .brand-logo {
+            width: 78px;
+            height: 78px;
+            object-fit: cover;
+            border-radius: 0.75rem;
+            display: block;
+        }
     </style>
 </head>
 <body>
-    <!-- ... (HTML du body existant) ... -->
+    <div id="loading-indicator" class="fixed inset-0 bg-white flex items-center justify-center z-50">
+        <p class="text-gray-600 text-lg">Préparation de votre espace affilié...</p>
+    </div>
+
+    <main id="onboarding-content" class="hidden min-h-screen p-4 sm:p-8">
+        <div class="max-w-4xl mx-auto">
+            <header class="mb-8">
+                <a href="/index.html" class="brand-logo-wrap mb-4" aria-label="Retour a l'accueil JEOAH'S">
+                    <img src="/public/assets/logo.png" alt="JEOAH'S Market Place" class="brand-logo" loading="lazy">
+                </a>
+                <p class="text-sm font-bold uppercase tracking-wide text-blue-700" data-i18n="stepOne">Étape 1 sur 3</p>
+                <h1 class="mt-2 text-3xl sm:text-4xl font-extrabold text-gray-900" data-i18n="affiliatePrograms">Ajoutez vos programmes affiliés</h1>
+                <p class="mt-3 max-w-2xl text-gray-600" data-i18n="affiliateProgramsText">Indiquez les plateformes sur lesquelles vous êtes affilié. JEOAH'S affichera ensuite les offres correspondantes sur votre vitrine.</p>
+                <p class="mt-3 text-sm font-semibold text-gray-700">Plateformes configurées : <span id="link-count">0 / 10</span></p>
+            </header>
+
+            <form onsubmit="handleSubmit(event)" class="space-y-4">
+                <div id="affiliate-links-container" class="space-y-4"></div>
+                <button type="button" onclick="addAffiliateLink()" class="px-4 py-3 border-2 border-dashed border-blue-300 text-blue-700 font-bold rounded-xl hover:bg-blue-50" data-i18n="addPlatform">
+                    <i class="fas fa-plus mr-2"></i>Ajouter une plateforme
+                </button>
+                <div class="flex justify-between items-center pt-4">
+                    <a href="/public/auth.html" class="px-6 py-3 border border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-50" data-i18n="back">
+                        <i class="fas fa-arrow-left mr-2"></i>Retour
+                    </a>
+                    <button type="submit" class="px-6 py-3 bg-blue-700 text-white font-bold rounded-xl hover:bg-blue-800" data-i18n="saveContinue">
+                        Enregistrer et continuer <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <div id="message-modal" class="hidden fixed inset-0 bg-gray-900/70 items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h2 id="message-title" class="text-xl font-bold text-gray-900"></h2>
+            <p id="message-text" class="mt-3 text-gray-600"></p>
+            <button type="button" onclick="document.getElementById('message-modal').classList.add('hidden')" class="mt-6 w-full py-3 bg-blue-700 text-white font-bold rounded-xl">Compris</button>
+        </div>
+    </div>
+
+    <div id="ney-widget-container"></div>
+    <script src="/public/assets/js/page-language.js"></script>
+    <script>
+        fetch('/jeoah-widget.html').then(r => r.text()).then(html => {
+            const container = document.getElementById('ney-widget-container');
+            if (container) {
+                container.innerHTML = html;
+                container.querySelectorAll('script').forEach(s => {
+                    const n = document.createElement('script');
+                    n.textContent = s.textContent;
+                    document.body.appendChild(n);
+                });
+            }
+        });
+    </script>
 </body>
 </html>
