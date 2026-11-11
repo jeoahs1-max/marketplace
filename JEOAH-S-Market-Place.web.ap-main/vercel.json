@@ -14,11 +14,11 @@
       "use": "@vercel/static"
     },
     {
-      "src": "styles.min.css",
+      "src": "*.js",
       "use": "@vercel/static"
     },
     {
-      "src": "firebase-config.js",
+      "src": "*.css",
       "use": "@vercel/static"
     }
   ],

@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "JEOAH-S-Market-Place.web.ap-main/api/*.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "JEOAH-S-Market-Place.web.ap-main/public/**/*",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "JEOAH-S-Market-Place.web.ap-main/*.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "JEOAH-S-Market-Place.web.ap-main/*.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "JEOAH-S-Market-Place.web.ap-main/*.css",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/$",
+      "dest": "/JEOAH-S-Market-Place.web.ap-main/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/JEOAH-S-Market-Place.web.ap-main/$1"
+    }
+  ]
+}

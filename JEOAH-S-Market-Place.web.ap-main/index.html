@@ -626,23 +626,291 @@
             </div>
         </div>
     </footer>
-    <div id="ney-widget-container"></div>
+    <div id="ney-widget-container">
+        <!-- Assistant JEOAH IA -->
+        <div id="jeoah-widget" style="position:fixed;right:20px;bottom:20px;z-index:9999;font-family:Inter,Arial,sans-serif">
+            <div id="jeoah-panel" hidden
+                style="width:min(390px,calc(100vw - 32px));height:min(540px,calc(100vh - 32px));background:#fff;border:1px solid #eadff4;border-radius:20px;box-shadow:0 18px 45px rgba(36,16,79,0.3);display:none;flex-direction:column;overflow:hidden">
+                <div style="padding:14px 18px;background:linear-gradient(135deg,#24104f,#a31266);color:#fff;display:flex;align-items:center;justify-content:space-between">
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <img src="/public/assets/logo.png" alt="JEOAH"
+                            style="width:34px;height:34px;border-radius:10px;object-fit:cover;border:1px solid rgba(255,255,255,0.3)">
+                        <div>
+                            <strong style="font-size:15px;display:block;line-height:1.2">JEOAH IA</strong>
+                            <span style="font-size:11px;color:#fce7f3;opacity:0.9">Assistant intelligent de la plateforme</span>
+                        </div>
+                    </div>
+                    <button id="jeoah-close" type="button" aria-label="Fermer l'assistant JEOAH" title="Fermer l'assistant"
+                        style="border:0;background:transparent;color:#fff;font-size:22px;cursor:pointer;padding:4px 8px;line-height:1">&times;</button>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:6px;padding:8px 14px;background:#fbf9fd;border-bottom:1px solid #f0e6f8;font-size:12px">
+                    <select id="jeoah-language" onchange="changeLanguage(this.value)"
+                        style="padding:4px 8px;border:1px solid #e0d2ef;border-radius:6px;background:#fff;font-size:12px;color:#334155;outline:none">
+                        <option value="auto">Langue du message</option>
+                        <option value="fr">🇫🇷 Français</option>
+                        <option value="ht">🇭🇹 Kreyòl Ayisyen</option>
+                        <option value="en">🇺🇸 English</option>
+                        <option value="es">🇪🇸 Español</option>
+                        <option value="zh">🇨🇳 中文</option>
+                    </select>
+                    <button id="jeoah-voice" type="button" aria-pressed="false" title="Activer la synthèse vocale"
+                        style="border:1px solid #e0d2ef;border-radius:6px;background:#fff;color:#4c1d95;padding:4px 7px;font-size:11px;font-weight:700;cursor:pointer">Voix: non</button>
+                    <span id="jeoah-role-badge"
+                        style="margin-left:auto;padding:3px 8px;background:#ede9fe;color:#6d28d9;border-radius:999px;font-weight:700;font-size:11px">Visiteur</span>
+                </div>
+                <div id="jeoah-messages"
+                    style="flex:1;padding:14px;overflow-y:auto;background:#faf8ff;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.5">
+                    <div id="jeoah-welcome"
+                        style="align-self:flex-start;max-width:85%;padding:10px 14px;border-radius:14px 14px 14px 2px;background:#fff;border:1px solid #eadff4;color:#1e293b;box-shadow:0 2px 5px rgba(0,0,0,0.03)">
+                    </div>
+                </div>
+                <form id="jeoah-form" style="display:flex;gap:8px;padding:12px;background:#fff;border-top:1px solid #eadff4">
+                    <input id="jeoah-input" required placeholder="Posez votre question..."
+                        style="min-width:0;flex:1;padding:10px 12px;border:1px solid #d8b4fe;border-radius:10px;outline:none;font-size:13px">
+                    <button id="jeoah-mic" type="button" aria-label="Parler à JEOAH" title="Parler à JEOAH"
+                        style="border:1px solid #d8b4fe;border-radius:10px;padding:10px 12px;background:#fff;color:#7c3aed;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <button type="submit"
+                        style="border:0;border-radius:10px;padding:10px 16px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+            <button id="jeoah-open" aria-label="Ouvrir l'assistant JEOAH"
+                style="width:58px;height:58px;border:0;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#c026d3);color:#fff;font-size:22px;box-shadow:0 10px 25px rgba(124,58,237,0.45);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.2s">
+                ✦
+            </button>
+        </div>
+    </div>
     <script>
         document.getElementById('menu-button').addEventListener('click', () => document.getElementById('site-links').classList.toggle('open'));
-        fetch('/jeoah-widget.html?v=' + Date.now()).then(r => r.text()).then(html => {
-            const container = document.getElementById('ney-widget-container');
-            container.innerHTML = html;
-            container.querySelectorAll('script').forEach(s => {
-                const n = document.createElement('script');
-                n.textContent = s.textContent;
-                document.body.appendChild(n);
-                s.remove();
-            });
-            const cur = localStorage.getItem('jeoahs-lang') || 'fr';
-            if (typeof window.changeLanguage === 'function') {
-                window.changeLanguage(cur);
+
+        // Logique Assistant JEOAH
+        (function () {
+            const panel = document.getElementById('jeoah-panel');
+            const openBtn = document.getElementById('jeoah-open');
+            const closeBtn = document.getElementById('jeoah-close');
+            const form = document.getElementById('jeoah-form');
+            const input = document.getElementById('jeoah-input');
+            const messages = document.getElementById('jeoah-messages');
+            const voiceButton = document.getElementById('jeoah-voice');
+            const micButton = document.getElementById('jeoah-mic');
+            const roleBadge = document.getElementById('jeoah-role-badge');
+            const memory = [];
+            let voiceEnabled = false;
+            let recognition = null;
+
+            const authUser = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+            const userPlan = authUser?.selectedPlan || authUser?.plan || 'free';
+            if (authUser && authUser.role) {
+                roleBadge.textContent = authUser.role.toUpperCase();
             }
-        });
+
+            function togglePanel(show) {
+                if (show) {
+                    panel.removeAttribute('hidden');
+                    panel.style.display = 'flex';
+                    openBtn.style.display = 'none';
+                    input.focus();
+                } else {
+                    panel.setAttribute('hidden', '');
+                    panel.style.display = 'none';
+                    openBtn.style.display = 'flex';
+                    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                }
+            }
+
+            if (openBtn) openBtn.addEventListener('click', () => togglePanel(true));
+            if (closeBtn) closeBtn.addEventListener('click', event => {
+                event.preventDefault();
+                event.stopPropagation();
+                togglePanel(false);
+            });
+
+            if (voiceButton) {
+                voiceButton.addEventListener('click', () => {
+                    voiceEnabled = !voiceEnabled;
+                    voiceButton.setAttribute('aria-pressed', String(voiceEnabled));
+                    voiceButton.textContent = voiceEnabled ? 'Voix: oui' : 'Voix: non';
+                    if (!voiceEnabled && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+                });
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition && micButton) {
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = true;
+                recognition.maxAlternatives = 1;
+                recognition.onstart = () => {
+                    micButton.style.background = '#fce7f3';
+                    micButton.style.color = '#be185d';
+                    micButton.setAttribute('aria-pressed', 'true');
+                };
+                recognition.onresult = event => {
+                    const transcript = Array.from(event.results).map(result => result[0].transcript).join('');
+                    input.value = transcript;
+                };
+                recognition.onerror = () => {
+                    appendMessage('JEOAH', 'Je n’ai pas pu entendre votre demande. Vérifiez l’autorisation du microphone et réessayez.', false);
+                };
+                recognition.onend = () => {
+                    micButton.style.background = '#fff';
+                    micButton.style.color = '#7c3aed';
+                    micButton.setAttribute('aria-pressed', 'false');
+                };
+                micButton.addEventListener('click', () => {
+                    const lang = document.getElementById('jeoah-language')?.value || 'fr';
+                    recognition.lang = lang === 'en' ? 'en-US' : (lang === 'zh' ? 'zh-CN' : (lang === 'es' ? 'es-ES' : 'fr-FR'));
+                    try { recognition.start(); } catch (_) { }
+                });
+            } else if (micButton) {
+                micButton.disabled = true;
+                micButton.title = 'La saisie vocale n’est pas disponible dans ce navigateur';
+                micButton.style.opacity = '0.45';
+            }
+
+            function appendMessage(sender, text, isUser) {
+                const msg = document.createElement('div');
+                msg.style.maxWidth = '85%';
+                msg.style.padding = '10px 14px';
+                msg.style.borderRadius = isUser ? '14px 14px 2px 14px' : '14px 14px 14px 2px';
+                msg.style.background = isUser ? 'linear-gradient(135deg,#7c3aed,#9333ea)' : '#fff';
+                msg.style.color = isUser ? '#fff' : '#1e293b';
+                msg.style.border = isUser ? 'none' : '1px solid #eadff4';
+                msg.style.alignSelf = isUser ? 'flex-end' : 'flex-start';
+                msg.style.boxShadow = '0 2px 6px rgba(0,0,0,0.04)';
+                msg.innerHTML = `<strong>${sender} :</strong> ${text}`;
+                messages.appendChild(msg);
+                messages.scrollTop = messages.scrollHeight;
+            }
+
+            function speak(text, language) {
+                if (!voiceEnabled || !('speechSynthesis' in window)) return;
+                const plainText = document.createElement('div');
+                plainText.innerHTML = text;
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(plainText.textContent || '');
+                utterance.lang = language === 'en' ? 'en-US' : (language === 'zh' ? 'zh-CN' : (language === 'es' ? 'es-ES' : 'fr-FR'));
+                utterance.rate = 0.96;
+                utterance.pitch = 1;
+                window.speechSynthesis.speak(utterance);
+            }
+
+            function getSmartFallback(q, lang) {
+                const text = q.toLowerCase();
+                const reply = {
+                    fr: {
+                        account: 'Pour vous inscrire ou vous connecter, ouvrez la page Connexion / Inscription.',
+                        product: 'Pour ajouter un produit affilié, ouvrez votre espace affilié puis importez votre lien partenaire.',
+                        storefront: 'Chaque membre dispose d’une vitrine dédiée. Vous pouvez consulter la vitrine générale ou votre espace personnel.',
+                        plans: 'Les formules disponibles sont présentées sur la page Plans JEOAH’S.',
+                        greeting: 'Bonjour ! Je peux vous guider pour votre compte, votre vitrine, vos produits ou les plans.',
+                        other: 'Je peux vous aider avec votre compte, votre vitrine, vos produits et les plans JEOAH’S.'
+                    },
+                    ht: {
+                        account: 'Pou kreye yon kont oswa konekte, ouvri paj Koneksyon / Enskripsyon an.',
+                        product: 'Pou ajoute yon pwodwi afilye, ouvri espas afilye ou epi enpòte lyen patnè ou.',
+                        storefront: 'Chak manm gen yon vitrin pa li. Ou ka wè vitrin jeneral la oswa espas pèsonèl ou.',
+                        plans: 'Plan ki disponib yo sou paj Plan JEOAH’S la.',
+                        greeting: 'Bonjou! Mwen ka gide ou pou kont ou, vitrin ou, pwodwi ou oswa plan yo.',
+                        other: 'Mwen ka ede ou ak kont ou, vitrin ou, pwodwi ou ak plan JEOAH’S yo.'
+                    },
+                    en: {
+                        account: 'To create an account or sign in, open the Sign in / Register page.',
+                        product: 'To add an affiliate product, open your affiliate space and import your partner link.',
+                        storefront: 'Each member has a dedicated storefront. You can visit the main storefront or your personal space.',
+                        plans: 'Available options are listed on the JEOAH’S Plans page.',
+                        greeting: 'Hello! I can guide you with your account, storefront, products, or plans.',
+                        other: 'I can help with your account, storefront, products, and JEOAH’S plans.'
+                    },
+                    es: {
+                        account: 'Para registrarse o iniciar sesión, abra la página Conexión / Registro.',
+                        product: 'Para agregar un producto afiliado, abra su espacio de afiliados e importe su enlace de socio.',
+                        storefront: 'Cada miembro tiene un escaparate dedicado. Puede consultar el escaparate general o su espacio personal.',
+                        plans: 'Las opciones disponibles están en la página de Planes JEOAH’S.',
+                        greeting: '¡Hola! Puedo orientarle sobre su cuenta, su escaparate, sus productos o los planes.',
+                        other: 'Puedo ayudarle con su cuenta, su escaparate, sus productos y los planes JEOAH’S.'
+                    },
+                    zh: {
+                        account: '注册或登录请打开登录/注册页面。',
+                        product: '如需添加联盟商品，请进入联盟中心并导入合作链接。',
+                        storefront: '每位会员均拥有专属橱窗，您可查看全站展厅或个人中心。',
+                        plans: '可选方案详情请查看 JEOAH’S 套餐方案页面。',
+                        greeting: '您好！我可以为您在账户设置、店铺橱窗、产品发布或套餐方案方面提供指引。',
+                        other: '我可以协助您了解账户、店铺橱窗、产品以及 JEOAH’S 套餐方案。'
+                    }
+                }[lang] || null;
+                if (!reply) return 'I am JEOAH. Please choose a language above or ask again in your preferred language.';
+                let answer = reply.other;
+                if (text.includes('inscr') || text.includes('connect') || text.includes('compte') || text.includes('login') || text.includes('sign') || text.includes('antre')) answer = reply.account;
+                else if (text.includes('produit') || text.includes('ajouter') || text.includes('import') || text.includes('product') || text.includes('pwodwi')) answer = reply.product;
+                else if (text.includes('vitrine') || text.includes('boutique') || text.includes('store')) answer = reply.storefront;
+                else if (text.includes('plan') || text.includes('abonnement') || text.includes('tarif') || text.includes('pri')) answer = reply.plans;
+                else if (text.includes('bonjour') || text.includes('salut') || text.includes('hello') || text.includes('bonjou')) answer = reply.greeting;
+                return answer;
+            }
+
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const prompt = input.value.trim();
+                    if (!prompt) return;
+
+                    const curLang = document.getElementById('jeoah-language')?.value || 'fr';
+                    const youLabels = { fr: 'Vous', ht: 'Ou', en: 'You', es: 'Tú', zh: '您' };
+                    appendMessage(youLabels[curLang] || 'Vous', prompt, true);
+                    memory.push({ role: 'user', content: prompt });
+                    input.value = '';
+                    const currentRole = authUser?.role || 'visiteur';
+
+                    const thinkingLabels = { fr: 'JEOAH réfléchit...', ht: 'JEOAH ap reflechi...', en: 'JEOAH is thinking...', es: 'JEOAH está pensando...', zh: 'JEOAH 正在思考...' };
+                    const loadingDiv = document.createElement('div');
+                    loadingDiv.style.alignSelf = 'flex-start';
+                    loadingDiv.style.padding = '8px 12px';
+                    loadingDiv.style.fontSize = '12px';
+                    loadingDiv.style.color = '#7c3aed';
+                    loadingDiv.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-1"></i> ${thinkingLabels[curLang] || thinkingLabels.fr}`;
+                    messages.appendChild(loadingDiv);
+                    messages.scrollTop = messages.scrollHeight;
+
+                    try {
+                        const res = await fetch('/api/jeoah.js', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                prompt,
+                                language: curLang,
+                                role: currentRole,
+                                plan: userPlan,
+                                memory: memory.slice(0, -1).slice(-8)
+                            })
+                        });
+
+                        const data = await res.json().catch(() => ({}));
+                        loadingDiv.remove();
+
+                        if (res.ok && data.reply) {
+                            appendMessage('JEOAH', data.reply, false);
+                            speak(data.reply, curLang);
+                            memory.push({ role: 'assistant', content: data.reply });
+                        } else {
+                            const smartReply = getSmartFallback(prompt, curLang);
+                            appendMessage('JEOAH', smartReply, false);
+                            speak(smartReply, curLang);
+                            memory.push({ role: 'assistant', content: smartReply });
+                        }
+                    } catch (err) {
+                        loadingDiv.remove();
+                        const smartReply = getSmartFallback(prompt, curLang);
+                        appendMessage('JEOAH', smartReply, false);
+                        speak(smartReply, curLang);
+                        memory.push({ role: 'assistant', content: smartReply });
+                    }
+                });
+            }
+        })();
 
         // Gestion PWA
         let deferredPrompt;
