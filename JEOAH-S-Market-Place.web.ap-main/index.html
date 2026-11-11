@@ -630,18 +630,20 @@
     <script>
         document.getElementById('menu-button').addEventListener('click', () => document.getElementById('site-links').classList.toggle('open'));
         fetch('/jeoah-widget.html').then(r => r.text()).then(html => {
-            document.getElementById('ney-widget-container').innerHTML = html;
-            document.getElementById('ney-widget-container').querySelectorAll('script').forEach(s => {
+            const container = document.getElementById('ney-widget-container');
+            container.innerHTML = html;
+            container.querySelectorAll('script').forEach(s => {
                 const n = document.createElement('script');
                 n.textContent = s.textContent;
                 document.body.appendChild(n);
+                s.remove();
             });
-            setTimeout(() => {
-                const cur = localStorage.getItem('jeoahs-lang') || 'fr';
-                if (typeof window.applyJeoahLanguage === 'function') {
-                    window.applyJeoahLanguage(cur);
-                }
-            }, 100);
+            const cur = localStorage.getItem('jeoahs-lang') || 'fr';
+            if (typeof window.applyJeoahLanguage === 'function') {
+                window.applyJeoahLanguage(cur);
+            }
+            const jSel = document.getElementById('jeoah-language');
+            if (jSel) jSel.value = cur;
         });
 
         // Gestion PWA
@@ -786,11 +788,48 @@
         };
 
         function changeLanguage(lang) {
+            if (!lang || !dict[lang]) lang = 'fr';
             localStorage.setItem('jeoahs-lang', lang);
-            window.dispatchEvent(new CustomEvent('jeoahs-lang-changed', { detail: { lang } }));
+
+            const sSelect = document.getElementById('site-lang-select');
+            if (sSelect && sSelect.value !== lang) {
+                sSelect.value = lang;
+            }
+
+            const jSelect = document.getElementById('jeoah-language');
+            if (jSelect && jSelect.value !== lang) {
+                jSelect.value = lang;
+            }
+
+            const jWelcome = document.getElementById('jeoah-welcome');
+            const greetings = {
+                fr: "Bonjour ! Je suis votre copilote JEOAH. Comment puis-je vous aider aujourd'hui ?",
+                ht: "Bonjou! Mwen se kopilot JEOAH ou. Kijan mwen ka ede ou?",
+                en: "Hello! I am your JEOAH copilot. How can I help you today?",
+                es: "¡Hola! Soy tu copiloto JEOAH. ¿Cómo puedo ayudarte hoy?",
+                zh: "您好！我是您的智能副驾 JEOAH。今天有什么我可以帮您的？"
+            };
+            if (jWelcome && greetings[lang]) {
+                jWelcome.innerHTML = `<strong>JEOAH :</strong> ${greetings[lang]}`;
+            }
+
+            const jInput = document.getElementById('jeoah-input');
+            const placeholders = {
+                fr: "Posez votre question...",
+                ht: "Poze kesyon ou...",
+                en: "Ask your question...",
+                es: "Haz tu pregunta...",
+                zh: "请输入您的问题..."
+            };
+            if (jInput && placeholders[lang]) {
+                jInput.placeholder = placeholders[lang];
+            }
+
             if (typeof window.applyJeoahLanguage === 'function') {
                 window.applyJeoahLanguage(lang);
             }
+
+            window.dispatchEvent(new CustomEvent('jeoahs-lang-changed', { detail: { lang } }));
             const d = dict[lang] || dict.fr;
             const pageCopy = homeCopy[lang] || homeCopy.fr;
             document.documentElement.lang = dict[lang] ? lang : 'fr';
@@ -832,10 +871,14 @@
             if (community) { const heading = community.querySelector('.eyebrow'); const title = community.querySelector('h2'); const text = community.querySelector(':scope > .wrap > div > p'); const box = community.querySelector('.community-box'); if (heading) heading.textContent = copy.community[0]; if (title) title.textContent = copy.community[1]; if (text) text.textContent = copy.community[2]; if (box) { box.querySelector('h3').textContent = copy.community[3]; box.querySelector('p').textContent = copy.community[4]; box.querySelector('.notice').textContent = copy.community[5]; } }
         }
 
+        window.changeLanguage = changeLanguage;
+        window.setSiteLanguage = changeLanguage;
+        window.setLang = changeLanguage;
+
         const savedLang = localStorage.getItem('jeoahs-lang') || 'fr';
         const langSelect = document.getElementById('site-lang-select');
         if (langSelect) langSelect.value = savedLang;
-        if (savedLang !== 'fr') changeLanguage(savedLang);
+        changeLanguage(savedLang);
 
         window.addEventListener('jeoahs-lang-changed', (e) => {
             if (e && e.detail && e.detail.lang) {
@@ -843,8 +886,13 @@
                 const select = document.getElementById('site-lang-select');
                 if (select && select.value !== lang) {
                     select.value = lang;
-                    changeLanguage(lang);
                 }
+            }
+        });
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'jeoahs-lang' && e.newValue) {
+                changeLanguage(e.newValue);
             }
         });
     </script>

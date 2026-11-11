@@ -198,11 +198,22 @@
     document.documentElement.lang = lang;
 
     // 1. Synchroniser tous les sélecteurs de langue présents
-    document.querySelectorAll('#site-lang-select, #page-language-select').forEach(sel => {
+    document.querySelectorAll('#site-lang-select, #page-language-select, #jeoah-language').forEach(sel => {
       if (sel.value !== lang) sel.value = lang;
     });
 
     // 2. Synchroniser le widget JEOAH (IA)
+    const jWel = document.getElementById('jeoah-welcome');
+    const widgetGreetings = {
+      fr: "Bonjour ! Je suis votre copilote JEOAH. Comment puis-je vous aider aujourd'hui ?",
+      ht: "Bonjou! Mwen se kopilot JEOAH ou. Kijan mwen ka ede ou?",
+      en: "Hello! I am your JEOAH copilot. How can I help you today?",
+      es: "¡Hola! Soy tu copiloto JEOAH. ¿Cómo puedo ayudarte hoy?",
+      zh: "您好！我是您的智能副驾 JEOAH。今天有什么我可以帮您的？"
+    };
+    if (jWel && widgetGreetings[lang]) {
+      jWel.innerHTML = `<strong>JEOAH :</strong> ${widgetGreetings[lang]}`;
+    }
     if (typeof window.applyJeoahLanguage === 'function') {
       window.applyJeoahLanguage(lang);
     }

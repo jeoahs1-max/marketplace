@@ -122,11 +122,20 @@
     function applyLanguage(language) {
       const selectedLanguage = (!language || language === 'auto') ? (localStorage.getItem('jeoahs-lang') || 'fr') : language;
       const settings = languageConfig[selectedLanguage] || languageConfig.fr;
-      if (langSelect) langSelect.value = selectedLanguage;
+      
+      const currentLangSelect = document.getElementById('jeoah-language');
+      if (currentLangSelect) currentLangSelect.value = selectedLanguage;
+      
       localStorage.setItem('jeoahs-lang', selectedLanguage);
-      if (welcome) welcome.innerHTML = `<strong>JEOAH :</strong> ${settings.greeting}`;
-      if (input) input.placeholder = settings.placeholder;
-      if (voiceButton) voiceButton.textContent = voiceEnabled ? settings.voiceOn : settings.voiceOff;
+      
+      const currentWelcome = document.getElementById('jeoah-welcome');
+      if (currentWelcome) currentWelcome.innerHTML = `<strong>JEOAH :</strong> ${settings.greeting}`;
+      
+      const currentInput = document.getElementById('jeoah-input');
+      if (currentInput) currentInput.placeholder = settings.placeholder;
+      
+      const currentVoice = document.getElementById('jeoah-voice');
+      if (currentVoice) currentVoice.textContent = voiceEnabled ? settings.voiceOn : settings.voiceOff;
     }
 
     // Expose globalement pour synchronisation immédiate avec le reste du site
@@ -143,23 +152,38 @@
     window.addEventListener('storage', function(e) {
       if (e.key === 'jeoahs-lang' && e.newValue) {
         applyLanguage(e.newValue);
+        const siteSelect = document.getElementById('site-lang-select');
+        if (siteSelect) siteSelect.value = e.newValue;
+        if (typeof window.setSiteLanguage === 'function') {
+          window.setSiteLanguage(e.newValue);
+        } else if (typeof window.changeLanguage === 'function') {
+          window.changeLanguage(e.newValue);
+        }
       }
     });
 
     const initialLanguage = localStorage.getItem('jeoahs-lang') || 'fr';
     applyLanguage(initialLanguage);
 
-    langSelect.addEventListener('change', () => {
-      const newLang = langSelect.value === 'auto' ? (localStorage.getItem('jeoahs-lang') || 'fr') : langSelect.value;
-      applyLanguage(newLang);
-      localStorage.setItem('jeoahs-lang', newLang);
-      window.dispatchEvent(new CustomEvent('jeoahs-lang-changed', { detail: { lang: newLang } }));
-      if (typeof window.changeLanguage === 'function') {
-        window.changeLanguage(newLang);
-      }
-      const siteSelect = document.getElementById('site-lang-select');
-      if (siteSelect) siteSelect.value = newLang;
-    });
+    const jLangSelect = document.getElementById('jeoah-language');
+    if (jLangSelect) {
+      jLangSelect.addEventListener('change', () => {
+        const newLang = (!jLangSelect.value || jLangSelect.value === 'auto') ? (localStorage.getItem('jeoahs-lang') || 'fr') : jLangSelect.value;
+        applyLanguage(newLang);
+        localStorage.setItem('jeoahs-lang', newLang);
+
+        const siteSelect = document.getElementById('site-lang-select');
+        if (siteSelect) siteSelect.value = newLang;
+
+        if (typeof window.setSiteLanguage === 'function') {
+          window.setSiteLanguage(newLang);
+        } else if (typeof window.changeLanguage === 'function') {
+          window.changeLanguage(newLang);
+        }
+
+        window.dispatchEvent(new CustomEvent('jeoahs-lang-changed', { detail: { lang: newLang } }));
+      });
+    }
 
     voiceButton.addEventListener('click', () => {
       voiceEnabled = !voiceEnabled;
