@@ -17,23 +17,19 @@
         style="border:0;background:transparent;color:#fff;font-size:22px;cursor:pointer;padding:4px 8px;line-height:1">&times;</button>
     </div>
 
-    <!-- Barre Langue & Statut -->
+    <!-- Barre Statut & Contrôles -->
     <div
-      style="display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:6px;padding:8px 14px;background:#fbf9fd;border-bottom:1px solid #f0e6f8;font-size:12px">
-      <select id="jeoah-language" onchange="if(window.handleJeoahLanguageChange)window.handleJeoahLanguageChange(this.value);"
-        style="padding:4px 8px;border:1px solid #e0d2ef;border-radius:6px;background:#fff;font-size:12px;color:#334155;outline:none">
-        <option value="auto">Langue du message</option>
-        <option value="fr">🇫🇷 Français</option>
-        <option value="ht">🇭🇹 Kreyòl Ayisyen</option>
-        <option value="en">🇺🇸 English</option>
-        <option value="es">🇪🇸 Español</option>
-        <option value="zh">🇨🇳 中文</option>
-      </select>
+      style="display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:8px;padding:8px 14px;background:#fbf9fd;border-bottom:1px solid #f0e6f8;font-size:12px">
+      <input type="hidden" id="jeoah-language" value="fr">
+      <div style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:#059669">
+        <span style="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block"></span>
+        <span id="jeoah-online-label">En ligne</span>
+      </div>
       <button id="jeoah-voice" type="button" aria-pressed="false" title="Activer la synthèse vocale"
-        style="border:1px solid #e0d2ef;border-radius:6px;background:#fff;color:#4c1d95;padding:4px 7px;font-size:11px;font-weight:700;cursor:pointer">Voix:
+        style="margin-left:auto;border:1px solid #e0d2ef;border-radius:6px;background:#fff;color:#4c1d95;padding:4px 7px;font-size:11px;font-weight:700;cursor:pointer">Voix:
         non</button>
       <span id="jeoah-role-badge"
-        style="margin-left:auto;padding:3px 8px;background:#ede9fe;color:#6d28d9;border-radius:999px;font-weight:700;font-size:11px">Visiteur</span>
+        style="display:none;padding:3px 8px;background:#ede9fe;color:#6d28d9;border-radius:999px;font-weight:700;font-size:11px"></span>
     </div>
 
     <!-- Zone de Messages -->
@@ -84,18 +80,21 @@
     let lastFallbackReply = '';
     let recognition = null;
     const languageConfig = {
-      auto: { greeting: 'Hello! I am JEOAH. I reply in the language of your message.', placeholder: 'Write in any language...', voiceOn: 'Voice: on', voiceOff: 'Voice: off', thinking: 'JEOAH is thinking...', unavailable: 'The service is temporarily unavailable.', you: 'You', locale: navigator.language || 'en-US' },
-      fr: { greeting: "Bonjour ! Je suis votre copilote JEOAH. Comment puis-je vous aider aujourd'hui ?", placeholder: 'Posez votre question...', voiceOn: 'Voix: oui', voiceOff: 'Voix: non', thinking: 'JEOAH réfléchit...', unavailable: 'Le service est temporairement indisponible.', you: 'Vous', locale: 'fr-FR' },
-      ht: { greeting: 'Bonjou! Mwen se kopilot JEOAH ou. Kijan mwen ka ede ou?', placeholder: 'Poze kesyon ou...', voiceOn: 'Vwa: wi', voiceOff: 'Vwa: non', thinking: 'JEOAH ap reflechi...', unavailable: 'Sèvis la pa disponib pou kounye a.', you: 'Ou', locale: 'fr-FR' },
-      en: { greeting: 'Hello! I am your JEOAH copilot. How can I help you today?', placeholder: 'Ask your question...', voiceOn: 'Voice: on', voiceOff: 'Voice: off', thinking: 'JEOAH is thinking...', unavailable: 'The service is temporarily unavailable.', you: 'You', locale: 'en-US' },
-      es: { greeting: '¡Hola! Soy tu copiloto JEOAH. ¿Cómo puedo ayudarte hoy?', placeholder: 'Haz tu pregunta...', voiceOn: 'Voz: sí', voiceOff: 'Voz: no', thinking: 'JEOAH está pensando...', unavailable: 'El servicio no está disponible temporalmente.', you: 'Tú', locale: 'es-ES' },
-      zh: { greeting: '您好！我是您的智能副驾 JEOAH。今天有什么我可以帮您的？', placeholder: '请输入您的问题...', voiceOn: '语音：开', voiceOff: '语音：关', thinking: 'JEOAH 正在思考...', unavailable: '服务暂时不可用。', you: '您', locale: 'zh-CN' }
+      auto: { greeting: 'Hello! I am JEOAH. I reply in the language of your message.', placeholder: 'Write in any language...', voiceOn: 'Voice: on', voiceOff: 'Voice: off', thinking: 'JEOAH is thinking...', unavailable: 'The service is temporarily unavailable.', you: 'You', locale: navigator.language || 'en-US', online: 'Online' },
+      fr: { greeting: "Bonjour ! Je suis votre copilote JEOAH. Comment puis-je vous aider aujourd'hui ?", placeholder: 'Posez votre question...', voiceOn: 'Voix: oui', voiceOff: 'Voix: non', thinking: 'JEOAH réfléchit...', unavailable: 'Le service est temporairement indisponible.', you: 'Vous', locale: 'fr-FR', online: 'En ligne' },
+      ht: { greeting: 'Bonjou! Mwen se kopilot JEOAH ou. Kijan mwen ka ede ou?', placeholder: 'Poze kesyon ou...', voiceOn: 'Vwa: wi', voiceOff: 'Vwa: non', thinking: 'JEOAH ap reflechi...', unavailable: 'Sèvis la pa disponib pou kounye a.', you: 'Ou', locale: 'fr-FR', online: 'An liy' },
+      en: { greeting: 'Hello! I am your JEOAH copilot. How can I help you today?', placeholder: 'Ask your question...', voiceOn: 'Voice: on', voiceOff: 'Voice: off', thinking: 'JEOAH is thinking...', unavailable: 'The service is temporarily unavailable.', you: 'You', locale: 'en-US', online: 'Online' },
+      es: { greeting: '¡Hola! Soy tu copiloto JEOAH. ¿Cómo puedo ayudarte hoy?', placeholder: 'Haz tu pregunta...', voiceOn: 'Voz: sí', voiceOff: 'Voz: no', thinking: 'JEOAH está pensando...', unavailable: 'El servicio no está disponible temporalmente.', you: 'Tú', locale: 'es-ES', online: 'En línea' },
+      zh: { greeting: '您好！我是您的智能副驾 JEOAH。今天有什么我可以帮您的？', placeholder: '请输入您的问题...', voiceOn: '语音：开', voiceOff: '语音：关', thinking: 'JEOAH 正在思考...', unavailable: '服务暂时不可用。', you: '您', locale: 'zh-CN', online: '在线' }
     };
 
     const authUser = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
     const userPlan = authUser?.selectedPlan || authUser?.plan || 'free';
     if (authUser && authUser.role) {
       roleBadge.textContent = authUser.role.toUpperCase();
+      roleBadge.style.display = 'inline-block';
+    } else {
+      roleBadge.style.display = 'none';
     }
 
     function togglePanel(show) {
@@ -128,6 +127,9 @@
       
       localStorage.setItem('jeoahs-lang', selectedLanguage);
       
+      const currentOnline = document.getElementById('jeoah-online-label');
+      if (currentOnline && settings.online) currentOnline.textContent = settings.online;
+
       const currentWelcome = document.getElementById('jeoah-welcome');
       if (currentWelcome) currentWelcome.innerHTML = `<strong>JEOAH :</strong> ${settings.greeting}`;
       

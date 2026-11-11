@@ -653,20 +653,16 @@
                     <button id="jeoah-close" type="button" aria-label="Fermer l'assistant JEOAH" title="Fermer l'assistant"
                         style="border:0;background:transparent;color:#fff;font-size:22px;cursor:pointer;padding:4px 8px;line-height:1">&times;</button>
                 </div>
-                <div style="display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:6px;padding:8px 14px;background:#fbf9fd;border-bottom:1px solid #f0e6f8;font-size:12px">
-                    <select id="jeoah-language" onchange="changeLanguage(this.value)"
-                        style="padding:4px 8px;border:1px solid #e0d2ef;border-radius:6px;background:#fff;font-size:12px;color:#334155;outline:none">
-                        <option value="auto">Langue du message</option>
-                        <option value="fr">🇫🇷 Français</option>
-                        <option value="ht">🇭🇹 Kreyòl Ayisyen</option>
-                        <option value="en">🇺🇸 English</option>
-                        <option value="es">🇪🇸 Español</option>
-                        <option value="zh">🇨🇳 中文</option>
-                    </select>
+                <div style="display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:8px;padding:8px 14px;background:#fbf9fd;border-bottom:1px solid #f0e6f8;font-size:12px">
+                    <input type="hidden" id="jeoah-language" value="fr">
+                    <div style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:#059669">
+                        <span style="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block"></span>
+                        <span data-home-copy="aiOnline">En ligne</span>
+                    </div>
                     <button id="jeoah-voice" type="button" aria-pressed="false" title="Activer la synthèse vocale"
-                        style="border:1px solid #e0d2ef;border-radius:6px;background:#fff;color:#4c1d95;padding:4px 7px;font-size:11px;font-weight:700;cursor:pointer">Voix: non</button>
+                        style="margin-left:auto;border:1px solid #e0d2ef;border-radius:6px;background:#fff;color:#4c1d95;padding:4px 7px;font-size:11px;font-weight:700;cursor:pointer">Voix: non</button>
                     <span id="jeoah-role-badge"
-                        style="margin-left:auto;padding:3px 8px;background:#ede9fe;color:#6d28d9;border-radius:999px;font-weight:700;font-size:11px">Visiteur</span>
+                        style="display:none;padding:3px 8px;background:#ede9fe;color:#6d28d9;border-radius:999px;font-weight:700;font-size:11px"></span>
                 </div>
                 <div id="jeoah-messages"
                     style="flex:1;padding:14px;overflow-y:auto;background:#faf8ff;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.5">
@@ -730,6 +726,9 @@
             const userPlan = authUser?.selectedPlan || authUser?.plan || 'free';
             if (authUser && authUser.role) {
                 roleBadge.textContent = authUser.role.toUpperCase();
+                roleBadge.style.display = 'inline-block';
+            } else {
+                roleBadge.style.display = 'none';
             }
 
             function togglePanel(show) {
@@ -1008,7 +1007,7 @@
 
         const homeCopy = {
             fr: {
-                install: "Installer", menuLabel: "Ouvrir le menu",
+                install: "Installer", menuLabel: "Ouvrir le menu", aiOnline: "En ligne",
                 heroEyebrow: "Une communauté, plusieurs possibilités",
                 heroExplore: "Découvrir la vitrine", heroStart: "Commencer avec un compte",
                 heroNote: "La vitrine est accessible sans inscription. Les paiements réels sont encore en préparation.",
@@ -1023,7 +1022,7 @@
                 footerPayments: "Paiements réels en préparation."
             },
             ht: {
-                install: "Enstale", menuLabel: "Louvri meni an",
+                install: "Enstale", menuLabel: "Louvri meni an", aiOnline: "An liy",
                 heroEyebrow: "Yon kominote, plizyè posiblite",
                 heroExplore: "Dekouvri vitrin nan", heroStart: "Kòmanse ak yon kont",
                 heroNote: "Ou ka vizite vitrin nan san ou pa enskri. Peman reyèl yo poko disponib.",
@@ -1038,7 +1037,7 @@
                 footerPayments: "Peman reyèl yo an preparasyon."
             },
             en: {
-                install: "Install", menuLabel: "Open menu",
+                install: "Install", menuLabel: "Open menu", aiOnline: "Online",
                 heroEyebrow: "One community, many possibilities",
                 heroExplore: "Explore the showcase", heroStart: "Get started with an account",
                 heroNote: "Browse the showcase without signing up. Real payments are still in preparation.",
@@ -1053,7 +1052,7 @@
                 footerPayments: "Real payments are in preparation."
             },
             es: {
-                install: "Instalar", menuLabel: "Abrir el menú",
+                install: "Instalar", menuLabel: "Abrir el menú", aiOnline: "En línea",
                 heroEyebrow: "Una comunidad, muchas posibilidades",
                 heroExplore: "Descubrir el escaparate", heroStart: "Empezar con una cuenta",
                 heroNote: "Puedes explorar el escaparate sin registrarte. Los pagos reales aún están en preparación.",
@@ -1068,7 +1067,7 @@
                 footerPayments: "Los pagos reales están en preparación."
             },
             zh: {
-                install: "安装", menuLabel: "打开菜单",
+                install: "安装", menuLabel: "打开菜单", aiOnline: "在线",
                 heroEyebrow: "一个社区，多种可能",
                 heroExplore: "浏览展厅", heroStart: "创建账户并开始",
                 heroNote: "无需注册即可浏览展厅。真实支付功能仍在准备中。",
