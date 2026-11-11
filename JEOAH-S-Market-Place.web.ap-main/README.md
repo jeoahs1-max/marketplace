@@ -14,6 +14,8 @@ Pour célébrer notre lancement, les **25 premiers utilisateurs inscrits** (tous
 2.  **Vendeur** : Met en vente ses produits. Peut choisir un plan d'abonnement pour l'automatisation par IA ou utiliser le plan gratuit en gérant sa propre promotion.
 3.  **Affilié** : Promeut les produits via des liens uniques pour gagner des commissions.
 
+Un plan payant actif publie les produits des vendeurs et des affiliés sur la vitrine de la marketplace pendant 30 jours après le paiement confirmé. À l'expiration, les produits sont retirés de la vitrine jusqu'au renouvellement.
+
 ### Programme de Parrainage
 Chaque utilisateur dispose d'un lien de parrainage. Partagez-le pour recevoir des commissions sur les abonnements souscrits par vos filleuls. Ces commissions sont cumulables et retirables.
 

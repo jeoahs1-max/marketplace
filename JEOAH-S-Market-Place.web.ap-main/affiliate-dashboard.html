@@ -1,11 +1,701 @@
+<!-- 
+     - Tableau de Bord Principal de l'Affilié (avec logique NEY Premium)
+    
+    Affiche les métriques clés et le générateur de liens, dont l'accès est conditionnel au statut d'abonnement.
+-->
 <!DOCTYPE html>
-<html>
-<head>
-    <title>Test</title>
-</head>
-<body>
-    <h1>Bonjour le monde!</h1>
-    <p>Si vous voyez cette page, le déploiement fonctionne.</p>
+<html lang="fr">
 
-    <script src="/public/jeoah-loader.js" defer></script></body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord Affilié</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth, userId;
+        const DEFAULT_PROFILE = {
+            name: 'Utilisateur',
+            nickname: 'MonPseudoAffilié',
+            profilePictureUrl: 'https://placehold.co/100x100/1D4ED8/ffffff?text=A'
+        };
+        let affiliateData = { ...DEFAULT_PROFILE };
+        let userSubscriptionStatus = { isPremium: false };
+
+        function isInternalAdmin() {
+            const account = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+            return Boolean(account?.internalAdmin && (account.roles || []).includes('admin'));
+        }
+
+        function hasActiveSubscription() {
+            if (isInternalAdmin()) return true;
+            const saved = JSON.parse(localStorage.getItem('jeoahs_affiliate_subscription') || 'null');
+            if (!saved) return true;
+            if (saved.status === 'inactive' || saved.status === 'expired') return false;
+            return !saved.expiresAt || new Date(saved.expiresAt).getTime() > Date.now();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initFirebase();
+            setTimeout(() => revealDashboard(), 7000);
+        });
+
+        function revealDashboard() {
+            document.getElementById('loading-overlay')?.classList.add('hidden');
+            document.getElementById('dashboard-container')?.classList.remove('hidden');
+            if (!userId) updateUI(affiliateData);
+        }
+
+        async function initFirebase() {
+            document.getElementById('loading-overlay').classList.remove('hidden');
+
+            if (!localStorage.getItem('jeoahs_auth_user')) {
+                window.location.href = '/public/auth.html';
+                return;
+            }
+
+            if (Object.keys(firebaseConfig).length === 0) {
+                userSubscriptionStatus.isPremium = hasActiveSubscription();
+                revealDashboard();
+                updateUI(DEFAULT_PROFILE);
+                return;
+            }
+
+            let app;
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+            } catch (error) {
+                console.error('Erreur de configuration Firebase:', error);
+                revealDashboard();
+                return;
+            }
+
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Erreur d'authentification:", error);
+                // Si l'auth échoue, on continue en mode non-connecté/gratuit
+            }
+
+            onAuthStateChanged(auth, async (user) => {
+                revealDashboard();
+
+                if (!user) {
+                    updateUI(DEFAULT_PROFILE);
+                    return;
+                }
+                userId = user.uid;
+                document.getElementById('user-id-display').textContent = `ID Affilié: ${userId}`;
+                document.getElementById('settings-user-id').textContent = `ID Affilié: ${userId}`;
+                loadClickStats();
+
+                // 1. Charger les données du profil de l'affilié
+                const affiliateDocRef = doc(db, `artifacts/${appId}/users/${userId}/affiliate_data/profile`);
+                onSnapshot(affiliateDocRef, (docSnap) => {
+                    affiliateData = docSnap.exists() ? docSnap.data() : DEFAULT_PROFILE;
+                    updateUI(affiliateData);
+                }, (error) => {
+                    console.error("Erreur onSnapshot pour le profil affilié:", error);
+                    updateUI(DEFAULT_PROFILE);
+                });
+
+                // 2. Charger le statut de l'abonnement
+                const subDocRef = doc(db, `artifacts/${appId}/users/${userId}/subscription_data/status`);
+                onSnapshot(subDocRef, (docSnap) => {
+                    userSubscriptionStatus = docSnap.exists() ? docSnap.data() : { isPremium: false };
+                    updateUI(affiliateData); // Mettre à jour l'UI après le statut d'abonnement
+                }, (error) => {
+                    console.error("Erreur onSnapshot pour l'abonnement:", error);
+                });
+            });
+        }
+
+        /**
+         * Met à jour l'interface utilisateur avec les données de l'affilié et le statut premium.
+         */
+        function updateUI(profile) {
+            document.getElementById('welcome-message').textContent = `Bienvenue, ${profile.nickname || DEFAULT_PROFILE.nickname} !`;
+            document.getElementById('profile-picture').src = profile.profilePictureUrl || DEFAULT_PROFILE.profilePictureUrl;
+
+            // Logique NEY Premium
+            const generatorContainer = document.getElementById('link-generator-container');
+            const isPremium = userSubscriptionStatus.isPremium && hasActiveSubscription();
+            if (!isPremium) userSubscriptionStatus.isPremium = false;
+
+            if (isPremium) {
+                // Afficher le générateur NEY Avancé
+                document.getElementById('premium-badge').classList.remove('hidden');
+                document.getElementById('generator-title').textContent = 'Générateur NEY Avancé (Multi-Sites)';
+                document.getElementById('premium-features-locked').classList.add('hidden');
+                document.getElementById('premium-features-unlocked').classList.remove('hidden');
+                generatorContainer.classList.remove('border-red-400');
+                generatorContainer.classList.add('border-green-400');
+                document.getElementById('subscription-link-text').textContent = 'Gérer mon Abonnement';
+
+            } else {
+                // Afficher le générateur de base avec blocage NEY
+                document.getElementById('premium-badge').classList.add('hidden');
+                document.getElementById('generator-title').textContent = 'Générateur de Liens Standard';
+                document.getElementById('premium-features-unlocked').classList.add('hidden');
+                document.getElementById('premium-features-locked').classList.remove('hidden');
+                generatorContainer.classList.remove('border-green-400');
+                generatorContainer.classList.add('border-red-400');
+                document.getElementById('subscription-link-text').textContent = 'Débloquer NEY Premium';
+            }
+
+            // JEOAH'S ne reçoit pas les ventes ni les commissions des plateformes partenaires.
+            document.getElementById('commission-total').textContent = 'Géré par la plateforme';
+            document.getElementById('clicks-total').textContent = localStorage.getItem('jeoahs_affiliate_clicks') || '0';
+            document.getElementById('sales-total').textContent = 'Non accessible';
+            document.getElementById('balance-current').textContent = 'Payé par la plateforme';
+        }
+
+        async function loadClickStats() {
+            if (!userId) return;
+            try {
+                const response = await fetch(`/api/affiliate-stats.js?affiliate_id=${encodeURIComponent(userId)}`);
+                const data = await response.json();
+                document.getElementById('clicks-total').textContent = data.clicks ?? 0;
+                const modalCount = document.getElementById('settings-click-count');
+                if (modalCount) modalCount.textContent = data.clicks ?? 0;
+            } catch (error) {
+                console.warn('Statistiques de clics indisponibles.', error);
+            }
+        }
+
+        window.openAffiliateSettings = function () {
+            document.getElementById('affiliate-settings-modal').classList.remove('hidden');
+            loadClickStats();
+        };
+
+        function getConfiguredAffiliatePrograms() {
+            return JSON.parse(localStorage.getItem('jeoahs_affiliate_links') || '[]')
+                .filter(link => link.name && link.base_link)
+                .map(link => ({ name: link.name.trim(), id: link.base_link.trim() }));
+        }
+
+        let metadataRequestId = 0;
+        window.loadProductMetadata = async function () {
+            const input = document.getElementById('product-url-input');
+            const status = document.getElementById('metadata-status');
+            const inputUrl = input.value.trim();
+            if (!inputUrl) return;
+            const requestId = ++metadataRequestId;
+            status.textContent = 'Ney recherche les informations disponibles...';
+            status.className = 'mt-2 text-sm text-blue-700';
+            try {
+                const response = await fetch('/api/product-metadata.js', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: inputUrl })
+                });
+                const metadata = await response.json();
+                if (requestId !== metadataRequestId) return;
+                if (!response.ok) throw new Error(metadata.error || 'Informations indisponibles');
+
+                const fields = [
+                    ['product-name-input', metadata.name],
+                    ['product-image-input', metadata.image],
+                    ['product-price-input', metadata.price],
+                    ['product-description-input', metadata.description]
+                ];
+                fields.forEach(([id, value]) => {
+                    const field = document.getElementById(id);
+                    if (value && !field.value.trim()) field.value = value;
+                });
+                if (metadata.name && !document.getElementById('product-hook-input').value.trim()) {
+                    document.getElementById('product-hook-input').value = `A decouvrir : ${metadata.name}`;
+                }
+                status.textContent = metadata.name ? 'Informations récupérées. Vérifiez-les avant publication.' : 'Aucune fiche automatique trouvée pour ce lien.';
+                status.className = 'mt-2 text-sm text-green-700';
+            } catch (error) {
+                status.textContent = 'Informations non disponibles automatiquement. Vous pouvez les compléter manuellement.';
+                status.className = 'mt-2 text-sm text-amber-700';
+            }
+        }
+
+        /**
+         * Simule la génération du lien.
+         */
+        window.generateLink = async function () {
+            const inputUrl = document.getElementById('product-url-input').value.trim();
+            const isPremium = userSubscriptionStatus.isPremium;
+
+            if (!inputUrl) {
+                showCustomModal("Erreur", "Veuillez coller une URL de produit valide.");
+                return;
+            }
+
+            let productUrl;
+            try {
+                productUrl = new URL(inputUrl);
+            } catch (error) {
+                showCustomModal("Erreur", "Veuillez saisir une URL complète commençant par https://.");
+                return;
+            }
+
+            const productNameInput = document.getElementById('product-name-input').value.trim();
+            const productName = productNameInput || `Produit recommandé sur ${productUrl.hostname.replace(/^www\./, '')}`;
+            const productHook = document.getElementById('product-hook-input').value.trim() || `Une belle découverte à ne pas manquer`;
+            const productDescription = document.getElementById('product-description-input').value.trim() || `Découvrez ${productName} et consultez l'offre partenaire.`;
+            const productPrice = document.getElementById('product-price-input').value.trim() || 'Voir le prix sur la plateforme';
+            const productImage = document.getElementById('product-image-input').value.trim() || `https://placehold.co/600x420/0f766e/ffffff?text=${encodeURIComponent(productName.slice(0, 18))}`;
+            const configuredPrograms = getConfiguredAffiliatePrograms();
+            const sourcePlatform = configuredPrograms.find(program => productUrl.hostname.toLowerCase().includes(program.name.toLowerCase()))?.name || productUrl.hostname.replace(/^www\./, '');
+            const comparisonPrograms = configuredPrograms.filter(program => program.name.toLowerCase() !== sourcePlatform.toLowerCase());
+            const trackingUrl = new URL('/api/affiliate-click.js', window.location.origin);
+            trackingUrl.searchParams.set('url', inputUrl);
+            trackingUrl.searchParams.set('affiliate_id', userId || 'local');
+            const generatedLink = trackingUrl.toString();
+
+            const affiliateProducts = JSON.parse(localStorage.getItem('jeoahs_affiliate_products') || '[]');
+            const productId = `affiliate-${Date.now()}`;
+            affiliateProducts.push({
+                id: productId,
+                name: productName,
+                hook: productHook,
+                description: productDescription,
+                imageUrl: productImage,
+                offers: [{
+                    platform: sourcePlatform,
+                    price: productPrice,
+                    url: generatedLink
+                }],
+                comparisonPlatforms: comparisonPrograms.map(program => program.name),
+                createdAt: new Date().toISOString()
+            });
+            localStorage.setItem('jeoahs_affiliate_products', JSON.stringify(affiliateProducts));
+            if (db && userId) {
+                try {
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/affiliate_products`, productId), {
+                        ...affiliateProducts[affiliateProducts.length - 1],
+                        affiliateId: userId,
+                        published: true
+                    });
+                } catch (error) {
+                    console.warn('Publication publique indisponible, conservation locale active.', error);
+                }
+            }
+
+            const resultDiv = document.getElementById('generation-result');
+
+            resultDiv.innerHTML = `
+                <div class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                    <div class="relative aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="${productImage}" alt="${productName.replace(/"/g, '&quot;')}" class="h-full w-full object-cover" onerror="this.src='https://placehold.co/900x500/102a43/ffffff?text=Photo+du+produit'">
+                        <span class="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-xs font-bold text-teal-700">${sourcePlatform}</span>
+                    </div>
+                    <div class="p-5 sm:p-6">
+                        <p class="text-sm font-bold uppercase tracking-wide text-teal-700">${productHook}</p>
+                        <h3 class="mt-2 text-2xl font-extrabold leading-tight text-slate-900">${productName}</h3>
+                        <p class="mt-3 text-base leading-7 text-slate-600">${productDescription}</p>
+                        <div class="mt-5 flex flex-col gap-4 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                            <div><p class="text-xs font-semibold uppercase text-slate-500">Prix indicatif</p><p class="text-2xl font-extrabold text-blue-700">${productPrice}</p></div>
+                            <a href="${generatedLink}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3 font-bold text-white shadow-md hover:bg-blue-700">Voir l'offre <i class="fas fa-arrow-up-right-from-square ml-2"></i></a>
+                        </div>
+                        <div class="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-500">
+                            <button type="button" onclick="copyToClipboard('${generatedLink}')" class="font-semibold text-blue-700 hover:underline"><i class="fas fa-link mr-1"></i>Copier le lien</button>
+                            <span>Les achats et commissions sont gérés par ${sourcePlatform}.</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="mt-3 text-center text-sm text-green-700"><i class="fas fa-check-circle mr-1"></i>Aperçu de la publication enregistré dans votre vitrine.</p>
+            `;
+        }
+
+        // Fonction utilitaire de formatage et de copie
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
+        }
+
+        function copyToClipboard(text) {
+            const tempInput = document.createElement('textarea');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showCustomModal("Copié !", "Le lien a été copié dans votre presse-papiers.");
+        }
+
+        window.copyStorefrontLink = function () {
+            if (!userId) return showCustomModal('Lien indisponible', 'Votre identifiant public est encore en chargement.');
+            const link = `${window.location.origin}/affiliate-storefront.html?id=${encodeURIComponent(userId)}`;
+            navigator.clipboard?.writeText(link);
+            showCustomModal('Lien de vitrine', `Votre lien personnel est prêt : ${link}`);
+        }
+
+        window.activateVendorRole = function () {
+            const account = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+            if (!account) {
+                window.location.href = '/public/auth.html';
+                return;
+            }
+            account.roles = Array.from(new Set([...(account.roles || [account.role]), 'affilie', 'vendeur']));
+            localStorage.setItem('jeoahs_auth_user', JSON.stringify(account));
+            window.location.href = '/vendor_onboarding.html?upgrade=vendor';
+        };
+
+        // Fonction pour afficher une modale personnalisée
+        window.showCustomModal = function (title, message) {
+            const modalId = 'custom-alert-modal';
+            document.getElementById(modalId)?.remove();
+
+            const modalHtml = `
+                <div id="${modalId}" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-[999]">
+                    <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full mx-4">
+                        <h3 class="text-xl font-bold ${title.includes('Erreur') ? 'text-red-600' : 'text-blue-600'} mb-4">${title}</h3>
+                        <p class="text-gray-700 mb-6">${message}</p>
+                        <button onclick="document.getElementById('${modalId}').remove()" 
+                                class="w-full py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
+                            OK
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(145deg, #f3efff 0%, #f8fafc 48%, #fff7fb 100%);
+        }
+
+        .dashboard-shell {
+            display: grid;
+            grid-template-columns: 220px minmax(0, 1fr);
+            gap: 1.5rem;
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        .dashboard-sidebar {
+            background: #fff;
+            border: 1px solid #e5defb;
+            border-radius: 1.25rem;
+            padding: 1.25rem;
+            box-shadow: 0 12px 28px rgba(45, 32, 89, .08);
+        }
+
+        .dashboard-sidebar a {
+            display: flex;
+            align-items: center;
+            gap: .7rem;
+            padding: .75rem;
+            border-radius: .7rem;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        .dashboard-sidebar a:hover,
+        .dashboard-sidebar a.active {
+            color: #45228d;
+            background: #f0eaff;
+        }
+
+        .dashboard-main {
+            min-width: 0;
+        }
+
+        .stat-card {
+            border-top: 4px solid transparent;
+        }
+
+        .stat-card:nth-child(1) {
+            border-top-color: #8b5cf6;
+        }
+
+        .stat-card:nth-child(2) {
+            border-top-color: #ec4899;
+        }
+
+        .stat-card:nth-child(3) {
+            border-top-color: #0ea5e9;
+        }
+
+        .stat-card:nth-child(4) {
+            border-top-color: #f59e0b;
+        }
+
+        @media (max-width: 800px) {
+            .dashboard-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-sidebar {
+                display: flex;
+                overflow-x: auto;
+                gap: .35rem;
+            }
+
+            .dashboard-sidebar a {
+                white-space: nowrap;
+            }
+        }
+
+        .stat-card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .link-generator-card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border: 3px solid;
+            /* Bordure conditionnelle */
+            transition: border-color 0.3s;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Overlay de Chargement -->
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-white flex items-center justify-center z-50">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
+        <p class="ml-4 text-gray-600 text-lg">Chargement du Tableau de Bord Affilié...</p>
+    </div>
+
+    <!-- Contenu du Tableau de Bord -->
+    <div id="dashboard-container" class="min-h-screen p-4 sm:p-8">
+        <div class="dashboard-shell">
+            <aside class="dashboard-sidebar h-fit">
+                <a href="#" class="active"><i class="fas fa-chart-pie"></i> Tableau de bord</a>
+                <a href="#link-generator-container"><i class="fas fa-link"></i> Mes liens</a>
+                <a href="affiliate-storefront.html"><i class="fas fa-store"></i> Ma vitrine</a>
+                <a href="affiliate_programs.html"><i class="fas fa-network-wired"></i> Partenaires</a>
+                <a href="subscription_manager.html"><i class="fas fa-star"></i> Abonnement</a>
+            </aside>
+            <div class="dashboard-main space-y-8">
+
+                <!-- En-tête et Bienvenue -->
+                <header
+                    class="bg-white p-6 rounded-2xl shadow-lg flex flex-col sm:flex-row items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <img id="profile-picture" src="https://placehold.co/100x100/1D4ED8/ffffff?text=A"
+                            alt="Photo de profil"
+                            class="w-16 h-16 object-cover rounded-full border-4 border-blue-500 shadow-md">
+                        <div>
+                            <h1 id="welcome-message" class="text-3xl font-extrabold text-[#032C4F]">Bienvenue !</h1>
+                            <p class="text-gray-600 mt-1 italic">Prêt à générer des commissions ?</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 sm:mt-0 text-sm text-right">
+                        <p id="user-id-display" class="text-gray-400">ID Affilié: (Chargement...)</p>
+                        <a href="subscription_manager.html"
+                            class="text-blue-600 hover:text-blue-800 font-semibold transition mt-1 block flex items-center justify-end">
+                            <i class="fas fa-star mr-1 text-yellow-500"></i> <span id="subscription-link-text">Débloquer
+                                NEY Premium</span>
+                        </a>
+                        <button type="button" onclick="activateVendorRole()"
+                            class="text-blue-600 hover:text-blue-800 font-semibold transition mt-2 block ml-auto">
+                            <i class="fas fa-store mr-1"></i> Devenir vendeur
+                        </button>
+                        <button type="button" onclick="copyStorefrontLink()" aria-label="Copier le lien de ma vitrine"
+                            title="Copier le lien de ma vitrine"
+                            class="text-blue-600 hover:text-blue-800 transition mt-2 ml-auto block text-lg">
+                            <i class="fas fa-arrow-up-right-from-square"></i>
+                        </button>
+                        <button type="button" onclick="openAffiliateSettings()"
+                            aria-label="Ouvrir les paramètres et statistiques" title="Paramètres et statistiques"
+                            class="text-blue-600 hover:text-blue-800 transition mt-2 ml-auto block text-lg">
+                            <i class="fas fa-gear"></i>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Section des Statistiques Clés -->
+                <section>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Activité de votre vitrine</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+                        <!-- Les commissions sont gérées par chaque plateforme partenaire. -->
+                        <div class="stat-card border-l-4 border-green-500">
+                            <i class="fas fa-building text-3xl text-green-600 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-500">Commissions</p>
+                            <p class="text-2xl font-extrabold text-gray-900 mt-1">
+                                <span id="commission-total" class="text-base">Gérées par la plateforme</span>
+                            </p>
+                        </div>
+
+                        <!-- Carte 2: Clics Uniques -->
+                        <div class="stat-card border-l-4 border-blue-500">
+                            <i class="fas fa-mouse-pointer text-3xl text-blue-600 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-500">Clics Uniques</p>
+                            <p class="text-2xl font-extrabold text-gray-900 mt-1">
+                                <span id="clicks-total">0</span>
+                            </p>
+                        </div>
+
+                        <!-- JEOAH'S ne reçoit pas les données de ventes partenaires. -->
+                        <div class="stat-card border-l-4 border-yellow-500">
+                            <i class="fas fa-shopping-cart text-3xl text-yellow-600 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-500">Ventes partenaires</p>
+                            <p class="text-2xl font-extrabold text-gray-900 mt-1">
+                                <span id="sales-total" class="text-base">Non accessibles ici</span>
+                            </p>
+                        </div>
+
+                        <!-- Les retraits sont effectués par la plateforme partenaire. -->
+                        <div class="stat-card border-l-4 border-purple-500">
+                            <i class="fas fa-wallet text-3xl text-purple-600 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-500">Retraits</p>
+                            <p class="text-2xl font-extrabold text-gray-900 mt-1">
+                                <span id="balance-current" class="text-base">Payés par la plateforme</span>
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section Générateur de Liens (Cœur NEY) -->
+                <section id="link-generator-container"
+                    class="link-generator-card bg-white p-6 shadow-xl border-4 border-red-400">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 id="generator-title" class="text-2xl font-bold text-gray-800 flex items-center">
+                            Générateur de Liens Standard
+                        </h2>
+                        <span id="premium-badge"
+                            class="hidden bg-yellow-500 text-white text-xs font-bold py-1 px-3 rounded-full shadow-md transform rotate-1">
+                            NEY PREMIUM
+                        </span>
+                    </div>
+
+                    <!-- Zone de Saisie -->
+                    <div class="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-3">
+                        <input type="text" id="product-name-input" placeholder="Nom du produit (facultatif)"
+                            class="flex-grow px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm">
+                        <input type="url" id="product-url-input" onblur="loadProductMetadata()"
+                            placeholder="Collez ici l'URL du produit à promouvoir (Ex: https://amazon.fr/mon-produit)"
+                            class="flex-grow px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm">
+                        <button type="button" onclick="generateLink()"
+                            class="py-3 px-6 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition duration-300 shadow-md flex-shrink-0">
+                            Générer le Lien
+                        </button>
+                    </div>
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input type="text" id="product-hook-input"
+                            placeholder="Titre accrocheur (ex : Le style qu'il vous faut)"
+                            class="px-4 py-3 border border-gray-300 rounded-lg text-sm">
+                        <input type="url" id="product-image-input" placeholder="URL de la photo du produit"
+                            class="px-4 py-3 border border-gray-300 rounded-lg text-sm">
+                        <input type="text" id="product-price-input" placeholder="Prix affiché (ex : 29,99 €)"
+                            class="px-4 py-3 border border-gray-300 rounded-lg text-sm">
+                        <textarea id="product-description-input" rows="2" maxlength="240"
+                            placeholder="Description courte et simple du produit"
+                            class="px-4 py-3 border border-gray-300 rounded-lg text-sm resize-none"></textarea>
+                    </div>
+                    <p id="metadata-status" class="mt-2 text-sm text-gray-500">Collez un lien puis cliquez ailleurs pour
+                        lancer la récupération automatique.</p>
+
+                    <!-- Contenu de la Génération / Blocs Conditionnels NEY -->
+                    <div id="generation-result" class="mt-4">
+                        <!-- Résultat de la génération apparaîtra ici -->
+                    </div>
+
+                    <!-- Explication des fonctionnalités NEY Premium -->
+                    <div id="premium-features-unlocked"
+                        class="hidden mt-6 bg-green-50 p-4 rounded-xl border border-green-200">
+                        <p class="font-bold text-green-700">Fonctionnalités NEY Actives :</p>
+                        <ul class="text-sm text-gray-600 mt-2 list-disc list-inside">
+                            <li>**Agrégation Multi-Affiliée :** Recherche et comparaison automatique des prix sur tous
+                                vos sites.</li>
+                            <li>**Page Produit Unique :** Génération d'une page comparatrice pour votre public.</li>
+                            <li>**Tendances :** Suggestion automatique des produits en forte demande.</li>
+                        </ul>
+                    </div>
+
+                    <div id="premium-features-locked" class="mt-6 bg-red-50 p-4 rounded-xl border border-red-200">
+                        <p class="font-bold text-red-700 flex items-center">
+                            <i class="fas fa-lock mr-2"></i> Fonctionnalité NEY Verrouillée
+                        </p>
+                        <p class="text-sm text-gray-600 mt-2">Passez à **NEY Premium** pour débloquer l'agrégation
+                            multi-sites et les alertes de réduction en temps réel. <a href="subscription_manager.html"
+                                class="font-semibold text-blue-600 hover:underline">Voir les plans</a>.</p>
+                    </div>
+
+                </section>
+
+                <!-- Autres sections du tableau de bord (simulées) -->
+                <section class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Historique des Gains -->
+                    <div class="stat-card border-l-4 border-gray-400">
+                        <h3 class="text-xl font-bold text-gray-800 mb-3 flex items-center">
+                            <i class="fas fa-history mr-2"></i> Historique des Gains
+                        </h3>
+                        <p class="text-gray-600 text-sm">Consultez, filtrez et téléchargez les rapports détaillés de vos
+                            commissions passées.</p>
+                        <button
+                            class="mt-3 py-2 px-4 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition">
+                            Voir les Transactions
+                        </button>
+                    </div>
+
+                    <!-- Mes Programmes Affiliés -->
+                    <div class="stat-card border-l-4 border-gray-400">
+                        <h3 class="text-xl font-bold text-gray-800 mb-3 flex items-center">
+                            <i class="fas fa-code-branch mr-2"></i> Mes Programmes
+                        </h3>
+                        <p class="text-gray-600 text-sm">Ajoutez, modifiez ou désactivez vos identifiants pour chaque
+                            plateforme d'affiliation.</p>
+                        <button
+                            class="mt-3 py-2 px-4 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition">
+                            Gérer les Partenaires
+                        </button>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="affiliate-settings-modal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4">
+        <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-extrabold text-slate-900">Paramètres de ma vitrine</h2>
+                <button type="button"
+                    onclick="document.getElementById('affiliate-settings-modal').classList.add('hidden')"
+                    aria-label="Fermer" class="text-2xl text-slate-500">&times;</button>
+            </div>
+            <p class="mt-4 text-sm text-slate-600">Votre identifiant sert à suivre les clics envoyés vers les
+                plateformes partenaires.</p>
+            <p class="mt-4 break-all rounded-lg bg-slate-100 p-3 font-mono text-xs" id="settings-user-id">ID en
+                chargement...</p>
+            <div class="mt-4 rounded-xl bg-blue-50 p-4">
+                <p class="text-sm font-semibold text-blue-800">Clics suivis par JEOAH’S</p>
+                <p id="settings-click-count" class="mt-1 text-3xl font-extrabold text-blue-700">0</p>
+            </div>
+            <button type="button" onclick="copyStorefrontLink()"
+                class="mt-5 w-full rounded-lg bg-blue-600 py-3 font-bold text-white">Copier le lien de ma
+                vitrine</button>
+        </div>
+    </div>
+
+</body>
+
 </html>

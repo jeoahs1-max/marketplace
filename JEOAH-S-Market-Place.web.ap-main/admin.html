@@ -1,5 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -48,13 +49,34 @@
         };
     </script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #0f172a; }
-        .admin-sidebar { background: #0f172a; color: #94a3b8; }
-        .admin-nav-active { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; font-weight: 700; }
-        .admin-stat-card { transition: transform 0.2s, box-shadow 0.2s; }
-        .admin-stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08); }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .admin-sidebar {
+            background: #0f172a;
+            color: #94a3b8;
+        }
+
+        .admin-nav-active {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .admin-stat-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .admin-stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
+        }
     </style>
 </head>
+
 <body class="flex min-h-screen">
 
     <!-- 1. SIDEBAR NAVIGATION (Exactement comme la maquette Image 1) -->
@@ -62,60 +84,77 @@
         <div class="space-y-6">
             <!-- Brand Logo -->
             <a href="/index.html" class="flex items-center gap-3">
-                <img src="/public/assets/logo.png" alt="JEOAH'S" class="h-9 w-9 object-cover rounded-xl border border-slate-700 shadow-sm">
+                <img src="/public/assets/logo.png" alt="JEOAH'S"
+                    class="h-9 w-9 object-cover rounded-xl border border-slate-700 shadow-sm">
                 <div>
                     <strong class="text-white text-base font-extrabold tracking-tight block">JEOAH'S</strong>
-                    <span class="text-[9px] font-bold text-indigo-400 tracking-widest block uppercase">MARKET PLACE</span>
+                    <span class="text-[9px] font-bold text-indigo-400 tracking-widest block uppercase">MARKET
+                        PLACE</span>
                 </div>
             </a>
 
             <!-- Admin Profile Badge -->
             <div class="flex items-center gap-3 p-3 bg-slate-800/80 rounded-2xl border border-slate-700/60">
-                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Admin" class="w-10 h-10 rounded-full object-cover border-2 border-purple-500">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"
+                    alt="Admin" class="w-10 h-10 rounded-full object-cover border-2 border-purple-500">
                 <div class="min-w-0 flex-1">
                     <span class="text-[10px] text-slate-400 block font-medium">Bienvenue,</span>
-                    <strong class="text-xs text-white font-bold flex items-center gap-1">Ney's <i class="fas fa-check-circle text-blue-400 text-[10px]"></i></strong>
-                    <span class="text-[9px] font-semibold text-purple-300 bg-purple-900/60 px-1.5 py-0.5 rounded-full mt-0.5 inline-block">Administrateur</span>
+                    <strong class="text-xs text-white font-bold flex items-center gap-1">Ney's <i
+                            class="fas fa-check-circle text-blue-400 text-[10px]"></i></strong>
+                    <span
+                        class="text-[9px] font-semibold text-purple-300 bg-purple-900/60 px-1.5 py-0.5 rounded-full mt-0.5 inline-block">Administrateur</span>
                 </div>
             </div>
 
             <!-- Menu Principal -->
             <div class="space-y-1">
-                <p class="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 px-3 pb-1">MENU PRINCIPAL</p>
-                <a href="#dashboard" class="admin-nav-active flex items-center justify-between p-3 rounded-xl text-xs transition">
+                <p class="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 px-3 pb-1">MENU PRINCIPAL
+                </p>
+                <a href="#dashboard"
+                    class="admin-nav-active flex items-center justify-between p-3 rounded-xl text-xs transition">
                     <span class="flex items-center gap-3"><i class="fas fa-tachometer-alt"></i> Tableau de bord</span>
                 </a>
-                <a href="/showcase.html" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                <a href="/showcase.html"
+                    class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
                     <span class="flex items-center gap-3"><i class="fas fa-store"></i> Vitrines</span>
                     <span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full text-[10px] font-bold">12</span>
                 </a>
-                <a href="/affiliate-dashboard.html" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                <a href="/affiliate-dashboard.html"
+                    class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
                     <span class="flex items-center gap-3"><i class="fas fa-boxes"></i> Produits</span>
                     <span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full text-[10px] font-bold">248</span>
                 </a>
-                <a href="#commandes" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                <a href="#commandes"
+                    class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
                     <span class="flex items-center gap-3"><i class="fas fa-shopping-bag"></i> Commandes</span>
                     <span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full text-[10px] font-bold">34</span>
                 </a>
-                <a href="#affiliations" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                <a href="#affiliations"
+                    class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
                     <span class="flex items-center gap-3"><i class="fas fa-link"></i> Affiliations</span>
                 </a>
-                <a href="#utilisateurs" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                <a href="#utilisateurs"
+                    class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
                     <span class="flex items-center gap-3"><i class="fas fa-users"></i> Utilisateurs</span>
                 </a>
-                <a href="#vendeurs" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                <a href="#vendeurs"
+                    class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
                     <span class="flex items-center gap-3"><i class="fas fa-user-tag"></i> Vendeurs</span>
                 </a>
-                <a href="#finances" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                <a href="#finances"
+                    class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
                     <span class="flex items-center gap-3"><i class="fas fa-wallet"></i> Finances</span>
                 </a>
-                <a href="/plans.html" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                <a href="/plans.html"
+                    class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
                     <span class="flex items-center gap-3"><i class="fas fa-crown"></i> Abonnements</span>
                 </a>
-                <a href="#rapports" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                <a href="#rapports"
+                    class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
                     <span class="flex items-center gap-3"><i class="fas fa-chart-pie"></i> Rapports</span>
                 </a>
-                <a href="#parametres" class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                <a href="#parametres"
+                    class="flex items-center justify-between p-3 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
                     <span class="flex items-center gap-3"><i class="fas fa-cog"></i> Paramètres</span>
                 </a>
             </div>
@@ -129,22 +168,27 @@
 
     <!-- 2. MAIN CONTENT AREA -->
     <div class="flex-1 flex flex-col min-w-0">
-        
+
         <!-- Topbar -->
-        <header class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between gap-4 sticky top-0 z-30 shadow-sm">
+        <header
+            class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between gap-4 sticky top-0 z-30 shadow-sm">
             <div class="flex items-center gap-3 flex-1 max-w-lg">
                 <i class="fas fa-bars text-slate-400 cursor-pointer"></i>
                 <div class="relative w-full">
-                    <input type="text" placeholder="Rechercher un produit, une commande, un utilisateur..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-full text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <input type="text" placeholder="Rechercher un produit, une commande, un utilisateur..."
+                        class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-full text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
                 </div>
             </div>
 
             <div class="flex items-center gap-4 text-xs font-bold text-slate-700">
-                <button class="relative text-slate-500 hover:text-indigo-600"><i class="fas fa-bell text-base"></i><span class="absolute -top-1.5 -right-1.5 bg-pink-600 text-white text-[9px] px-1 rounded-full">5</span></button>
-                <button class="relative text-slate-500 hover:text-indigo-600"><i class="fas fa-comment-dots text-base"></i></button>
+                <button class="relative text-slate-500 hover:text-indigo-600"><i class="fas fa-bell text-base"></i><span
+                        class="absolute -top-1.5 -right-1.5 bg-pink-600 text-white text-[9px] px-1 rounded-full">5</span></button>
+                <button class="relative text-slate-500 hover:text-indigo-600"><i
+                        class="fas fa-comment-dots text-base"></i></button>
                 <div class="flex items-center gap-2 pl-3 border-l border-slate-200">
-                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Admin" class="w-7 h-7 rounded-full object-cover">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"
+                        alt="Admin" class="w-7 h-7 rounded-full object-cover">
                     <span class="text-xs font-bold text-slate-800">Admin Central</span>
                 </div>
             </div>
@@ -154,21 +198,29 @@
         <main class="p-6 space-y-6 max-w-7xl mx-auto w-full">
             <section class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div><h2 class="font-extrabold text-slate-900">Validation des retraits</h2><p class="text-xs text-slate-500 mt-1">Aucun paiement n’est envoyé sans votre autorisation.</p></div>
-                    <span class="text-xs font-bold text-amber-700 bg-amber-50 px-3 py-1.5 rounded-full">Plafond automatique : 500 USD</span>
+                    <div>
+                        <h2 class="font-extrabold text-slate-900">Validation des retraits</h2>
+                        <p class="text-xs text-slate-500 mt-1">Aucun paiement n’est envoyé sans votre autorisation.</p>
+                    </div>
+                    <span class="text-xs font-bold text-amber-700 bg-amber-50 px-3 py-1.5 rounded-full">Plafond
+                        automatique : 500 USD</span>
                 </div>
-                <div id="admin-withdrawals-list" class="mt-3"><p class="text-sm text-slate-500">Chargement des demandes...</p></div>
+                <div id="admin-withdrawals-list" class="mt-3">
+                    <p class="text-sm text-slate-500">Chargement des demandes...</p>
+                </div>
             </section>
-            
+
             <!-- Welcome Header -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 class="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
                         Tableau de bord 👋
                     </h1>
-                    <p class="text-xs text-slate-500 mt-0.5">Voici un aperçu global de votre activité sur JEOAH'S Market Place.</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Voici un aperçu global de votre activité sur JEOAH'S Market
+                        Place.</p>
                 </div>
-                <div class="inline-flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 shadow-sm">
+                <div
+                    class="inline-flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 shadow-sm">
                     <i class="far fa-calendar-alt text-indigo-600"></i>
                     <span>12 août – 18 août 2026</span>
                 </div>
@@ -176,11 +228,14 @@
 
             <!-- Top Stat KPI Cards (5 Cards comme la maquette) -->
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                
+
                 <div class="admin-stat-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
                     <div class="flex items-center justify-between">
-                        <span class="w-8 h-8 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-sm font-bold"><i class="fas fa-shopping-cart"></i></span>
-                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i class="fas fa-arrow-up text-[9px]"></i> 18.6%</span>
+                        <span
+                            class="w-8 h-8 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-sm font-bold"><i
+                                class="fas fa-shopping-cart"></i></span>
+                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i
+                                class="fas fa-arrow-up text-[9px]"></i> 18.6%</span>
                     </div>
                     <div>
                         <p class="text-xs text-slate-500 font-medium">Ventes totales</p>
@@ -190,8 +245,11 @@
 
                 <div class="admin-stat-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
                     <div class="flex items-center justify-between">
-                        <span class="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold"><i class="fas fa-shopping-bag"></i></span>
-                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i class="fas fa-arrow-up text-[9px]"></i> 12.4%</span>
+                        <span
+                            class="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold"><i
+                                class="fas fa-shopping-bag"></i></span>
+                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i
+                                class="fas fa-arrow-up text-[9px]"></i> 12.4%</span>
                     </div>
                     <div>
                         <p class="text-xs text-slate-500 font-medium">Commandes</p>
@@ -201,8 +259,11 @@
 
                 <div class="admin-stat-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
                     <div class="flex items-center justify-between">
-                        <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm font-bold"><i class="fas fa-users"></i></span>
-                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i class="fas fa-arrow-up text-[9px]"></i> 15.7%</span>
+                        <span
+                            class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm font-bold"><i
+                                class="fas fa-users"></i></span>
+                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i
+                                class="fas fa-arrow-up text-[9px]"></i> 15.7%</span>
                     </div>
                     <div>
                         <p class="text-xs text-slate-500 font-medium">Utilisateurs</p>
@@ -212,8 +273,11 @@
 
                 <div class="admin-stat-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
                     <div class="flex items-center justify-between">
-                        <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-sm font-bold"><i class="fas fa-store"></i></span>
-                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i class="fas fa-arrow-up text-[9px]"></i> 9.1%</span>
+                        <span
+                            class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-sm font-bold"><i
+                                class="fas fa-store"></i></span>
+                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i
+                                class="fas fa-arrow-up text-[9px]"></i> 9.1%</span>
                     </div>
                     <div>
                         <p class="text-xs text-slate-500 font-medium">Vitrines actives</p>
@@ -223,8 +287,11 @@
 
                 <div class="admin-stat-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
                     <div class="flex items-center justify-between">
-                        <span class="w-8 h-8 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center text-sm font-bold"><i class="fas fa-percent"></i></span>
-                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i class="fas fa-arrow-up text-[9px]"></i> 14.3%</span>
+                        <span
+                            class="w-8 h-8 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center text-sm font-bold"><i
+                                class="fas fa-percent"></i></span>
+                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i
+                                class="fas fa-arrow-up text-[9px]"></i> 14.3%</span>
                     </div>
                     <div>
                         <p class="text-xs text-slate-500 font-medium">Commissions</p>
@@ -236,26 +303,47 @@
 
             <!-- Graphiques & Assistant IA (3 Colonnes : 8 cols Gauche / 4 cols Droite) -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                
+
                 <!-- 8 Cols : Graphiques + Top Vitrines -->
                 <div class="lg:col-span-8 space-y-6">
-                    
+
                     <!-- Graphique Évolution des ventes & Ventes par catégorie -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        
+
                         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                             <div class="flex items-center justify-between mb-4">
                                 <h3 class="font-bold text-slate-900 text-sm">Évolution des ventes</h3>
                                 <span class="text-xs text-slate-400 font-semibold">7 derniers jours</span>
                             </div>
                             <div class="h-44 flex items-end justify-between gap-2 pt-6 px-2">
-                                <div class="flex-1 flex flex-col items-center gap-2"><div class="w-full bg-indigo-200 hover:bg-indigo-500 rounded-t-lg transition" style="height: 45px"></div><span class="text-[10px] text-slate-400">12</span></div>
-                                <div class="flex-1 flex flex-col items-center gap-2"><div class="w-full bg-indigo-300 hover:bg-indigo-500 rounded-t-lg transition" style="height: 70px"></div><span class="text-[10px] text-slate-400">13</span></div>
-                                <div class="flex-1 flex flex-col items-center gap-2"><div class="w-full bg-indigo-400 hover:bg-indigo-500 rounded-t-lg transition" style="height: 100px"></div><span class="text-[10px] text-slate-400">14</span></div>
-                                <div class="flex-1 flex flex-col items-center gap-2"><div class="w-full bg-indigo-300 hover:bg-indigo-500 rounded-t-lg transition" style="height: 80px"></div><span class="text-[10px] text-slate-400">15</span></div>
-                                <div class="flex-1 flex flex-col items-center gap-2"><div class="w-full bg-indigo-400 hover:bg-indigo-500 rounded-t-lg transition" style="height: 95px"></div><span class="text-[10px] text-slate-400">16</span></div>
-                                <div class="flex-1 flex flex-col items-center gap-2"><div class="w-full bg-indigo-500 hover:bg-indigo-600 rounded-t-lg transition" style="height: 110px"></div><span class="text-[10px] text-slate-400">17</span></div>
-                                <div class="flex-1 flex flex-col items-center gap-2"><div class="w-full bg-indigo-600 hover:bg-indigo-700 rounded-t-lg transition" style="height: 135px"></div><span class="text-[10px] text-slate-400">18</span></div>
+                                <div class="flex-1 flex flex-col items-center gap-2">
+                                    <div class="w-full bg-indigo-200 hover:bg-indigo-500 rounded-t-lg transition"
+                                        style="height: 45px"></div><span class="text-[10px] text-slate-400">12</span>
+                                </div>
+                                <div class="flex-1 flex flex-col items-center gap-2">
+                                    <div class="w-full bg-indigo-300 hover:bg-indigo-500 rounded-t-lg transition"
+                                        style="height: 70px"></div><span class="text-[10px] text-slate-400">13</span>
+                                </div>
+                                <div class="flex-1 flex flex-col items-center gap-2">
+                                    <div class="w-full bg-indigo-400 hover:bg-indigo-500 rounded-t-lg transition"
+                                        style="height: 100px"></div><span class="text-[10px] text-slate-400">14</span>
+                                </div>
+                                <div class="flex-1 flex flex-col items-center gap-2">
+                                    <div class="w-full bg-indigo-300 hover:bg-indigo-500 rounded-t-lg transition"
+                                        style="height: 80px"></div><span class="text-[10px] text-slate-400">15</span>
+                                </div>
+                                <div class="flex-1 flex flex-col items-center gap-2">
+                                    <div class="w-full bg-indigo-400 hover:bg-indigo-500 rounded-t-lg transition"
+                                        style="height: 95px"></div><span class="text-[10px] text-slate-400">16</span>
+                                </div>
+                                <div class="flex-1 flex flex-col items-center gap-2">
+                                    <div class="w-full bg-indigo-500 hover:bg-indigo-600 rounded-t-lg transition"
+                                        style="height: 110px"></div><span class="text-[10px] text-slate-400">17</span>
+                                </div>
+                                <div class="flex-1 flex flex-col items-center gap-2">
+                                    <div class="w-full bg-indigo-600 hover:bg-indigo-700 rounded-t-lg transition"
+                                        style="height: 135px"></div><span class="text-[10px] text-slate-400">18</span>
+                                </div>
                             </div>
                         </div>
 
@@ -263,20 +351,36 @@
                             <h3 class="font-bold text-slate-900 text-sm mb-4">Ventes par catégorie</h3>
                             <div class="space-y-2.5 text-xs">
                                 <div>
-                                    <div class="flex justify-between font-semibold mb-1"><span class="text-slate-600">Électronique</span><span class="text-slate-900 font-bold">35%</span></div>
-                                    <div class="w-full bg-slate-100 rounded-full h-2"><div class="bg-purple-600 h-2 rounded-full" style="width: 35%"></div></div>
+                                    <div class="flex justify-between font-semibold mb-1"><span
+                                            class="text-slate-600">Électronique</span><span
+                                            class="text-slate-900 font-bold">35%</span></div>
+                                    <div class="w-full bg-slate-100 rounded-full h-2">
+                                        <div class="bg-purple-600 h-2 rounded-full" style="width: 35%"></div>
+                                    </div>
                                 </div>
                                 <div>
-                                    <div class="flex justify-between font-semibold mb-1"><span class="text-slate-600">Mode & Accessoires</span><span class="text-slate-900 font-bold">25%</span></div>
-                                    <div class="w-full bg-slate-100 rounded-full h-2"><div class="bg-pink-500 h-2 rounded-full" style="width: 25%"></div></div>
+                                    <div class="flex justify-between font-semibold mb-1"><span
+                                            class="text-slate-600">Mode & Accessoires</span><span
+                                            class="text-slate-900 font-bold">25%</span></div>
+                                    <div class="w-full bg-slate-100 rounded-full h-2">
+                                        <div class="bg-pink-500 h-2 rounded-full" style="width: 25%"></div>
+                                    </div>
                                 </div>
                                 <div>
-                                    <div class="flex justify-between font-semibold mb-1"><span class="text-slate-600">Maison & Déco</span><span class="text-slate-900 font-bold">18%</span></div>
-                                    <div class="w-full bg-slate-100 rounded-full h-2"><div class="bg-emerald-500 h-2 rounded-full" style="width: 18%"></div></div>
+                                    <div class="flex justify-between font-semibold mb-1"><span
+                                            class="text-slate-600">Maison & Déco</span><span
+                                            class="text-slate-900 font-bold">18%</span></div>
+                                    <div class="w-full bg-slate-100 rounded-full h-2">
+                                        <div class="bg-emerald-500 h-2 rounded-full" style="width: 18%"></div>
+                                    </div>
                                 </div>
                                 <div>
-                                    <div class="flex justify-between font-semibold mb-1"><span class="text-slate-600">Beauté & Soins</span><span class="text-slate-900 font-bold">12%</span></div>
-                                    <div class="w-full bg-slate-100 rounded-full h-2"><div class="bg-amber-500 h-2 rounded-full" style="width: 12%"></div></div>
+                                    <div class="flex justify-between font-semibold mb-1"><span
+                                            class="text-slate-600">Beauté & Soins</span><span
+                                            class="text-slate-900 font-bold">12%</span></div>
+                                    <div class="w-full bg-slate-100 rounded-full h-2">
+                                        <div class="bg-amber-500 h-2 rounded-full" style="width: 12%"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -288,21 +392,31 @@
                         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
                             <div class="flex items-center justify-between">
                                 <h3 class="font-bold text-slate-900 text-sm">Top vitrines</h3>
-                                <a href="/showcase.html" class="text-xs font-bold text-indigo-600 hover:underline">Voir tout</a>
+                                <a href="/showcase.html" class="text-xs font-bold text-indigo-600 hover:underline">Voir
+                                    tout</a>
                             </div>
                             <div class="space-y-2 text-xs">
-                                <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50"><span class="font-semibold text-slate-800">1. TechStore</span><strong class="text-indigo-600 font-bold">$8,560.45</strong></div>
-                                <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50"><span class="font-semibold text-slate-800">2. Beauty by Carel</span><strong class="text-indigo-600 font-bold">$6,420.30</strong></div>
-                                <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50"><span class="font-semibold text-slate-800">3. Fashion House</span><strong class="text-indigo-600 font-bold">$4,250.00</strong></div>
+                                <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50"><span
+                                        class="font-semibold text-slate-800">1. TechStore</span><strong
+                                        class="text-indigo-600 font-bold">$8,560.45</strong></div>
+                                <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50"><span
+                                        class="font-semibold text-slate-800">2. Beauty by Carel</span><strong
+                                        class="text-indigo-600 font-bold">$6,420.30</strong></div>
+                                <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50"><span
+                                        class="font-semibold text-slate-800">3. Fashion House</span><strong
+                                        class="text-indigo-600 font-bold">$4,250.00</strong></div>
                             </div>
                         </div>
 
                         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
                             <h3 class="font-bold text-slate-900 text-sm">Sources de trafic</h3>
                             <div class="space-y-2 text-xs">
-                                <div class="flex justify-between font-semibold"><span class="text-slate-600">Recherche Google</span><span>45.2%</span></div>
-                                <div class="flex justify-between font-semibold"><span class="text-slate-600">Réseaux sociaux</span><span>28.5%</span></div>
-                                <div class="flex justify-between font-semibold"><span class="text-slate-600">Accès direct</span><span>26.3%</span></div>
+                                <div class="flex justify-between font-semibold"><span class="text-slate-600">Recherche
+                                        Google</span><span>45.2%</span></div>
+                                <div class="flex justify-between font-semibold"><span class="text-slate-600">Réseaux
+                                        sociaux</span><span>28.5%</span></div>
+                                <div class="flex justify-between font-semibold"><span class="text-slate-600">Accès
+                                        direct</span><span>26.3%</span></div>
                             </div>
                         </div>
                     </div>
@@ -311,7 +425,7 @@
 
                 <!-- 4 Cols : Activité récente + Assistant IA JEOAH -->
                 <div class="lg:col-span-4 space-y-6">
-                    
+
                     <!-- Activité récente -->
                     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
                         <div class="flex items-center justify-between">
@@ -320,59 +434,95 @@
                         </div>
                         <div class="space-y-3 text-xs text-slate-600">
                             <div class="flex items-start gap-2.5">
-                                <span class="p-1.5 bg-purple-100 text-purple-600 rounded-lg"><i class="fas fa-shopping-bag"></i></span>
-                                <div><p class="font-semibold text-slate-800">Nouvelle commande #4587</p><span class="text-[10px] text-slate-400">Il y a 2 min • $125.50</span></div>
+                                <span class="p-1.5 bg-purple-100 text-purple-600 rounded-lg"><i
+                                        class="fas fa-shopping-bag"></i></span>
+                                <div>
+                                    <p class="font-semibold text-slate-800">Nouvelle commande #4587</p><span
+                                        class="text-[10px] text-slate-400">Il y a 2 min • $125.50</span>
+                                </div>
                             </div>
                             <div class="flex items-start gap-2.5">
-                                <span class="p-1.5 bg-blue-100 text-blue-600 rounded-lg"><i class="fas fa-user-plus"></i></span>
-                                <div><p class="font-semibold text-slate-800">Nouvel affilié inscrit</p><span class="text-[10px] text-slate-400">Il y a 15 min • @MarieLou</span></div>
+                                <span class="p-1.5 bg-blue-100 text-blue-600 rounded-lg"><i
+                                        class="fas fa-user-plus"></i></span>
+                                <div>
+                                    <p class="font-semibold text-slate-800">Nouvel affilié inscrit</p><span
+                                        class="text-[10px] text-slate-400">Il y a 15 min • @MarieLou</span>
+                                </div>
                             </div>
                             <div class="flex items-start gap-2.5">
-                                <span class="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg"><i class="fas fa-store"></i></span>
-                                <div><p class="font-semibold text-slate-800">Vitrine mise à jour</p><span class="text-[10px] text-slate-400">Il y a 1h • TechStore</span></div>
+                                <span class="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg"><i
+                                        class="fas fa-store"></i></span>
+                                <div>
+                                    <p class="font-semibold text-slate-800">Vitrine mise à jour</p><span
+                                        class="text-[10px] text-slate-400">Il y a 1h • TechStore</span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- ASSISTANTE IA PRIVEE - NEY -->
-                    <div class="bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white p-5 rounded-3xl shadow-xl space-y-4">
+                    <div
+                        class="bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white p-5 rounded-3xl shadow-xl space-y-4">
                         <div class="flex items-center justify-between border-b border-white/10 pb-3">
                             <div class="flex items-center gap-2.5">
-                                <span class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm"><i class="fas fa-robot text-pink-300"></i></span>
+                                <span
+                                    class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm"><i
+                                        class="fas fa-robot text-pink-300"></i></span>
                                 <strong class="text-sm">Ney, assistante administrative</strong>
                             </div>
-                            <span class="text-[10px] font-bold bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-full">Actif</span>
+                            <span
+                                class="text-[10px] font-bold bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-full">Actif</span>
                         </div>
 
                         <div class="p-3 bg-white/10 rounded-2xl backdrop-blur-md text-xs leading-relaxed">
                             <p class="font-bold text-pink-200">Bonjour.</p>
-                            <p class="mt-1 text-slate-200">Je suis Ney. Je peux préparer vos rapports, analyser les vitrines et vous assister dans les tâches administratives.</p>
+                            <p class="mt-1 text-slate-200">Je suis Ney. Je peux préparer vos rapports, analyser les
+                                vitrines et vous assister dans les tâches administratives.</p>
                         </div>
 
                         <!-- Actions Rapides Assistant -->
                         <div class="grid grid-cols-2 gap-2 text-[11px] font-bold">
-                            <a href="/affiliate_onboarding_step1.html" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition block">Créer une vitrine</a>
-                            <a href="/vendor_product_submission.html" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition block">Ajouter un produit</a>
-                            <button onclick="generateDailyReport()" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition">Générer un rapport</button>
-                            <button onclick="openJack()" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition">Ouvrir Jack</button>
-                            <a href="/faq.html" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition block">Aide & support</a>
+                            <a href="/affiliate_onboarding_step1.html"
+                                class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition block">Créer
+                                une vitrine</a>
+                            <a href="/vendor_product_submission.html"
+                                class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition block">Ajouter
+                                un produit</a>
+                            <button onclick="generateDailyReport()"
+                                class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition">Générer un
+                                rapport</button>
+                            <button onclick="openJack()"
+                                class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition">Ouvrir
+                                Jack</button>
+                            <a href="/faq.html"
+                                class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition block">Aide &
+                                support</a>
                         </div>
 
                         <div class="flex gap-2 pt-1">
-                            <select id="admin-ai-language" aria-label="Langue de Ney" class="w-24 rounded-xl border border-white/20 bg-white/15 px-2 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-pink-400">
+                            <select id="admin-ai-language" aria-label="Langue de Ney"
+                                class="w-24 rounded-xl border border-white/20 bg-white/15 px-2 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-pink-400">
                                 <option value="auto" class="text-slate-900">Auto</option>
                                 <option value="fr" class="text-slate-900">FR</option>
                                 <option value="ht" class="text-slate-900">HT</option>
                                 <option value="en" class="text-slate-900">EN</option>
                                 <option value="es" class="text-slate-900">ES</option>
                             </select>
-                            <input type="text" id="admin-ai-input" placeholder="Demandez à Ney..." class="flex-1 px-3 py-2 bg-white/15 border border-white/20 rounded-xl text-xs text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-pink-400">
-                            <button type="button" id="admin-ai-mic" title="Parler à Ney" aria-label="Parler à Ney" class="px-3 py-2 bg-white/15 hover:bg-white/20 rounded-xl text-xs font-bold text-white"><i class="fas fa-microphone"></i></button>
-                            <button onclick="sendAdminAi()" class="px-3.5 py-2 bg-pink-600 hover:bg-pink-700 rounded-xl text-xs font-bold text-white shadow"><i class="fas fa-paper-plane"></i></button>
+                            <input type="text" id="admin-ai-input" placeholder="Demandez à Ney..."
+                                class="flex-1 px-3 py-2 bg-white/15 border border-white/20 rounded-xl text-xs text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-pink-400">
+                            <button type="button" id="admin-ai-mic" title="Parler à Ney" aria-label="Parler à Ney"
+                                class="px-3 py-2 bg-white/15 hover:bg-white/20 rounded-xl text-xs font-bold text-white"><i
+                                    class="fas fa-microphone"></i></button>
+                            <button onclick="sendAdminAi()"
+                                class="px-3.5 py-2 bg-pink-600 hover:bg-pink-700 rounded-xl text-xs font-bold text-white shadow"><i
+                                    class="fas fa-paper-plane"></i></button>
                         </div>
                         <div class="flex items-center justify-between gap-2">
                             <p id="admin-ai-response" class="hidden text-xs leading-relaxed text-pink-100"></p>
-                            <button type="button" id="admin-ai-speak" title="Lire la réponse de Ney" aria-label="Lire la réponse de Ney" class="hidden shrink-0 px-2 py-1 bg-white/15 hover:bg-white/20 rounded-lg text-xs text-white"><i class="fas fa-volume-up"></i></button>
+                            <button type="button" id="admin-ai-speak" title="Lire la réponse de Ney"
+                                aria-label="Lire la réponse de Ney"
+                                class="hidden shrink-0 px-2 py-1 bg-white/15 hover:bg-white/20 rounded-lg text-xs text-white"><i
+                                    class="fas fa-volume-up"></i></button>
                         </div>
                     </div>
 
@@ -441,7 +591,7 @@
                 recognition.onresult = event => { input.value = event.results[0][0].transcript; sendAdminAi(); };
                 mic.addEventListener('click', () => {
                     recognition.lang = adminVoiceLocales[document.getElementById('admin-ai-language').value] || 'fr-FR';
-                    try { recognition.start(); } catch (_) {}
+                    try { recognition.start(); } catch (_) { }
                 });
             } else {
                 mic.disabled = true;
@@ -538,4 +688,5 @@
         }));
     </script>
 </body>
+
 </html>

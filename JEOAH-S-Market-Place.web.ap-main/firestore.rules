@@ -13,17 +13,22 @@ service cloud.firestore {
       allow create: if isVendor() && request.resource.data.ownerId == request.auth.uid;
       allow update, delete: if isVendor() && resource.data.ownerId == request.auth.uid;
     }
-    match /avis/{doc} {
+    match /marketplace_central/{doc} {
       allow read: if true;
-      allow create: if request.auth != null;
+      allow create, update, delete: if request.auth != null && (request.auth.token.email == 'jeoahs1@gmail.com' || request.auth.token.email == 'jeoahs1-max-03326376-49b27@firebaseapp.com');
     }
     match /profiles/{userId} {
       allow create: if request.auth != null && request.auth.uid == userId;
-      allow read: if true;
-      allow update: if request.auth != null && request.auth.uid == userId;
+      allow read, update: if request.auth != null && request.auth.uid == userId;
     }
     match /artifacts/{appId}/public/data/users/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
+    }
+    match /artifacts/{appId}/users/{userId}/products/{productId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if isVendor() && request.auth.uid == userId && request.resource.data.vendorId == userId;
+      allow update: if isVendor() && request.auth.uid == userId && resource.data.vendorId == userId && request.resource.data.vendorId == userId;
+      allow delete: if isVendor() && request.auth.uid == userId && resource.data.vendorId == userId;
     }
     match /artifacts/{appId}/public/data/products/{productId} {
       allow read: if true;

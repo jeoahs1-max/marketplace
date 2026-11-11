@@ -3,6 +3,7 @@
 
 const admin = require('firebase-admin');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const SUBSCRIPTION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 // Il faut aussi une variable d'environnement pour le secret du webhook
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -60,12 +61,35 @@ module.exports = async (req, res) => {
         }
 
         try {
+            const now = Date.now();
+            const startedAt = admin.firestore.Timestamp.fromMillis(now);
+            const expiresAt = admin.firestore.Timestamp.fromMillis(now + SUBSCRIPTION_DURATION_MS);
+            const appId = admin.app().options.projectId;
+
+            await db.doc(`artifacts/${appId}/users/${userId}/subscription_data/status`).set({
+                planId,
+                status: 'active',
+                isPremium: true,
+                startedAt,
+                expiresAt,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            await db.collection('profiles').doc(userId).set({
+                selectedPlan: planId,
+                subscriptionStatus: 'active',
+                expiresAt,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
             const userRef = db.collection('users').doc(userId);
             await userRef.set({
+                selectedPlan: planId,
                 subscription: {
                     planId: planId,
                     status: 'active',
-                    startDate: admin.firestore.FieldValue.serverTimestamp(),
+                    startDate: startedAt,
+                    expiresAt,
                 }
             }, { merge: true });
 

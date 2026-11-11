@@ -288,14 +288,16 @@
 
     <!-- Contenu du Tableau de Bord -->
     <div id="dashboard-container" class="hidden min-h-screen p-4 sm:p-8">
-        <div class="mb-6 flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-lg sm:flex-row sm:items-center sm:justify-between">
+        <div
+            class="mb-6 flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-lg sm:flex-row sm:items-center sm:justify-between">
             <a href="/showcase.html" class="flex items-center gap-3 font-extrabold text-[#032C4F]">
                 <img src="/public/assets/logo.png" alt="JEOAH'S" class="h-12 w-12 rounded-xl object-cover">
                 <span>JEOAH'S <small class="block text-xs font-semibold text-blue-600">Espace vendeur</small></span>
             </a>
             <label class="w-full sm:max-w-md">
                 <span class="sr-only">Rechercher dans ma boutique</span>
-                <input id="vendor-search" type="search" placeholder="Rechercher dans ma boutique..." class="w-full rounded-full border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none">
+                <input id="vendor-search" type="search" placeholder="Rechercher dans ma boutique..."
+                    class="w-full rounded-full border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none">
             </label>
         </div>
         <div class="vendor-shell">
@@ -303,7 +305,8 @@
                 <a href="vendor_dashboard.html" class="active"><i class="fas fa-chart-pie"></i> Tableau de bord</a>
                 <a href="vendor-products.html"><i class="fas fa-box"></i> Produits</a>
                 <a href="vendor_orders.html"><i class="fas fa-clipboard-list"></i> Commandes</a>
-                <a href="#report" onclick="showVendorReport(); return false;"><i class="fas fa-chart-line"></i> Statistiques</a>
+                <a href="#report" onclick="showVendorReport(); return false;"><i class="fas fa-chart-line"></i>
+                    Statistiques</a>
                 <a href="vendor-setup.html"><i class="fas fa-cog"></i> Paramètres</a>
             </aside>
             <div class="min-w-0 space-y-8">
@@ -324,7 +327,8 @@
                     </div>
                     <div class="mt-4 sm:mt-0 text-sm text-right">
                         <p id="user-id-display" class="text-gray-400">ID Vendeur: (Chargement...)</p>
-                        <a href="vendor-setup.html" class="text-blue-600 hover:text-blue-800 font-semibold transition mt-1 block">
+                        <a href="vendor-setup.html"
+                            class="text-blue-600 hover:text-blue-800 font-semibold transition mt-1 block">
                             <i class="fas fa-store mr-1"></i> Gérer ma Boutique
                         </a>
                         <p id="subscription-status" class="text-sm font-semibold text-green-700 mt-2">Abonnement actif

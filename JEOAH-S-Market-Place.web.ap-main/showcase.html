@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,22 +9,66 @@
   <script src="/firebase-config.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
+
 <body class="min-h-screen bg-slate-50 text-slate-900">
-  <div class="bg-indigo-950 px-5 py-2 text-center text-xs font-semibold text-white">Bienvenue sur JEOAH'S Market Place - Achetez local, vendez global.</div>
+  <div class="bg-indigo-950 px-5 py-2 text-center text-xs font-semibold text-white">Bienvenue sur JEOAH'S Market Place -
+    Achetez local, vendez global.</div>
   <header class="sticky top-0 z-40 border-b border-slate-200 bg-white shadow-sm">
     <div class="mx-auto flex max-w-7xl items-center gap-5 px-5 py-3">
-      <a href="/index.html" class="flex shrink-0 items-center gap-2"><img src="/public/assets/logo.png" alt="JEOAH'S" class="h-11 w-11 rounded-lg object-cover"><span class="font-extrabold leading-tight">JEOAH'S<span class="block text-[10px] tracking-wider text-fuchsia-600">MARKET PLACE</span></span></a>
-      <label class="relative hidden flex-1 md:block"><i class="fas fa-search absolute left-4 top-3.5 text-slate-400"></i><input id="market-search" class="w-full rounded-full border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none focus:border-fuchsia-500" placeholder="Rechercher un produit, une boutique, une catégorie..."></label>
-      <nav class="ml-auto flex items-center gap-4 text-sm font-semibold"><a href="/index.html" class="hidden sm:block">Accueil</a><a href="#categories" class="hidden sm:block">Catégories</a><a href="/public/auth.html" title="Messages"><i class="fas fa-comment-dots"></i></a><a href="/panier.html" title="Panier"><i class="fas fa-shopping-cart"></i></a><a href="/public/auth.html" class="rounded-lg bg-fuchsia-600 px-3 py-2 text-white">Mon compte</a></nav>
+      <a href="/index.html" class="flex shrink-0 items-center gap-2"><img src="/public/assets/logo.png" alt="JEOAH'S"
+          class="h-11 w-11 rounded-lg object-cover"><span class="font-extrabold leading-tight">JEOAH'S<span
+            class="block text-[10px] tracking-wider text-fuchsia-600">MARKET PLACE</span></span></a>
+      <label class="relative hidden flex-1 md:block"><i
+          class="fas fa-search absolute left-4 top-3.5 text-slate-400"></i><input id="market-search"
+          class="w-full rounded-full border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none focus:border-fuchsia-500"
+          placeholder="Rechercher un produit, une boutique, une catégorie..."></label>
+      <nav class="ml-auto flex items-center gap-4 text-sm font-semibold"><a href="/index.html"
+          class="hidden sm:block">Accueil</a><a href="#categories" class="hidden sm:block">Catégories</a><a
+          href="/public/auth.html" title="Messages"><i class="fas fa-comment-dots"></i></a><a href="/panier.html"
+          title="Panier"><i class="fas fa-shopping-cart"></i></a><a href="/public/auth.html"
+          class="rounded-lg bg-fuchsia-600 px-3 py-2 text-white">Mon compte</a></nav>
     </div>
   </header>
   <main class="mx-auto max-w-7xl px-5 py-6">
     <section class="grid gap-5 lg:grid-cols-[210px_1fr]">
-      <aside id="categories" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><h2 class="font-bold">Catégories</h2><div id="category-list" class="mt-3 space-y-1 text-sm"></div></aside>
+      <aside id="categories" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h2 class="font-bold">Catégories</h2>
+        <div id="category-list" class="mt-3 space-y-1 text-sm"></div>
+      </aside>
       <div class="space-y-5">
-        <section class="overflow-hidden rounded-xl bg-gradient-to-r from-indigo-950 via-purple-800 to-fuchsia-700 p-7 text-white shadow-lg"><p class="font-semibold text-fuchsia-200">BIENVENUE SUR</p><h1 class="mt-1 text-4xl font-extrabold sm:text-5xl">JEOAH'S<br>MARKET PLACE</h1><p class="mt-3 max-w-lg text-sm text-indigo-100">Comparez les offres des vendeurs et affiliés. Choisissez le produit qui vous convient puis achetez sur la plateforme indiquée.</p><div class="mt-6 flex flex-wrap gap-3 text-xs font-bold"><span class="rounded-lg bg-white/15 px-3 py-2">Paiement sécurisé par JEOAH'S</span><span class="rounded-lg bg-white/15 px-3 py-2">Frais de service 3%</span><span class="rounded-lg bg-white/15 px-3 py-2">Suivi de livraison</span></div></section>
-        <section><div class="mb-3 flex items-center justify-between"><h2 class="text-xl font-extrabold">Boutiques en vedette</h2><a href="#products" class="text-sm font-bold text-fuchsia-700">Voir tout</a></div><div id="stores" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"></div></section>
-        <section id="products"><div class="mb-3 flex flex-wrap items-center justify-between gap-3"><div><h2 class="text-xl font-extrabold">Produits populaires</h2><p id="market-status" class="mt-1 text-xs text-slate-500">Chargement des offres JEOAH'S...</p></div><select id="currency" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold"><option value="USD">USD</option><option value="EUR">EUR</option><option value="HTG">HTG</option><option value="CAD">CAD</option></select></div><div id="products-grid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div></section>
+        <section
+          class="overflow-hidden rounded-xl bg-gradient-to-r from-indigo-950 via-purple-800 to-fuchsia-700 p-7 text-white shadow-lg">
+          <p class="font-semibold text-fuchsia-200">BIENVENUE SUR</p>
+          <h1 class="mt-1 text-4xl font-extrabold sm:text-5xl">JEOAH'S<br>MARKET PLACE</h1>
+          <p class="mt-3 max-w-lg text-sm text-indigo-100">Comparez les offres des vendeurs et affiliés. Choisissez le
+            produit qui vous convient puis achetez sur la plateforme indiquée.</p>
+          <div class="mt-6 flex flex-wrap gap-3 text-xs font-bold"><span
+              class="rounded-lg bg-white/15 px-3 py-2">Paiement sécurisé par JEOAH'S</span><span
+              class="rounded-lg bg-white/15 px-3 py-2">Frais de service 3%</span><span
+              class="rounded-lg bg-white/15 px-3 py-2">Suivi de livraison</span></div>
+        </section>
+        <section>
+          <div class="mb-3 flex items-center justify-between">
+            <h2 class="text-xl font-extrabold">Boutiques en vedette</h2><a href="#products"
+              class="text-sm font-bold text-fuchsia-700">Voir tout</a>
+          </div>
+          <div id="stores" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"></div>
+        </section>
+        <section id="products">
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="text-xl font-extrabold">Produits populaires</h2>
+              <p id="market-status" class="mt-1 text-xs text-slate-500">Chargement des offres JEOAH'S...</p>
+            </div><select id="currency"
+              class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold">
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="HTG">HTG</option>
+              <option value="CAD">CAD</option>
+            </select>
+          </div>
+          <div id="products-grid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
+        </section>
       </div>
     </section>
   </main>
@@ -34,15 +79,19 @@
     const rates = { USD: 1, EUR: .92, HTG: 131, CAD: 1.36 };
     let products = [];
     let selectedCategory = 'Toutes les catégories';
-    const escape = value => String(value || '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
+    const escape = value => String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
     function renderCategories() { document.getElementById('category-list').innerHTML = categories.map(category => `<button data-category="${escape(category)}" class="category w-full rounded-lg px-3 py-2 text-left ${category === selectedCategory ? 'bg-fuchsia-50 font-bold text-fuchsia-700' : 'hover:bg-slate-50'}">${category}</button>`).join(''); document.querySelectorAll('.category').forEach(button => button.onclick = () => { selectedCategory = button.dataset.category; renderCategories(); renderProducts(); }); }
-    function price(product) { const raw = Number(String(product.price || product.priceUsd || '0').replace(/[^0-9.]/g, '')) || 0; const code = document.getElementById('currency').value; return new Intl.NumberFormat(code === 'HTG' ? 'fr-HT' : 'fr-FR', { style:'currency', currency:code, maximumFractionDigits:code === 'HTG' ? 0 : 2 }).format(raw * rates[code]); }
+    function price(product) { const raw = Number(String(product.price || product.priceUsd || '0').replace(/[^0-9.]/g, '')) || 0; const code = document.getElementById('currency').value; return new Intl.NumberFormat(code === 'HTG' ? 'fr-HT' : 'fr-FR', { style: 'currency', currency: code, maximumFractionDigits: code === 'HTG' ? 0 : 2 }).format(raw * rates[code]); }
     function matches(product) { const text = document.getElementById('market-search').value.trim().toLowerCase(); const categoryMatch = selectedCategory === 'Toutes les catégories' || String(product.category || '').toLowerCase().includes(selectedCategory.split(' ')[0].toLowerCase()); return categoryMatch && (!text || `${product.name || product.title || ''} ${product.category || ''} ${product.source || ''}`.toLowerCase().includes(text)); }
-    function renderProducts() { const visible = products.filter(matches); document.getElementById('products-grid').innerHTML = visible.length ? visible.map(product => { const name = product.name || product.title || 'Produit JEOAH'S'; const image = product.imageUrl || product.image || 'https://placehold.co/600x600/e2e8f0/334155?text=Produit'; const link = product.url || product.redirection || '#'; const platform = product.source || product.platform || 'Partenaire'; return `<article class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><img src="${escape(image)}" alt="${escape(name)}" class="h-44 w-full object-cover"><div class="p-4"><p class="text-xs font-bold uppercase text-fuchsia-700">${escape(platform)}</p><h3 class="mt-1 min-h-10 font-bold">${escape(name)}</h3><div class="mt-3 flex items-center justify-between gap-2"><strong>${price(product)}</strong><a href="/api/affiliate-click.js?affiliate_id=${encodeURIComponent(product.affiliateId || product.ownerId || 'marketplace')}&url=${encodeURIComponent(link)}" class="rounded-lg bg-fuchsia-600 px-3 py-2 text-xs font-bold text-white">Voir l'offre</a></div></div></article>`; }).join('') : '<p class="col-span-full rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">Aucun produit ne correspond à cette recherche.</p>'; }
-    function renderStores() { const stores = [...new Set(products.map(product => product.storeName || product.sellerName || product.affiliateName || product.source).filter(Boolean))].slice(0, 4); document.getElementById('stores').innerHTML = stores.length ? stores.map(store => `<a href="#products" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-fuchsia-300"><p class="font-bold">${escape(store)}</p><p class="mt-1 text-xs text-slate-500">Voir les offres disponibles</p></a>`).join('') : '<p class="text-sm text-slate-500">Les boutiques apparaîtront lorsque les produits seront publiés par JEOAH.</p>'; }
-    async function loadProducts() { try { const config = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : null; if (!config?.apiKey) throw new Error('Configuration Firebase indisponible'); const app = getApps()[0] || initializeApp(config); const db = getFirestore(app); const [vendorSnap, affiliateSnap, profilesSnap] = await Promise.all([ getDocs(collection(db, 'products')), getDocs(collection(db, 'artifacts/jeoahs1-max-03326376-49b27/public/data/affiliate_products')), getDocs(collection(db, 'profiles')) ]); const planByUid = new Map(); profilesSnap.docs.forEach(item => planByUid.set(item.id, item.data().selectedPlan || 'free')); const hasActivePlan = uid => { const plan = planByUid.get(uid); return Boolean(plan) && plan !== 'free'; }; const vendorProducts = vendorSnap.docs.map(item => ({ id: item.id, source: 'Vendeur', ...item.data() })).filter(product => product.subscriptionActive !== false && hasActivePlan(product.ownerId)); const affiliateProducts = affiliateSnap.docs.map(item => ({ id: item.id, source: 'Affilié', ...item.data() })).filter(product => product.subscriptionActive !== false && hasActivePlan(product.affiliateId)); products = [...vendorProducts, ...affiliateProducts]; document.getElementById('market-status').textContent = `${products.length} offre(s) disponible(s) (vendeurs et affiliés avec un plan actif). Prix convertis à titre indicatif.`; } catch (error) { document.getElementById('market-status').textContent = 'Les offres seront disponibles dès que la connexion sécurisée est établie.'; } renderStores(); renderProducts(); }
-    document.getElementById('market-search').addEventListener('input', renderProducts); document.getElementById('currency').addEventListener('change', renderProducts); renderCategories(); loadProducts();
+    function hasActivePlan(product) { const value = product.subscriptionExpiresAt; const expiresAt = value?.toDate ? value.toDate().getTime() : new Date(value).getTime(); return product.subscriptionActive === true && Number.isFinite(expiresAt) && expiresAt > Date.now(); }
+    function renderProducts() {
+      const visible = products.filter(matches); document.getElementById('products-grid').innerHTML = visible.length ? visible.map(product => {
+        const name = product.name || product.title || "Produit JEOAH'S"; const image = product.imageUrl || product.image || 'https://placehold.co/600x600/e2e8f0/334155?text=Produit'; const link = product.url || product.redirection || '#'; const platform = product.source || product.platform || 'Partenaire'; return `<article class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><img src="${escape(image)}" alt="${escape(name)}" class="h-44 w-full object-cover"><div class="p-4"><p class="text-xs font-bold uppercase text-fuchsia-700">${escape(platform)}</p><h3 class="mt-1 min-h-10 font-bold">${escape(name)}</h3><div class="mt-3 flex items-center justify-between gap-2"><strong>${price(product)}</strong><a href="/api/affiliate-click.js?affiliate_id=${encodeURIComponent(product.affiliateId || product.ownerId || 'marketplace')}&url=${encodeURIComponent(link)}" class="rounded-lg bg-fuchsia-600 px-3 py-2 text-xs font-bold text-white">Voir l'offre</a></div></div></article>`; }).join('') : '<p class="col-span-full rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">Aucun produit ne correspond à cette recherche.</p>'; }
+        function renderStores() { const stores = [...new Set(products.map(product => product.storeName || product.sellerName || product.affiliateName || product.source).filter(Boolean))].slice(0, 4); document.getElementById('stores').innerHTML = stores.length ? stores.map(store => `<a href="#products" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-fuchsia-300"><p class="font-bold">${escape(store)}</p><p class="mt-1 text-xs text-slate-500">Voir les offres disponibles</p></a>`).join('') : '<p class="text-sm text-slate-500">Les boutiques apparaîtront lorsque les produits seront publiés par JEOAH.</p>'; }
+        async function loadProducts() { try { const config = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : null; if (!config?.apiKey) throw new Error('Configuration Firebase indisponible'); const app = getApps()[0] || initializeApp(config); const snapshot = await getDocs(collection(getFirestore(app), 'artifacts/jeoahs1-max-03326376-49b27/public/data/products')); products = snapshot.docs.map(item => ({ id: item.id, ...item.data() })).filter(hasActivePlan); document.getElementById('market-status').textContent = `${products.length} offre(s) disponible(s). Prix convertis à titre indicatif.`; } catch (error) { document.getElementById('market-status').textContent = 'Les offres seront disponibles dès que la connexion sécurisée est établie.'; } renderStores(); renderProducts(); }
+        document.getElementById('market-search').addEventListener('input', renderProducts); document.getElementById('currency').addEventListener('change', renderProducts); renderCategories(); loadProducts();
   </script>
   <script src="/public/jeoah-loader.js" defer></script>
 </body>
+
 </html>

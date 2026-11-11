@@ -1,5 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,13 +9,19 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+
         .store-hero-banner {
             background: linear-gradient(135deg, #6b21a8 0%, #a21caf 50%, #be185d 100%);
             position: relative;
             overflow: hidden;
             border-radius: 1.5rem;
         }
+
         .store-hero-banner::after {
             content: '';
             position: absolute;
@@ -22,18 +29,21 @@
             bottom: -60px;
             width: 320px;
             height: 320px;
-            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
             border-radius: 50%;
         }
+
         .store-tab-active {
             color: #7e22ce;
             border-bottom: 3px solid #7e22ce;
             font-weight: 700;
         }
+
         .product-card {
             transition: all 0.25s ease;
             border: 1px solid #f1f5f9;
         }
+
         .product-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 16px 30px -8px rgba(15, 23, 42, 0.1);
@@ -77,16 +87,16 @@
         let activeCategory = 'all';
         let searchTerm = '';
 
-        const esc = s => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const esc = s => String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-        window.shareStore = function() {
+        window.shareStore = function () {
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(location.href);
                 alert("Lien de la boutique copié dans le presse-papiers !");
             }
         };
 
-        window.copyReferralLink = function() {
+        window.copyReferralLink = function () {
             const link = authUser?.referralLink || `${location.origin}/public/auth.html?ref=${encodeURIComponent(authUser?.accountCode || targetId)}`;
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(link);
@@ -94,7 +104,7 @@
             }
         };
 
-        window.setCategory = function(cat) {
+        window.setCategory = function (cat) {
             activeCategory = cat;
             document.querySelectorAll('.cat-pill').forEach(btn => {
                 btn.className = 'cat-pill px-4 py-2 rounded-full text-xs font-semibold ' + (btn.dataset.cat === cat ? 'bg-purple-700 text-white shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200');
@@ -103,9 +113,9 @@
         };
 
         // Supprimer un produit / lien de la vitrine
-        window.deleteProduct = async function(prodId) {
+        window.deleteProduct = async function (prodId) {
             if (!confirm("Voulez-vous vraiment retirer ce produit de votre vitrine ?")) return;
-            
+
             // 1. Mise à jour locale
             let localProds = JSON.parse(localStorage.getItem('jeoahs_affiliate_products') || '[]');
             localProds = localProds.filter(p => p.id !== prodId);
@@ -135,7 +145,7 @@
         };
 
         // Modifier le prix ou le titre (Mode Vendeur/Propriétaire)
-        window.editProduct = async function(prodId) {
+        window.editProduct = async function (prodId) {
             const prod = storeProducts.find(p => p.id === prodId);
             if (!prod) return;
 
@@ -185,8 +195,8 @@
             const featuredContainer = document.getElementById('featured-products-grid');
             const allContainer = document.getElementById('all-products-grid');
 
-            const filteredByCategory = activeCategory === 'all' 
-                ? storeProducts 
+            const filteredByCategory = activeCategory === 'all'
+                ? storeProducts
                 : storeProducts.filter(p => (p.category || '').toLowerCase().includes(activeCategory.toLowerCase()));
             const filtered = searchTerm
                 ? filteredByCategory.filter(p => `${p.name || ''} ${p.category || ''} ${p.hook || ''}`.toLowerCase().includes(searchTerm))
@@ -231,13 +241,13 @@
 
             if (featuredContainer) {
                 const featured = storeProducts.slice(0, 4);
-                featuredContainer.innerHTML = featured.length 
+                featuredContainer.innerHTML = featured.length
                     ? featured.map(p => renderCard(p, true)).join('')
                     : '<div class="col-span-full py-8 text-center text-slate-400 text-sm bg-white rounded-2xl border border-dashed border-slate-200">Aucun produit en vedette pour le moment.</div>';
             }
 
             if (allContainer) {
-                allContainer.innerHTML = filtered.length 
+                allContainer.innerHTML = filtered.length
                     ? filtered.map(p => renderCard(p)).join('')
                     : '<div class="col-span-full py-12 text-center text-slate-400 text-sm bg-white rounded-2xl border border-dashed border-slate-200">Aucun produit dans cette catégorie.</div>';
             }
@@ -290,7 +300,7 @@
             try {
                 const pSnap = await getDocs(query(collection(db, `artifacts/${appId}/public/data/affiliate_products`), where('affiliateId', '==', targetId)));
                 prods = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            } catch (_) {}
+            } catch (_) { }
 
             if (!prods.length) {
                 const isVendor = authUser?.role === 'vendeur' || authUser?.roles?.includes('vendeur');
@@ -311,6 +321,7 @@
         });
     </script>
 </head>
+
 <body class="min-h-screen flex flex-col">
 
     <!-- Top Navigation Bar JEOAH'S (Conforme à l'image 1) -->
@@ -318,27 +329,40 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
             <!-- Logo Gauche -->
             <a href="/index.html" class="flex items-center gap-3 flex-shrink-0">
-                <img src="/public/assets/logo.png" alt="JEOAH'S" class="h-10 w-10 object-cover rounded-xl shadow-sm border border-slate-100">
-                <span class="font-extrabold text-xl tracking-tight text-slate-900 leading-none">JEOAH'S <span class="text-[10px] font-bold text-pink-600 block tracking-widest mt-0.5">MARKET PLACE</span></span>
+                <img src="/public/assets/logo.png" alt="JEOAH'S"
+                    class="h-10 w-10 object-cover rounded-xl shadow-sm border border-slate-100">
+                <span class="font-extrabold text-xl tracking-tight text-slate-900 leading-none">JEOAH'S <span
+                        class="text-[10px] font-bold text-pink-600 block tracking-widest mt-0.5">MARKET
+                        PLACE</span></span>
             </a>
 
             <!-- Search Bar Centre -->
             <div class="hidden md:flex flex-1 max-w-xl mx-4">
                 <div class="relative w-full">
-                    <input type="text" placeholder="Rechercher un produit, une catégorie..." class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-full text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white transition">
+                    <input type="text" placeholder="Rechercher un produit, une catégorie..."
+                        class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-full text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white transition">
                     <i class="fas fa-search absolute left-3.5 top-2.5 text-slate-400 text-sm"></i>
                 </div>
             </div>
 
             <!-- Liens Droite -->
             <nav class="flex items-center gap-4 text-xs font-semibold text-slate-700">
-                <a href="/index.html" class="hidden sm:flex items-center gap-1.5 hover:text-purple-600 transition"><i class="fas fa-home text-sm"></i> Accueil</a>
-                <a href="/showcase.html" class="hidden sm:flex items-center gap-1.5 hover:text-purple-600 transition"><i class="fas fa-th-large text-sm"></i> Catégories</a>
-                <a href="/public/auth.html" class="hidden sm:flex items-center gap-1.5 hover:text-purple-600 transition"><i class="fas fa-comment-dots text-sm"></i> Messages</a>
-                <a href="/public/auth.html" class="relative hover:text-purple-600 transition"><i class="fas fa-bell text-base"></i><span class="absolute -top-1.5 -right-1.5 bg-pink-600 text-white text-[9px] font-bold px-1 rounded-full">3</span></a>
-                <a href="/panier.html" class="relative hover:text-purple-600 transition"><i class="fas fa-shopping-cart text-base"></i><span class="absolute -top-1.5 -right-1.5 bg-purple-600 text-white text-[9px] font-bold px-1 rounded-full">2</span></a>
+                <a href="/index.html" class="hidden sm:flex items-center gap-1.5 hover:text-purple-600 transition"><i
+                        class="fas fa-home text-sm"></i> Accueil</a>
+                <a href="/showcase.html" class="hidden sm:flex items-center gap-1.5 hover:text-purple-600 transition"><i
+                        class="fas fa-th-large text-sm"></i> Catégories</a>
+                <a href="/public/auth.html"
+                    class="hidden sm:flex items-center gap-1.5 hover:text-purple-600 transition"><i
+                        class="fas fa-comment-dots text-sm"></i> Messages</a>
+                <a href="/public/auth.html" class="relative hover:text-purple-600 transition"><i
+                        class="fas fa-bell text-base"></i><span
+                        class="absolute -top-1.5 -right-1.5 bg-pink-600 text-white text-[9px] font-bold px-1 rounded-full">3</span></a>
+                <a href="/panier.html" class="relative hover:text-purple-600 transition"><i
+                        class="fas fa-shopping-cart text-base"></i><span
+                        class="absolute -top-1.5 -right-1.5 bg-purple-600 text-white text-[9px] font-bold px-1 rounded-full">2</span></a>
                 <a href="/public/auth.html" class="flex items-center gap-2 pl-2 border-l border-slate-200">
-                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Avatar" class="w-7 h-7 rounded-full object-cover">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"
+                        alt="Avatar" class="w-7 h-7 rounded-full object-cover">
                     <span class="hidden md:inline text-xs font-bold text-slate-800">Mon Compte</span>
                 </a>
             </nav>
@@ -357,33 +381,48 @@
         </nav>
 
         <!-- BANNIÈRE HERO DE LA BOUTIQUE (Exactement comme la maquette Image 1) -->
-        <div class="store-hero-banner p-6 sm:p-10 text-white shadow-xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
-            
+        <div
+            class="store-hero-banner p-6 sm:p-10 text-white shadow-xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+
             <!-- Profil Gauche -->
             <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6 z-10">
                 <div class="relative flex-shrink-0">
-                    <img id="store-avatar-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80" alt="Avatar" class="w-28 h-28 sm:w-36 sm:h-36 rounded-full border-4 border-white object-cover shadow-2xl">
-                    <button class="absolute bottom-1 right-1 bg-white text-purple-700 p-2 rounded-full shadow-md text-xs hover:bg-slate-100 transition"><i class="fas fa-camera"></i></button>
+                    <img id="store-avatar-img"
+                        src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80"
+                        alt="Avatar"
+                        class="w-28 h-28 sm:w-36 sm:h-36 rounded-full border-4 border-white object-cover shadow-2xl">
+                    <button
+                        class="absolute bottom-1 right-1 bg-white text-purple-700 p-2 rounded-full shadow-md text-xs hover:bg-slate-100 transition"><i
+                            class="fas fa-camera"></i></button>
                 </div>
                 <div class="space-y-2">
-                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-bold">
+                    <div
+                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-bold">
                         <i class="fas fa-check-circle text-emerald-300"></i>
                         <span>Affilié vérifié</span>
                     </div>
-                    <h1 id="store-name-display" class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">Beauty by Carel</h1>
-                    <p id="store-bio-display" class="text-sm sm:text-base text-purple-100 max-w-xl leading-relaxed">Produits de beauté et soins naturels pour votre bien-être.</p>
+                    <h1 id="store-name-display"
+                        class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">Beauty by
+                        Carel</h1>
+                    <p id="store-bio-display" class="text-sm sm:text-base text-purple-100 max-w-xl leading-relaxed">
+                        Produits de beauté et soins naturels pour votre bien-être.</p>
                     <div class="flex flex-wrap items-center gap-4 text-xs text-purple-100/90 pt-1">
-                        <span class="flex items-center gap-1"><i class="fas fa-map-marker-alt text-pink-300"></i> Port-au-Prince, Haiti</span>
-                        <span class="flex items-center gap-1"><i class="fas fa-clock text-pink-300"></i> Répond en général en quelques heures</span>
+                        <span class="flex items-center gap-1"><i class="fas fa-map-marker-alt text-pink-300"></i>
+                            Port-au-Prince, Haiti</span>
+                        <span class="flex items-center gap-1"><i class="fas fa-clock text-pink-300"></i> Répond en
+                            général en quelques heures</span>
                     </div>
                     <div class="flex flex-wrap items-center gap-3 pt-3">
-                        <a href="/public/auth.html" class="px-5 py-2.5 bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-2">
+                        <a href="/public/auth.html"
+                            class="px-5 py-2.5 bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-2">
                             <i class="fas fa-comment-dots"></i> Contacter la boutique
                         </a>
-                        <button onclick="shareStore()" class="px-4 py-2.5 bg-white/15 hover:bg-white/25 border border-white/25 text-white text-xs font-bold rounded-xl backdrop-blur-md transition flex items-center gap-2">
+                        <button onclick="shareStore()"
+                            class="px-4 py-2.5 bg-white/15 hover:bg-white/25 border border-white/25 text-white text-xs font-bold rounded-xl backdrop-blur-md transition flex items-center gap-2">
                             <i class="far fa-heart"></i> Suivre la boutique
                         </button>
-                        <button onclick="shareStore()" title="Partager cette vitrine" class="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 text-white rounded-xl backdrop-blur-md transition">
+                        <button onclick="shareStore()" title="Partager cette vitrine"
+                            class="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 text-white rounded-xl backdrop-blur-md transition">
                             <i class="fas fa-share-alt"></i>
                         </button>
                     </div>
@@ -404,32 +443,41 @@
                 </div>
                 <div class="flex items-center justify-between pt-1">
                     <div class="flex items-center gap-1 text-amber-500 font-bold text-sm">
-                        <i class="fas fa-star"></i> 4.8 <span class="text-[11px] text-slate-400 font-medium">(128 avis)</span>
+                        <i class="fas fa-star"></i> 4.8 <span class="text-[11px] text-slate-400 font-medium">(128
+                            avis)</span>
                     </div>
-                    <span class="text-[11px] text-slate-500 font-medium flex items-center gap-1"><i class="far fa-calendar-alt text-purple-600"></i> Depuis Mars 2024</span>
+                    <span class="text-[11px] text-slate-500 font-medium flex items-center gap-1"><i
+                            class="far fa-calendar-alt text-purple-600"></i> Depuis Mars 2024</span>
                 </div>
             </div>
         </div>
 
         <!-- Navigation par Onglets (Accueil, Produits, À propos, Avis) -->
         <div class="border-b border-slate-200 flex gap-8 text-sm font-semibold text-slate-600 px-2 overflow-x-auto">
-            <button class="store-tab-active py-3.5 flex items-center gap-2 whitespace-nowrap"><i class="fas fa-store"></i> Accueil de la boutique</button>
-            <button onclick="location.href='#all-products-section'" class="py-3.5 hover:text-purple-600 flex items-center gap-2 whitespace-nowrap"><i class="fas fa-boxes"></i> Tous les produits</button>
-            <button onclick="location.href='#about-section'" class="py-3.5 hover:text-purple-600 flex items-center gap-2 whitespace-nowrap"><i class="fas fa-info-circle"></i> À propos</button>
-            <button class="py-3.5 hover:text-purple-600 flex items-center gap-2 whitespace-nowrap"><i class="fas fa-star"></i> Avis des clients</button>
+            <button class="store-tab-active py-3.5 flex items-center gap-2 whitespace-nowrap"><i
+                    class="fas fa-store"></i> Accueil de la boutique</button>
+            <button onclick="location.href='#all-products-section'"
+                class="py-3.5 hover:text-purple-600 flex items-center gap-2 whitespace-nowrap"><i
+                    class="fas fa-boxes"></i> Tous les produits</button>
+            <button onclick="location.href='#about-section'"
+                class="py-3.5 hover:text-purple-600 flex items-center gap-2 whitespace-nowrap"><i
+                    class="fas fa-info-circle"></i> À propos</button>
+            <button class="py-3.5 hover:text-purple-600 flex items-center gap-2 whitespace-nowrap"><i
+                    class="fas fa-star"></i> Avis des clients</button>
         </div>
 
         <!-- GRILLE PRINCIPALE EN 2 COLONNES (8 Cols Gauche / 4 Cols Droite) -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
+
             <!-- COLONNE GAUCHE (Produits en vedette + Tous les produits) -->
             <div class="lg:col-span-8 space-y-10">
-                
+
                 <!-- Section 1 : Produits en vedette -->
                 <div>
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-xl font-extrabold text-slate-900">Produits en vedette</h2>
-                        <a href="#all-products-section" class="text-xs font-bold text-purple-700 hover:underline">Voir tout →</a>
+                        <a href="#all-products-section" class="text-xs font-bold text-purple-700 hover:underline">Voir
+                            tout →</a>
                     </div>
                     <div id="featured-products-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <!-- Rendu dynamique JS -->
@@ -442,7 +490,8 @@
                         <h2 class="text-xl font-extrabold text-slate-900">Tous les produits</h2>
                         <div class="flex items-center gap-2">
                             <span class="text-xs font-semibold text-slate-500">Trier par :</span>
-                            <select class="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold bg-white text-slate-700 focus:outline-none">
+                            <select
+                                class="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold bg-white text-slate-700 focus:outline-none">
                                 <option>Populaire</option>
                                 <option>Prix croissant</option>
                                 <option>Prix décroissant</option>
@@ -453,12 +502,20 @@
 
                     <!-- Pilules de Filtres Catégories -->
                     <div class="flex flex-wrap gap-2 mb-6 text-xs font-semibold">
-                        <button data-cat="all" onclick="setCategory('all')" class="cat-pill px-4 py-2 rounded-full bg-purple-700 text-white shadow-sm">Tous</button>
-                        <button data-cat="visage" onclick="setCategory('visage')" class="cat-pill px-4 py-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200">Soins du visage</button>
-                        <button data-cat="corps" onclick="setCategory('corps')" class="cat-pill px-4 py-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200">Soins du corps</button>
-                        <button data-cat="huiles" onclick="setCategory('huiles')" class="cat-pill px-4 py-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200">Huiles</button>
-                        <button data-cat="savons" onclick="setCategory('savons')" class="cat-pill px-4 py-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200">Savons</button>
-                        <button data-cat="autres" onclick="setCategory('autres')" class="cat-pill px-4 py-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200">Autres</button>
+                        <button data-cat="all" onclick="setCategory('all')"
+                            class="cat-pill px-4 py-2 rounded-full bg-purple-700 text-white shadow-sm">Tous</button>
+                        <button data-cat="visage" onclick="setCategory('visage')"
+                            class="cat-pill px-4 py-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200">Soins
+                            du visage</button>
+                        <button data-cat="corps" onclick="setCategory('corps')"
+                            class="cat-pill px-4 py-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200">Soins
+                            du corps</button>
+                        <button data-cat="huiles" onclick="setCategory('huiles')"
+                            class="cat-pill px-4 py-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200">Huiles</button>
+                        <button data-cat="savons" onclick="setCategory('savons')"
+                            class="cat-pill px-4 py-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200">Savons</button>
+                        <button data-cat="autres" onclick="setCategory('autres')"
+                            class="cat-pill px-4 py-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200">Autres</button>
                     </div>
 
                     <!-- Grille de Tous les Produits -->
@@ -470,20 +527,23 @@
 
             <!-- COLONNE DROITE (À propos de la boutique + Comment ça marche ?) -->
             <div id="about-section" class="lg:col-span-4 space-y-6">
-                
+
                 <!-- Carte À propos de la boutique -->
                 <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
                     <h3 class="font-extrabold text-base text-slate-900">À propos de la boutique</h3>
                     <p id="store-about-text" class="text-xs text-slate-600 leading-relaxed">
-                        Cette vitrine présente des produits et offres sélectionnés par cet affilié. Découvrez les recommandations et accédez aux offres officielles.
+                        Cette vitrine présente des produits et offres sélectionnés par cet affilié. Découvrez les
+                        recommandations et accédez aux offres officielles.
                     </p>
                     <div class="pt-3 border-t border-slate-100 space-y-3 text-xs">
                         <div class="flex items-center justify-between">
-                            <span class="text-slate-500 font-medium flex items-center gap-1.5"><i class="fas fa-tag text-purple-600"></i> Type de vitrine</span>
+                            <span class="text-slate-500 font-medium flex items-center gap-1.5"><i
+                                    class="fas fa-tag text-purple-600"></i> Type de vitrine</span>
                             <span class="font-bold text-slate-800">Recommandations affiliées</span>
                         </div>
                         <div class="flex items-center justify-between">
-                            <span class="text-slate-500 font-medium flex items-center gap-1.5"><i class="fas fa-address-book text-purple-600"></i> Moyens de contact</span>
+                            <span class="text-slate-500 font-medium flex items-center gap-1.5"><i
+                                    class="fas fa-address-book text-purple-600"></i> Moyens de contact</span>
                             <div class="flex gap-2 text-purple-700 text-sm">
                                 <i class="fab fa-whatsapp hover:text-emerald-500 cursor-pointer"></i>
                                 <i class="fas fa-phone hover:text-blue-500 cursor-pointer"></i>
@@ -492,7 +552,8 @@
                             </div>
                         </div>
                         <div class="flex items-center justify-between">
-                            <span class="text-slate-500 font-medium flex items-center gap-1.5"><i class="far fa-clock text-purple-600"></i> Heures de réponse</span>
+                            <span class="text-slate-500 font-medium flex items-center gap-1.5"><i
+                                    class="far fa-clock text-purple-600"></i> Heures de réponse</span>
                             <span class="font-bold text-slate-800">Lun - Sam : 8h00 - 20h00</span>
                         </div>
                     </div>
@@ -503,36 +564,45 @@
                     <h3 class="font-extrabold text-base text-purple-950">Comment ça marche ?</h3>
                     <div class="space-y-3 text-xs text-slate-700">
                         <div class="flex items-start gap-3">
-                            <span class="w-5 h-5 rounded-full bg-purple-700 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">1</span>
+                            <span
+                                class="w-5 h-5 rounded-full bg-purple-700 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">1</span>
                             <p>Parcourez les produits et recommandations de la boutique.</p>
                         </div>
                         <div class="flex items-start gap-3">
-                            <span class="w-5 h-5 rounded-full bg-purple-700 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">2</span>
+                            <span
+                                class="w-5 h-5 rounded-full bg-purple-700 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">2</span>
                             <p>Contactez le vendeur via le chat ou découvrez l'offre officielle.</p>
                         </div>
                         <div class="flex items-start gap-3">
-                            <span class="w-5 h-5 rounded-full bg-purple-700 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">3</span>
+                            <span
+                                class="w-5 h-5 rounded-full bg-purple-700 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">3</span>
                             <p>Confirmez votre commande en toute sécurité.</p>
                         </div>
                         <div class="flex items-start gap-3">
-                            <span class="w-5 h-5 rounded-full bg-purple-700 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">4</span>
+                            <span
+                                class="w-5 h-5 rounded-full bg-purple-700 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">4</span>
                             <p>Recevez votre produit directement chez vous.</p>
                         </div>
                     </div>
-                    <div class="pt-3 border-t border-purple-100 flex items-center gap-2 text-[11px] text-pink-700 font-semibold bg-pink-50/70 p-2.5 rounded-xl">
+                    <div
+                        class="pt-3 border-t border-purple-100 flex items-center gap-2 text-[11px] text-pink-700 font-semibold bg-pink-50/70 p-2.5 rounded-xl">
                         <i class="fas fa-percent"></i>
                         <span>Frais de service JEOAH'S : 3% à la charge de l'acheteur.</span>
                     </div>
                     <div id="owner-product-action" class="hidden pt-3 border-t border-purple-100">
                         <p class="mb-2 text-xs font-semibold text-purple-950">Gérer ma vitrine</p>
-                        <a id="add-product-link" href="/affiliate-product-add.html" onclick="window.location.href='/affiliate-product-add.html'; return false;" class="inline-flex items-center gap-2 rounded-lg bg-purple-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-purple-800">
+                        <a id="add-product-link" href="/affiliate-product-add.html"
+                            onclick="window.location.href='/affiliate-product-add.html'; return false;"
+                            class="inline-flex items-center gap-2 rounded-lg bg-purple-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-purple-800">
                             <i class="fas fa-plus-circle"></i> Ajouter un produit
                         </a>
                     </div>
                     <div class="pt-3 border-t border-purple-100">
                         <p class="text-xs font-semibold text-purple-950">Mon lien de partage et de parrainage</p>
-                        <p id="referral-code-display" class="mt-2 text-xs font-bold text-purple-700">Votre code sera disponible après connexion.</p>
-                        <button type="button" onclick="copyReferralLink()" class="mt-2 inline-flex items-center gap-2 rounded-lg border border-purple-200 px-3 py-2 text-xs font-bold text-purple-700 transition hover:bg-purple-50">
+                        <p id="referral-code-display" class="mt-2 text-xs font-bold text-purple-700">Votre code sera
+                            disponible après connexion.</p>
+                        <button type="button" onclick="copyReferralLink()"
+                            class="mt-2 inline-flex items-center gap-2 rounded-lg border border-purple-200 px-3 py-2 text-xs font-bold text-purple-700 transition hover:bg-purple-50">
                             <i class="fas fa-link"></i> Copier mon lien
                         </button>
                     </div>
@@ -565,4 +635,5 @@
         });
     </script>
 </body>
+
 </html>

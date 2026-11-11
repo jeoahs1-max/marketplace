@@ -1,64 +1,647 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="JEOAH'S facilite les échanges entre acheteurs, vendeurs et affiliés, avec l'aide de JEOAH.">
+    <meta name="description"
+        content="JEOAH'S facilite les échanges entre acheteurs, vendeurs et affiliés, avec l'aide de JEOAH.">
     <link rel="icon" href="/public/assets/logo.png" type="image/png">
     <link rel="apple-touch-icon" href="/public/assets/logo.png">
     <link rel="manifest" href="/public/manifest.json">
     <title>JEOAH'S | La communauté qui facilite le commerce</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer">
     <style>
-        :root { --ink:#102a43; --blue:#1665d8; --teal:#0f766e; --gold:#f4b942; --mist:#eef5f7; --line:#d7e2e8; }
-        * { box-sizing:border-box; }
-        body { margin:0; color:var(--ink); background:#fbfdfd; font-family:'DM Sans',sans-serif; }
-        h1,h2,h3 { font-family:'Space Grotesk',sans-serif; }
-        a { color:inherit; text-decoration:none; }
-        .wrap { width:min(1160px, calc(100% - 40px)); margin:auto; }
-        header { position:sticky; top:0; z-index:20; background:rgba(251,253,253,.94); border-bottom:1px solid var(--line); backdrop-filter:blur(12px); }
-        .nav { min-height:74px; display:flex; align-items:center; justify-content:space-between; gap:20px; }
-        .brand { display:flex; align-items:center; gap:10px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.35rem; }
-        .brand-logo { width:44px; height:44px; object-fit:cover; border-radius:10px; box-shadow:6px 6px 0 var(--gold); }
-        .links { display:flex; align-items:center; gap:22px; color:#486581; font-size:.94rem; }
-        .links a:hover { color:var(--blue); }
-        .menu { display:none; border:0; background:transparent; color:var(--ink); font-size:1.4rem; }
-        .actions { display:flex; align-items:center; gap:10px; }
-        .button { display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius:9px; padding:11px 16px; font-weight:700; border:1px solid transparent; cursor:pointer; }
-        .button.primary { background:var(--blue); color:white; }.button.secondary { background:white; border-color:var(--line); color:var(--ink); }.button:hover { transform:translateY(-1px); }
-        .hero { padding:86px 0 70px; background:linear-gradient(135deg,#eaf6f5 0%,#fbfdfd 58%,#fff4d7 100%); }.hero-grid { display:grid; grid-template-columns:1.1fr .9fr; align-items:center; gap:70px; }
-        .eyebrow { color:var(--teal); font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-size:.8rem; }
-        h1 { font-size:clamp(2.6rem,6vw,5.5rem); line-height:.98; margin:16px 0 24px; letter-spacing:-.04em; }.hero p { color:#486581; font-size:1.15rem; line-height:1.7; max-width:650px; }.hero-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:30px; }.hero-note { margin-top:18px; color:#627d98; font-size:.86rem; }
-        .orbit { min-height:380px; position:relative; display:grid; place-items:center; }.orbit::before { content:''; position:absolute; width:300px; height:300px; border:1px dashed #9ccbc6; border-radius:50%; }.ney-card { position:relative; width:min(310px,90%); padding:30px; border-radius:24px; color:white; background:var(--ink); box-shadow:18px 18px 0 var(--gold); }.ney-icon { width:54px; height:54px; display:grid; place-items:center; border-radius:16px; background:#2aa198; font-size:1.4rem; }.ney-card h2 { margin:22px 0 8px; font-size:2rem; }.ney-card p { color:#d9edf0; font-size:.95rem; }.float { position:absolute; padding:12px 15px; border:1px solid white; border-radius:12px; background:white; box-shadow:0 10px 25px #102a4320; font-weight:700; font-size:.85rem; }.float.one { top:12%; left:0; }.float.two { right:-2%; bottom:16%; }.float.three { bottom:0; left:13%; }
-        section { padding:78px 0; }.section-head { max-width:700px; margin-bottom:34px; }.section-head h2 { font-size:clamp(2rem,4vw,3rem); margin:8px 0 12px; }.section-head p { color:#627d98; line-height:1.7; }.cards { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }.card { padding:28px; background:white; border:1px solid var(--line); border-radius:14px; box-shadow:0 12px 28px #102a430c; }.card i { color:var(--blue); font-size:1.5rem; }.card h3 { margin:20px 0 10px; font-size:1.35rem; }.card p { color:#627d98; line-height:1.65; }
-        .steps { background:var(--ink); color:white; }.steps .section-head p { color:#b9d0dc; }.steps .card { background:#173b57; border-color:#2b5571; }.steps .card p { color:#c7dbe4; }.steps .card i { color:var(--gold); }.community { display:grid; grid-template-columns:1fr 1fr; gap:50px; align-items:center; }.community-box { padding:32px; border-left:5px solid var(--teal); background:var(--mist); }.community-box p { color:#486581; line-height:1.7; }.pill-row { display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }.pill { padding:9px 12px; border-radius:999px; background:white; border:1px solid var(--line); color:#486581; font-size:.85rem; }.notice { padding:20px; border:1px solid #f1d28a; border-radius:12px; background:#fff9e8; color:#76551a; line-height:1.6; }
-        footer { padding:45px 0 28px; background:#0c2135; color:white; }.footer-grid { display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:35px; }.footer-grid p,.footer-grid a { color:#b9cbd5; line-height:1.7; }.socials { display:flex; flex-wrap:wrap; gap:16px; margin-top:18px; font-size:1.25rem; }.socials a:hover { color:white; }.legal { border-top:1px solid #294258; margin-top:30px; padding-top:20px; color:#9fb4c1; font-size:.84rem; display:flex; justify-content:space-between; gap:20px; }
-        @media(max-width:800px){ .links{display:none;position:absolute;top:74px;left:0;right:0;padding:20px;background:white;border-bottom:1px solid var(--line);flex-direction:column;align-items:flex-start}.links.open{display:flex}.hero{padding-top:55px}.hero-grid,.community{grid-template-columns:1fr;gap:40px}.orbit{min-height:330px}.cards{grid-template-columns:1fr}.footer-grid{grid-template-columns:1fr}.legal{flex-direction:column}.actions .secondary{display:none}.wrap{width:min(100% - 28px,1160px)} }
+        :root {
+            --ink: #102a43;
+            --blue: #1665d8;
+            --teal: #0f766e;
+            --gold: #f4b942;
+            --mist: #eef5f7;
+            --line: #d7e2e8;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            color: var(--ink);
+            background: #fbfdfd;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .wrap {
+            width: min(1160px, calc(100% - 40px));
+            margin: auto;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: rgba(251, 253, 253, .94);
+            border-bottom: 1px solid var(--line);
+            backdrop-filter: blur(12px);
+        }
+
+        .nav {
+            min-height: 74px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.35rem;
+        }
+
+        .brand-logo {
+            width: 44px;
+            height: 44px;
+            object-fit: cover;
+            border-radius: 10px;
+            box-shadow: 6px 6px 0 var(--gold);
+        }
+
+        .links {
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            color: #486581;
+            font-size: .94rem;
+        }
+
+        .links a:hover {
+            color: var(--blue);
+        }
+
+        .menu {
+            display: none;
+            border: 0;
+            background: transparent;
+            color: var(--ink);
+            font-size: 1.4rem;
+        }
+
+        .actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 9px;
+            padding: 11px 16px;
+            font-weight: 700;
+            border: 1px solid transparent;
+            cursor: pointer;
+        }
+
+        .button.primary {
+            background: var(--blue);
+            color: white;
+        }
+
+        .button.secondary {
+            background: white;
+            border-color: var(--line);
+            color: var(--ink);
+        }
+
+        .button:hover {
+            transform: translateY(-1px);
+        }
+
+        .hero {
+            padding: 86px 0 70px;
+            background: linear-gradient(135deg, #eaf6f5 0%, #fbfdfd 58%, #fff4d7 100%);
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.1fr .9fr;
+            align-items: center;
+            gap: 70px;
+        }
+
+        .eyebrow {
+            color: var(--teal);
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            font-size: .8rem;
+        }
+
+        h1 {
+            font-size: clamp(2.6rem, 6vw, 5.5rem);
+            line-height: .98;
+            margin: 16px 0 24px;
+            letter-spacing: -.04em;
+        }
+
+        .hero p {
+            color: #486581;
+            font-size: 1.15rem;
+            line-height: 1.7;
+            max-width: 650px;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .hero-note {
+            margin-top: 18px;
+            color: #627d98;
+            font-size: .86rem;
+        }
+
+        .orbit {
+            min-height: 380px;
+            position: relative;
+            display: grid;
+            place-items: center;
+        }
+
+        .orbit::before {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border: 1px dashed #9ccbc6;
+            border-radius: 50%;
+        }
+
+        .ney-card {
+            position: relative;
+            width: min(310px, 90%);
+            padding: 30px;
+            border-radius: 24px;
+            color: white;
+            background: var(--ink);
+            box-shadow: 18px 18px 0 var(--gold);
+        }
+
+        .ney-icon {
+            width: 54px;
+            height: 54px;
+            display: grid;
+            place-items: center;
+            border-radius: 16px;
+            background: #2aa198;
+            font-size: 1.4rem;
+        }
+
+        .ney-card h2 {
+            margin: 22px 0 8px;
+            font-size: 2rem;
+        }
+
+        .ney-card p {
+            color: #d9edf0;
+            font-size: .95rem;
+        }
+
+        .float {
+            position: absolute;
+            padding: 12px 15px;
+            border: 1px solid white;
+            border-radius: 12px;
+            background: white;
+            box-shadow: 0 10px 25px #102a4320;
+            font-weight: 700;
+            font-size: .85rem;
+        }
+
+        .float.one {
+            top: 12%;
+            left: 0;
+        }
+
+        .float.two {
+            right: -2%;
+            bottom: 16%;
+        }
+
+        .float.three {
+            bottom: 0;
+            left: 13%;
+        }
+
+        section {
+            padding: 78px 0;
+        }
+
+        .section-head {
+            max-width: 700px;
+            margin-bottom: 34px;
+        }
+
+        .section-head h2 {
+            font-size: clamp(2rem, 4vw, 3rem);
+            margin: 8px 0 12px;
+        }
+
+        .section-head p {
+            color: #627d98;
+            line-height: 1.7;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+        }
+
+        .card {
+            padding: 28px;
+            background: white;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            box-shadow: 0 12px 28px #102a430c;
+        }
+
+        .card i {
+            color: var(--blue);
+            font-size: 1.5rem;
+        }
+
+        .card h3 {
+            margin: 20px 0 10px;
+            font-size: 1.35rem;
+        }
+
+        .card p {
+            color: #627d98;
+            line-height: 1.65;
+        }
+
+        .steps {
+            background: var(--ink);
+            color: white;
+        }
+
+        .steps .section-head p {
+            color: #b9d0dc;
+        }
+
+        .steps .card {
+            background: #173b57;
+            border-color: #2b5571;
+        }
+
+        .steps .card p {
+            color: #c7dbe4;
+        }
+
+        .steps .card i {
+            color: var(--gold);
+        }
+
+        .community {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            align-items: center;
+        }
+
+        .community-box {
+            padding: 32px;
+            border-left: 5px solid var(--teal);
+            background: var(--mist);
+        }
+
+        .community-box p {
+            color: #486581;
+            line-height: 1.7;
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .pill {
+            padding: 9px 12px;
+            border-radius: 999px;
+            background: white;
+            border: 1px solid var(--line);
+            color: #486581;
+            font-size: .85rem;
+        }
+
+        .notice {
+            padding: 20px;
+            border: 1px solid #f1d28a;
+            border-radius: 12px;
+            background: #fff9e8;
+            color: #76551a;
+            line-height: 1.6;
+        }
+
+        footer {
+            padding: 45px 0 28px;
+            background: #0c2135;
+            color: white;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr 1fr;
+            gap: 35px;
+        }
+
+        .footer-grid p,
+        .footer-grid a {
+            color: #b9cbd5;
+            line-height: 1.7;
+        }
+
+        .socials {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 18px;
+            font-size: 1.25rem;
+        }
+
+        .socials a:hover {
+            color: white;
+        }
+
+        .legal {
+            border-top: 1px solid #294258;
+            margin-top: 30px;
+            padding-top: 20px;
+            color: #9fb4c1;
+            font-size: .84rem;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        @media(max-width:800px) {
+            .links {
+                display: none;
+                position: absolute;
+                top: 74px;
+                left: 0;
+                right: 0;
+                padding: 20px;
+                background: white;
+                border-bottom: 1px solid var(--line);
+                flex-direction: column;
+                align-items: flex-start
+            }
+
+            .links.open {
+                display: flex
+            }
+
+            .hero {
+                padding-top: 55px
+            }
+
+            .hero-grid,
+            .community {
+                grid-template-columns: 1fr;
+                gap: 40px
+            }
+
+            .orbit {
+                min-height: 330px
+            }
+
+            .cards {
+                grid-template-columns: 1fr
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr
+            }
+
+            .legal {
+                flex-direction: column
+            }
+
+            .actions .secondary {
+                display: none
+            }
+
+            .wrap {
+                width: min(100% - 28px, 1160px)
+            }
+        }
     </style>
 </head>
+
 <body>
-    <header><div class="wrap nav"><a class="brand" href="/index.html"><img class="brand-logo" src="/public/assets/logo.png" alt="JEOAH'S Market Place"><span>JEOAH'S</span></a><button class="menu" id="menu-button" aria-label="Ouvrir le menu"><i class="fa-solid fa-bars"></i></button><nav class="links" id="site-links"><a href="#services" data-nav="services">Notre service</a><a href="#parcours" data-nav="parcours">Parcours</a><a href="#communaute" data-nav="communaute">Communauté</a><a href="/fonctionnalite.html" data-nav="features">Fonctionnalités</a><a href="/plans.html" data-nav="plans">Plans</a><a href="/faq.html" data-nav="faq">FAQ</a><a href="/avis.html">Avis</a><a href="/about.html" data-nav="about">À propos</a><a href="/contact.html" data-nav="contact">Contact</a></nav><div class="actions"><select id="site-lang-select" onchange="changeLanguage(this.value)" style="padding:6px 10px;border:1px solid var(--line);border-radius:8px;font-size:12px;background:white;font-weight:700;color:var(--ink);cursor:pointer"><option value="fr">🇫🇷 FR</option><option value="ht">🇭🇹 HT</option><option value="en">🇺🇸 EN</option><option value="es">🇪🇸 ES</option><option value="zh">🇨🇳 中文</option></select><button id="pwa-install-btn" style="display:none;background:#2aa198;color:white;border:0;border-radius:8px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer"><i class="fa-solid fa-download mr-1"></i> Installer</button><a class="button secondary" href="/showcase.html" data-action="vitrine">Voir la vitrine</a><a class="button primary" href="/public/auth.html" data-action="auth">Se connecter / S'inscrire</a></div></div></header>
+    <header>
+        <div class="wrap nav"><a class="brand" href="/index.html"><img class="brand-logo" src="/public/assets/logo.png"
+                    alt="JEOAH'S Market Place"><span>JEOAH'S</span></a><button class="menu" id="menu-button"
+        aria-label="Ouvrir le menu" data-home-aria="menuLabel"><i class="fa-solid fa-bars"></i></button>
+            <nav class="links" id="site-links"><a href="#services" data-nav="services">Notre service</a><a
+                    href="#parcours" data-nav="parcours">Parcours</a><a href="#communaute"
+                    data-nav="communaute">Communauté</a><a href="/fonctionnalite.html"
+                    data-nav="features">Fonctionnalités</a><a href="/plans.html" data-nav="plans">Plans</a><a
+                    href="/faq.html" data-nav="faq">FAQ</a><a href="/contact.html" data-nav="contact">Contact</a></nav>
+            <div class="actions"><select id="site-lang-select" onchange="changeLanguage(this.value)"
+                    style="padding:6px 10px;border:1px solid var(--line);border-radius:8px;font-size:12px;background:white;font-weight:700;color:var(--ink);cursor:pointer">
+                    <option value="fr">🇫🇷 FR</option>
+                    <option value="ht">🇭🇹 HT</option>
+                    <option value="en">🇺🇸 EN</option>
+                    <option value="es">🇪🇸 ES</option>
+                    <option value="zh">🇨🇳 中文</option>
+                </select><button id="pwa-install-btn"
+                    style="display:none;background:#2aa198;color:white;border:0;border-radius:8px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer"><i
+                        class="fa-solid fa-download mr-1"></i> <span data-home-copy="install">Installer</span></button><a class="button secondary"
+                    href="/showcase.html" data-action="vitrine">Voir la vitrine</a><a class="button primary"
+                    href="/public/auth.html" data-action="auth">Se connecter / S'inscrire</a></div>
+        </div>
+    </header>
     <main>
-        <section class="hero"><div class="wrap hero-grid"><div><div class="eyebrow">Une communauté, plusieurs possibilités</div><div style="display:inline-block;margin-bottom:14px;padding:8px 14px;border-radius:999px;background:#fff4d7;border:1px solid #f4b942;color:#76551a;font-weight:700;font-size:.82rem" data-nav="launchOfferBanner">🎉 Offre de lancement : les 25 premiers inscrits reçoivent un essai gratuit de 15 jours.</div><h1>Le commerce devient plus simple avec JEOAH'S.</h1><p>Nous réunissons acheteurs, vendeurs et affiliés au même endroit. Notre assistant JEOAH aide chacun à comprendre, organiser et développer son activité.</p><div class="hero-actions"><a class="button primary" href="/showcase.html" data-action="heroVitrine">Découvrir la vitrine <i class="fa-solid fa-arrow-right"></i></a><a class="button secondary" href="/public/auth.html" data-action="heroAuth">Commencer avec un compte</a></div><div class="hero-note">La vitrine est accessible sans inscription. Les paiements réels sont encore en préparation.</div></div><div class="orbit"><div class="float one"><i class="fa-solid fa-store"></i> Vendeurs</div><div class="float two"><i class="fa-solid fa-chart-line"></i> Affiliés</div><div class="float three"><i class="fa-solid fa-bag-shopping"></i> Acheteurs</div><div class="ney-card"><div class="ney-icon"><i class="fa-solid fa-robot"></i></div><h2>JEOAH est là.</h2><p>Un assistant qui explique, suggère et aide à avancer, en texte et progressivement en voix.</p></div></div></div></section>
-        <section id="services"><div class="wrap"><div class="section-head"><div class="eyebrow">Notre service</div><h2>Une plateforme qui facilite les échanges.</h2><p>JEOAH'S ne stocke pas les produits. Nous facilitons la rencontre, la visibilité, la communication et, dans le modèle prévu, le traitement des commandes.</p></div><div class="cards"><article class="card"><i class="fa-solid fa-magnifying-glass"></i><h3>Comparer et découvrir</h3><p>Les visiteurs trouvent des produits et peuvent consulter les offres de partenaires au même endroit.</p></article><article class="card"><i class="fa-solid fa-bullhorn"></i><h3>Grandir ensemble</h3><p>Les vendeurs et affiliés présentent leurs produits et développent leur communauté sur leurs réseaux.</p></article><article class="card"><i class="fa-solid fa-robot"></i><h3>Être accompagné</h3><p>JEOAH explique les étapes, prépare des contenus et propose des actions adaptées au rôle et au plan.</p></article></div></div></section>
-        <section class="steps" id="parcours"><div class="wrap"><div class="section-head"><div class="eyebrow">Votre parcours</div><h2>Choisissez votre façon de participer.</h2><p>Un compte est nécessaire pour devenir vendeur ou affilié. Les visiteurs peuvent simplement explorer.</p></div><div class="cards"><article class="card"><i class="fa-solid fa-store"></i><h3>Vendeur</h3><p>Présente ses produits, indique ses conditions de livraison et organise sa boutique avec l'aide de JEOAH.</p></article><article class="card"><i class="fa-solid fa-link"></i><h3>Affilié</h3><p>Ajoute ses programmes partenaires, partage des produits et construit une vitrine de recommandations.</p></article><article class="card"><i class="fa-solid fa-user"></i><h3>Acheteur ou visiteur</h3><p>Découvre les produits sans obligation de compte. Le membre acheteur peut rejoindre la communauté.</p></article></div></div></section>
-        <section id="communaute"><div class="wrap community"><div><div class="eyebrow">Notre communauté</div><h2>Des voix locales, une portée mondiale.</h2><p>Les réseaux sociaux relient les créateurs, vendeurs et acheteurs. JEOAH'S aide à organiser cette énergie dans un espace clair.</p><div class="pill-row"><span class="pill">Français</span><span class="pill">Kreyòl</span><span class="pill">English</span><span class="pill">中文</span><span class="pill">Voix et texte</span></div></div><div class="community-box"><h3>Des paiements adaptés aux pays</h3><p>Les moyens de paiement comme MonCash, NatCash, cartes, virements ou autres partenaires seront proposés selon le pays et la disponibilité du service.</p><div class="notice">Les moyens affichés aujourd'hui sont en préparation. Aucun paiement réel n'est activé dans cette version de test.</div></div></div></section>
-        <div class="wrap"><nav style="display:flex;justify-content:space-between;align-items:center;padding:24px 0;border-top:1px solid var(--line);font-weight:700;font-size:.9rem"><a href="/contact.html" style="color:var(--blue)">← Contact</a><a href="/fonctionnalite.html" style="color:var(--blue)">Fonctionnalités →</a></nav></div>
+        <section class="hero">
+            <div class="wrap hero-grid">
+                <div>
+                    <div class="eyebrow" data-home-copy="heroEyebrow">Une communauté, plusieurs possibilités</div>
+                    <h1>Le commerce devient plus simple avec JEOAH'S.</h1>
+                    <p>Nous réunissons acheteurs, vendeurs et affiliés au même endroit. Notre assistant JEOAH aide
+                        chacun à comprendre, organiser et développer son activité.</p>
+                    <div class="hero-actions"><a class="button primary" href="/showcase.html"><span
+                                data-home-copy="heroExplore">Découvrir la vitrine</span> <i
+                                class="fa-solid fa-arrow-right"></i></a><a class="button secondary"
+                            href="/public/auth.html" data-home-copy="heroStart">Commencer avec un compte</a></div>
+                    <div class="hero-note" data-home-copy="heroNote">La vitrine est accessible sans inscription. Les paiements réels sont encore
+                        en préparation.</div>
+                </div>
+                <div class="orbit">
+                    <div class="float one"><i class="fa-solid fa-store"></i> <span data-home-copy="roleSeller">Vendeurs</span></div>
+                    <div class="float two"><i class="fa-solid fa-chart-line"></i> <span data-home-copy="roleAffiliate">Affiliés</span></div>
+                    <div class="float three"><i class="fa-solid fa-bag-shopping"></i> <span data-home-copy="roleBuyer">Acheteurs</span></div>
+                    <div class="ney-card">
+                        <div class="ney-icon"><i class="fa-solid fa-robot"></i></div>
+                        <h2 data-home-copy="assistantTitle">JEOAH est là.</h2>
+                        <p data-home-copy="assistantDescription">Un assistant qui explique, suggère et aide à avancer, en texte et progressivement en voix.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section id="services">
+            <div class="wrap">
+                <div class="section-head">
+                    <div class="eyebrow">Notre service</div>
+                    <h2>Une plateforme qui facilite les échanges.</h2>
+                    <p>JEOAH'S ne stocke pas les produits. Nous facilitons la rencontre, la visibilité, la communication
+                        et, dans le modèle prévu, le traitement des commandes.</p>
+                </div>
+                <div class="cards">
+                    <article class="card"><i class="fa-solid fa-magnifying-glass"></i>
+                        <h3>Comparer et découvrir</h3>
+                        <p>Les visiteurs trouvent des produits et peuvent consulter les offres de partenaires au même
+                            endroit.</p>
+                    </article>
+                    <article class="card"><i class="fa-solid fa-bullhorn"></i>
+                        <h3>Grandir ensemble</h3>
+                        <p>Les vendeurs et affiliés présentent leurs produits et développent leur communauté sur leurs
+                            réseaux.</p>
+                    </article>
+                    <article class="card"><i class="fa-solid fa-robot"></i>
+                        <h3>Être accompagné</h3>
+                        <p>JEOAH explique les étapes, prépare des contenus et propose des actions adaptées au rôle et au
+                            plan.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+        <section class="steps" id="parcours">
+            <div class="wrap">
+                <div class="section-head">
+                    <div class="eyebrow">Votre parcours</div>
+                    <h2>Choisissez votre façon de participer.</h2>
+                    <p>Un compte est nécessaire pour devenir vendeur ou affilié. Les visiteurs peuvent simplement
+                        explorer.</p>
+                </div>
+                <div class="cards">
+                    <article class="card"><i class="fa-solid fa-store"></i>
+                        <h3>Vendeur</h3>
+                        <p>Présente ses produits, indique ses conditions de livraison et organise sa boutique avec
+                            l'aide de JEOAH.</p>
+                    </article>
+                    <article class="card"><i class="fa-solid fa-link"></i>
+                        <h3>Affilié</h3>
+                        <p>Ajoute ses programmes partenaires, partage des produits et construit une vitrine de
+                            recommandations.</p>
+                    </article>
+                    <article class="card"><i class="fa-solid fa-user"></i>
+                        <h3>Acheteur ou visiteur</h3>
+                        <p>Découvre les produits sans obligation de compte. Le membre acheteur peut rejoindre la
+                            communauté.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+        <section id="communaute">
+            <div class="wrap community">
+                <div>
+                    <div class="eyebrow">Notre communauté</div>
+                    <h2>Des voix locales, une portée mondiale.</h2>
+                    <p>Les réseaux sociaux relient les créateurs, vendeurs et acheteurs. JEOAH'S aide à organiser cette
+                        énergie dans un espace clair.</p>
+                    <div class="pill-row"><span class="pill">Français</span><span class="pill">Kreyòl</span><span
+                            class="pill">English</span><span class="pill">中文</span><span class="pill">Voix et
+                            texte</span></div>
+                </div>
+                <div class="community-box">
+                    <h3>Des paiements adaptés aux pays</h3>
+                    <p>Les moyens de paiement comme MonCash, NatCash, cartes, virements ou autres partenaires seront
+                        proposés selon le pays et la disponibilité du service.</p>
+                    <div class="notice">Les moyens affichés aujourd'hui sont en préparation. Aucun paiement réel n'est
+                        activé dans cette version de test.</div>
+                </div>
+            </div>
+        </section>
     </main>
-    <footer><div class="wrap"><div class="footer-grid"><div><a class="brand" href="/index.html"><img class="brand-logo" src="/public/assets/logo.png" alt="JEOAH'S Market Place"><span>JEOAH'S</span></a><p data-nav="footerTagline">Faciliter les échanges entre personnes, produits et communautés.</p></div><div><h3 data-nav="footerExplore">Explorer</h3><p><a href="/fonctionnalite.html" data-nav="features">Fonctionnalités</a><br><a href="/plans.html" data-nav="plans">Plans</a><br><a href="/showcase.html" data-nav="footerShowcase">Vitrine</a><br><a href="/shipping.html" data-nav="footerShipping">Livraison et retours</a><br><a href="/faq.html" data-nav="faq">FAQ</a><br><a href="/about.html" data-nav="about">À propos</a><br><a href="/public/terms.html" data-nav="footerTerms">Conditions</a><br><a href="/confidentialite.html" data-nav="footerPrivacy">Confidentialité</a></p></div><div><h3 data-nav="footerFollow">Suivez-nous</h3><p data-nav="footerFollowText">Construisons notre communauté, réseau après réseau.</p><div class="socials"><a href="https://www.facebook.com/jeoahsmarketplace" target="_blank" rel="noopener" aria-label="Facebook"><i class="fab fa-facebook"></i></a><a href="https://www.instagram.com/jeoahsmarketplace" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a><a href="https://tiktok.com/@jeoahs1" target="_blank" rel="noopener" aria-label="TikTok"><i class="fab fa-tiktok"></i></a><a href="https://www.youtube.com/@jeoahs1" target="_blank" rel="noopener" aria-label="YouTube"><i class="fab fa-youtube"></i></a><a href="#" aria-label="Telegram"><i class="fab fa-telegram"></i></a><a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a></div><p data-nav="footerPayments" style="margin-top:14px;font-size:.8rem">Paiements prévus : MonCash, NatCash, Visa, Mastercard, Stripe, PayPal.</p></div></div><div class="legal"><span data-nav="footerCopyright">© 2026 JEOAH'S. Version de test.</span><span data-nav="footerLegalNote">Paiements réels en préparation.</span></div></div></footer>
+    <footer>
+        <div class="wrap">
+            <div class="footer-grid">
+                <div><a class="brand" href="/index.html"><img class="brand-logo" src="/public/assets/logo.png"
+                            alt="JEOAH'S Market Place"><span>JEOAH'S</span></a>
+                    <p data-home-copy="footerDescription">Faciliter les échanges entre personnes, produits et communautés.</p>
+                </div>
+                <div>
+                    <h3 data-home-copy="footerExplore">Explorer</h3>
+                    <p><a href="/showcase.html" data-home-copy="footerShowcase">Vitrine</a><br><a href="/shipping.html" data-home-copy="footerShipping">Livraison et retours</a><br><a
+                            href="/faq.html" data-home-copy="footerFaq">FAQ</a><br><a href="/public/terms.html" data-home-copy="footerTerms">Conditions</a></p>
+                </div>
+                <div>
+                    <h3 data-home-copy="footerFollow">Suivez-nous</h3>
+                    <p data-home-copy="footerSocialIntro">Construisons notre communauté, réseau après réseau.</p>
+                    <div class="socials"><a href="https://www.facebook.com/jeoahsmarketplace" target="_blank"
+                            rel="noopener" aria-label="Facebook"><i class="fab fa-facebook"></i></a><a
+                            href="https://www.instagram.com/jeoahsmarketplace" target="_blank" rel="noopener"
+                            aria-label="Instagram"><i class="fab fa-instagram"></i></a><a
+                            href="https://tiktok.com/@jeoahs1" target="_blank" rel="noopener" aria-label="TikTok"><i
+                                class="fab fa-tiktok"></i></a><a href="https://www.youtube.com/@jeoahs1" target="_blank"
+                            rel="noopener" aria-label="YouTube"><i class="fab fa-youtube"></i></a><a href="#"
+                            aria-label="Telegram"><i class="fab fa-telegram"></i></a><a href="#"
+                            aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a></div>
+                </div>
+            </div>
+            <div class="legal"><span data-home-copy="footerCopyright">© 2026 JEOAH'S. Version de test.</span><span data-home-copy="footerPayments">Paiements réels en préparation.</span>
+            </div>
+        </div>
+    </footer>
     <div id="ney-widget-container"></div>
     <script>
-        document.getElementById('menu-button').addEventListener('click',()=>document.getElementById('site-links').classList.toggle('open'));
-        fetch('/jeoah-widget.html').then(r=>r.text()).then(html=>{
-            document.getElementById('ney-widget-container').innerHTML=html;
-            document.getElementById('ney-widget-container').querySelectorAll('script').forEach(s=>{
-                const n=document.createElement('script');
-                n.textContent=s.textContent;
+        document.getElementById('menu-button').addEventListener('click', () => document.getElementById('site-links').classList.toggle('open'));
+        fetch('/jeoah-widget.html').then(r => r.text()).then(html => {
+            document.getElementById('ney-widget-container').innerHTML = html;
+            document.getElementById('ney-widget-container').querySelectorAll('script').forEach(s => {
+                const n = document.createElement('script');
+                n.textContent = s.textContent;
                 document.body.appendChild(n);
             });
+            setTimeout(() => {
+                const cur = localStorage.getItem('jeoahs-lang') || 'fr';
+                if (typeof window.applyJeoahLanguage === 'function') {
+                    window.applyJeoahLanguage(cur);
+                }
+            }, 100);
         });
 
         // Gestion PWA
@@ -87,69 +670,146 @@
                 .then(registrations => Promise.all(registrations
                     .filter(registration => registration.scope.endsWith('/public/'))
                     .map(registration => registration.unregister())))
-                .catch(()=>{});
+                .catch(() => { });
         }
 
         // Gestion Langue Dynamique
         const dict = {
             fr: {
                 services: "Notre service", parcours: "Parcours", communaute: "Communauté", features: "Fonctionnalités", plans: "Plans", shipping: "Livraison", faq: "FAQ", contact: "Contact",
-                vitrine: "Voir la vitrine", auth: "Se connecter / S'inscrire", heroVitrine: "Découvrir la vitrine", heroAuth: "Commencer avec un compte", about: "À propos",
+                vitrine: "Voir la vitrine", auth: "Se connecter / S'inscrire",
                 heroH1: "Le commerce devient plus simple avec JEOAH'S.",
-                heroP: "Nous réunissons acheteurs, vendeurs et affiliés au même endroit. Notre assistant JEOAH aide chacun à comprendre, organiser et développer son activité.",
-                launchOfferBanner: "🎉 Offre de lancement : les 25 premiers inscrits reçoivent un essai gratuit de 15 jours.",
-                footerTagline: "Faciliter les échanges entre personnes, produits et communautés.", footerExplore: "Explorer", footerShowcase: "Vitrine", footerShipping: "Livraison et retours", footerTerms: "Conditions", footerPrivacy: "Confidentialité", footerFollow: "Suivez-nous", footerFollowText: "Construisons notre communauté, réseau après réseau.", footerPayments: "Paiements prévus : MonCash, NatCash, Visa, Mastercard, Stripe, PayPal.", footerCopyright: "© 2026 JEOAH'S. Version de test.", footerLegalNote: "Paiements réels en préparation."
+                heroP: "Nous réunissons acheteurs, vendeurs et affiliés au même endroit. Notre assistant JEOAH aide chacun à comprendre, organiser et développer son activité."
             },
             ht: {
                 services: "Sèvis Nou", parcours: "Pakou", communaute: "Kominote", features: "Fonksyon yo", plans: "Plan yo", shipping: "Livrezon", faq: "FAQ", contact: "Kontak",
-                vitrine: "Gade Vitrin", auth: "Konekte / Enskri", heroVitrine: "Dekouvri Vitrin nan", heroAuth: "Kòmanse ak yon kont", about: "Konsènan nou",
+                vitrine: "Gade Vitrin", auth: "Konekte / Enskri",
                 heroH1: "Komès la vin pi fasil avèk JEOAH'S.",
-                heroP: "Nou reyini achtè, vandè ak afilye nan menm espas. Asistan JEOAH la ede chak moun konprann, òganize epi devlope aktivite yo.",
-                launchOfferBanner: "🎉 Òf lansman: 25 premye moun ki enskri yo resevwa yon esè gratis pandan 15 jou.",
-                footerTagline: "Fasilite echanj ant moun, pwodwi ak kominote.", footerExplore: "Eksplore", footerShowcase: "Vitrin", footerShipping: "Livrezon ak retou", footerTerms: "Kondisyon", footerPrivacy: "Konfidansyalite", footerFollow: "Swiv nou", footerFollowText: "Ann konstwi kominote nou an, rezo apre rezo.", footerPayments: "Peman prevwa : MonCash, NatCash, Visa, Mastercard, Stripe, PayPal.", footerCopyright: "© 2026 JEOAH'S. Vesyon tes.", footerLegalNote: "Peman reyel yo ap vini."
+                heroP: "Nou reyini achtè, vandè ak afilye nan menm espas. Asistan JEOAH la ede chak moun konprann, òganize epi devlope aktivite yo."
             },
             en: {
                 services: "Our Service", parcours: "Journey", communaute: "Community", features: "Features", plans: "Plans", shipping: "Shipping", faq: "FAQ", contact: "Contact",
-                vitrine: "Explore Showcase", auth: "Sign In / Register", heroVitrine: "Explore the showcase", heroAuth: "Start with an account", about: "About",
+                vitrine: "Explore Showcase", auth: "Sign In / Register",
                 heroH1: "Commerce made simpler with JEOAH'S.",
-                heroP: "We bring buyers, sellers, and affiliates together in one place. Our JEOAH assistant helps everyone understand, organize, and grow their business.",
-                launchOfferBanner: "🎉 Launch offer: the first 25 members get a free 15-day trial.",
-                footerTagline: "Making exchanges easier between people, products and communities.", footerExplore: "Explore", footerShowcase: "Showcase", footerShipping: "Shipping and returns", footerTerms: "Terms", footerPrivacy: "Privacy", footerFollow: "Follow us", footerFollowText: "Let's build our community, network after network.", footerPayments: "Planned payments: MonCash, NatCash, Visa, Mastercard, Stripe, PayPal.", footerCopyright: "© 2026 JEOAH'S. Test version.", footerLegalNote: "Real payments coming soon."
+                heroP: "We bring buyers, sellers, and affiliates together in one place. Our JEOAH assistant helps everyone understand, organize, and grow their business."
             },
             es: {
                 services: "Nuestro Servicio", parcours: "Recorrido", communaute: "Comunidad", features: "Funciones", plans: "Planes", shipping: "Envíos", faq: "Preguntas", contact: "Contacto",
-                vitrine: "Ver Vitrina", auth: "Iniciar Sesión / Registro", heroVitrine: "Descubrir la vitrina", heroAuth: "Comenzar con una cuenta", about: "Sobre nosotros",
+                vitrine: "Ver Vitrina", auth: "Iniciar Sesión / Registro",
                 heroH1: "El comercio es más simple con JEOAH'S.",
-                heroP: "Reunimos compradores, vendedores y afiliados en un solo lugar. Nuestro asistente JEOAH ayuda a todos a crecer.",
-                launchOfferBanner: "🎉 Oferta de lanzamiento: los primeros 25 miembros reciben una prueba gratis de 15 días.",
-                footerTagline: "Facilitar los intercambios entre personas, productos y comunidades.", footerExplore: "Explorar", footerShowcase: "Vitrina", footerShipping: "Envío y devoluciones", footerTerms: "Condiciones", footerPrivacy: "Privacidad", footerFollow: "Síguenos", footerFollowText: "Construyamos nuestra comunidad, red tras red.", footerPayments: "Pagos previstos: MonCash, NatCash, Visa, Mastercard, Stripe, PayPal.", footerCopyright: "© 2026 JEOAH'S. Versión de prueba.", footerLegalNote: "Pagos reales próximamente."
+                heroP: "Reunimos compradores, vendedores y afiliados en un solo lugar. Nuestro asistente JEOAH ayuda a todos a crecer."
             },
             zh: {
                 services: "服务介绍", parcours: "使用指南", communaute: "社区生态", features: "功能", plans: "套餐方案", shipping: "物流与配送", faq: "常见问题", contact: "联系我们",
-                vitrine: "浏览展厅", auth: "登录 / 注册", heroVitrine: "浏览展厅", heroAuth: "创建账户开始", about: "关于我们",
+                vitrine: "浏览展厅", auth: "登录 / 注册",
                 heroH1: "携手 JEOAH'S，让电商更简单。",
-                heroP: "我们将买家、卖家和联盟会员聚集在一个智能生态中。JEOAH 助手助力每一位用户开拓业务。",
-                launchOfferBanner: "🎉 启动优惠：前 25 位注册会员可获得 15 天免费试用。",
-                footerTagline: "让人与人、产品与社区之间的交流更加简单。", footerExplore: "探索", footerShowcase: "展厅", footerShipping: "配送与退货", footerTerms: "条款", footerPrivacy: "隐私政策", footerFollow: "关注我们", footerFollowText: "让我们一起建设社区。", footerPayments: "预计支付方式：MonCash、NatCash、Visa、Mastercard、Stripe、PayPal。", footerCopyright: "© 2026 JEOAH'S。测试版本。", footerLegalNote: "真实支付即将推出。"
+                heroP: "我们将买家、卖家和联盟会员聚集在一个智能生态中。JEOAH 助手助力每一位用户开拓业务。"
+            }
+        };
+
+        const homeCopy = {
+            fr: {
+                install: "Installer", menuLabel: "Ouvrir le menu",
+                heroEyebrow: "Une communauté, plusieurs possibilités",
+                heroExplore: "Découvrir la vitrine", heroStart: "Commencer avec un compte",
+                heroNote: "La vitrine est accessible sans inscription. Les paiements réels sont encore en préparation.",
+                roleSeller: "Vendeurs", roleAffiliate: "Affiliés", roleBuyer: "Acheteurs",
+                assistantTitle: "JEOAH est là.",
+                assistantDescription: "Un assistant qui explique, suggère et aide à avancer, en texte et progressivement en voix.",
+                footerDescription: "Faciliter les échanges entre personnes, produits et communautés.",
+                footerExplore: "Explorer", footerShowcase: "Vitrine", footerShipping: "Livraison et retours",
+                footerFaq: "FAQ", footerTerms: "Conditions", footerFollow: "Suivez-nous",
+                footerSocialIntro: "Construisons notre communauté, réseau après réseau.",
+                footerCopyright: "© 2026 JEOAH'S. Version de test.",
+                footerPayments: "Paiements réels en préparation."
+            },
+            ht: {
+                install: "Enstale", menuLabel: "Louvri meni an",
+                heroEyebrow: "Yon kominote, plizyè posiblite",
+                heroExplore: "Dekouvri vitrin nan", heroStart: "Kòmanse ak yon kont",
+                heroNote: "Ou ka vizite vitrin nan san ou pa enskri. Peman reyèl yo poko disponib.",
+                roleSeller: "Vandè yo", roleAffiliate: "Afilye yo", roleBuyer: "Achtè yo",
+                assistantTitle: "JEOAH la.",
+                assistantDescription: "Yon asistan ki esplike, sijere epi ede w avanse, an tèks epi piti piti ak vwa.",
+                footerDescription: "Fasilite echanj ant moun, pwodwi ak kominote yo.",
+                footerExplore: "Eksplore", footerShowcase: "Vitrin", footerShipping: "Livrezon ak retou",
+                footerFaq: "Kesyon yo poze souvan", footerTerms: "Kondisyon", footerFollow: "Swiv nou",
+                footerSocialIntro: "Ann bati kominote nou an, sou chak rezo sosyal.",
+                footerCopyright: "© 2026 JEOAH'S. Vèsyon tès.",
+                footerPayments: "Peman reyèl yo an preparasyon."
+            },
+            en: {
+                install: "Install", menuLabel: "Open menu",
+                heroEyebrow: "One community, many possibilities",
+                heroExplore: "Explore the showcase", heroStart: "Get started with an account",
+                heroNote: "Browse the showcase without signing up. Real payments are still in preparation.",
+                roleSeller: "Sellers", roleAffiliate: "Affiliates", roleBuyer: "Buyers",
+                assistantTitle: "JEOAH is here.",
+                assistantDescription: "An assistant that explains, suggests, and helps you move forward through text, with voice being introduced gradually.",
+                footerDescription: "Making it easier for people, products, and communities to connect.",
+                footerExplore: "Explore", footerShowcase: "Showcase", footerShipping: "Shipping and returns",
+                footerFaq: "FAQ", footerTerms: "Terms", footerFollow: "Follow us",
+                footerSocialIntro: "Let's build our community, one network at a time.",
+                footerCopyright: "© 2026 JEOAH'S. Test version.",
+                footerPayments: "Real payments are in preparation."
+            },
+            es: {
+                install: "Instalar", menuLabel: "Abrir el menú",
+                heroEyebrow: "Una comunidad, muchas posibilidades",
+                heroExplore: "Descubrir el escaparate", heroStart: "Empezar con una cuenta",
+                heroNote: "Puedes explorar el escaparate sin registrarte. Los pagos reales aún están en preparación.",
+                roleSeller: "Vendedores", roleAffiliate: "Afiliados", roleBuyer: "Compradores",
+                assistantTitle: "JEOAH está aquí.",
+                assistantDescription: "Un asistente que explica, sugiere y te ayuda a avanzar por texto, con la voz incorporándose poco a poco.",
+                footerDescription: "Facilitamos las conexiones entre personas, productos y comunidades.",
+                footerExplore: "Explorar", footerShowcase: "Escaparate", footerShipping: "Envíos y devoluciones",
+                footerFaq: "Preguntas frecuentes", footerTerms: "Condiciones", footerFollow: "Síguenos",
+                footerSocialIntro: "Construyamos nuestra comunidad, red tras red.",
+                footerCopyright: "© 2026 JEOAH'S. Versión de prueba.",
+                footerPayments: "Los pagos reales están en preparación."
+            },
+            zh: {
+                install: "安装", menuLabel: "打开菜单",
+                heroEyebrow: "一个社区，多种可能",
+                heroExplore: "浏览展厅", heroStart: "创建账户并开始",
+                heroNote: "无需注册即可浏览展厅。真实支付功能仍在准备中。",
+                roleSeller: "卖家", roleAffiliate: "联盟会员", roleBuyer: "买家",
+                assistantTitle: "JEOAH 在这里。",
+                assistantDescription: "一位通过文字解释、提出建议并帮助你前进的助手，语音功能也将逐步推出。",
+                footerDescription: "让人与人、商品与社区之间的交流更加便捷。",
+                footerExplore: "探索", footerShowcase: "商品展厅", footerShipping: "配送与退货",
+                footerFaq: "常见问题", footerTerms: "条款", footerFollow: "关注我们",
+                footerSocialIntro: "携手各个社交平台，共同建设我们的社区。",
+                footerCopyright: "© 2026 JEOAH'S。测试版本。",
+                footerPayments: "真实支付功能正在准备中。"
             }
         };
 
         function changeLanguage(lang) {
             localStorage.setItem('jeoahs-lang', lang);
+            window.dispatchEvent(new CustomEvent('jeoahs-lang-changed', { detail: { lang } }));
+            if (typeof window.applyJeoahLanguage === 'function') {
+                window.applyJeoahLanguage(lang);
+            }
             const d = dict[lang] || dict.fr;
+            const pageCopy = homeCopy[lang] || homeCopy.fr;
+            document.documentElement.lang = dict[lang] ? lang : 'fr';
+            document.querySelectorAll('[data-home-copy]').forEach(el => {
+                const key = el.getAttribute('data-home-copy');
+                if (pageCopy[key]) el.textContent = pageCopy[key];
+            });
+            document.querySelectorAll('[data-home-aria]').forEach(el => {
+                const key = el.getAttribute('data-home-aria');
+                if (pageCopy[key]) el.setAttribute('aria-label', pageCopy[key]);
+            });
             document.querySelectorAll('[data-nav]').forEach(el => {
                 const k = el.getAttribute('data-nav');
                 if (d[k]) el.textContent = d[k];
             });
             document.querySelectorAll('[data-action]').forEach(el => {
                 const k = el.getAttribute('data-action');
-                if (!d[k]) return;
-                const icon = el.querySelector('i');
-                el.textContent = icon ? d[k] + ' ' : d[k];
-                if (icon) el.appendChild(icon);
+                if (d[k]) el.textContent = d[k];
             });
-            const widgetLangSelect = document.getElementById('jeoah-language');
-            if (widgetLangSelect) { widgetLangSelect.value = lang; widgetLangSelect.dispatchEvent(new Event('change')); }
             const h1 = document.querySelector('h1');
             if (h1 && d.heroH1) h1.textContent = d.heroH1;
             const heroP = document.querySelector('.hero p');
@@ -176,6 +836,18 @@
         const langSelect = document.getElementById('site-lang-select');
         if (langSelect) langSelect.value = savedLang;
         if (savedLang !== 'fr') changeLanguage(savedLang);
+
+        window.addEventListener('jeoahs-lang-changed', (e) => {
+            if (e && e.detail && e.detail.lang) {
+                const lang = e.detail.lang;
+                const select = document.getElementById('site-lang-select');
+                if (select && select.value !== lang) {
+                    select.value = lang;
+                    changeLanguage(lang);
+                }
+            }
+        });
     </script>
 </body>
+
 </html>
