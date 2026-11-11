@@ -415,21 +415,31 @@
         }
 
         @media(max-width:800px) {
+            .menu {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+            }
+
             .links {
                 display: none;
                 position: absolute;
                 top: 74px;
                 left: 0;
                 right: 0;
-                padding: 20px;
+                padding: 20px 24px;
                 background: white;
                 border-bottom: 1px solid var(--line);
+                box-shadow: 0 14px 28px rgba(16, 42, 67, 0.12);
                 flex-direction: column;
-                align-items: flex-start
+                align-items: flex-start;
+                gap: 16px;
+                z-index: 50;
             }
 
             .links.open {
-                display: flex
+                display: flex;
             }
 
             .hero {
@@ -684,7 +694,22 @@
         </div>
     </div>
     <script>
-        document.getElementById('menu-button').addEventListener('click', () => document.getElementById('site-links').classList.toggle('open'));
+        const menuBtn = document.getElementById('menu-button');
+        const siteLinks = document.getElementById('site-links');
+        if (menuBtn && siteLinks) {
+            menuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                siteLinks.classList.toggle('open');
+            });
+            siteLinks.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => siteLinks.classList.remove('open'));
+            });
+            document.addEventListener('click', (e) => {
+                if (!siteLinks.contains(e.target) && !menuBtn.contains(e.target)) {
+                    siteLinks.classList.remove('open');
+                }
+            });
+        }
 
         // Logique Assistant JEOAH
         (function () {
@@ -722,6 +747,12 @@
             }
 
             if (openBtn) openBtn.addEventListener('click', () => togglePanel(true));
+            const heroNeyCard = document.querySelector('.ney-card');
+            if (heroNeyCard) {
+                heroNeyCard.style.cursor = 'pointer';
+                heroNeyCard.title = "Cliquez pour ouvrir l'assistant JEOAH";
+                heroNeyCard.addEventListener('click', () => togglePanel(true));
+            }
             if (closeBtn) closeBtn.addEventListener('click', event => {
                 event.preventDefault();
                 event.stopPropagation();
