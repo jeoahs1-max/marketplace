@@ -629,7 +629,7 @@
     <div id="ney-widget-container"></div>
     <script>
         document.getElementById('menu-button').addEventListener('click', () => document.getElementById('site-links').classList.toggle('open'));
-        fetch('/jeoah-widget.html').then(r => r.text()).then(html => {
+        fetch('/jeoah-widget.html?v=' + Date.now()).then(r => r.text()).then(html => {
             const container = document.getElementById('ney-widget-container');
             container.innerHTML = html;
             container.querySelectorAll('script').forEach(s => {
@@ -639,11 +639,9 @@
                 s.remove();
             });
             const cur = localStorage.getItem('jeoahs-lang') || 'fr';
-            if (typeof window.applyJeoahLanguage === 'function') {
-                window.applyJeoahLanguage(cur);
+            if (typeof window.changeLanguage === 'function') {
+                window.changeLanguage(cur);
             }
-            const jSel = document.getElementById('jeoah-language');
-            if (jSel) jSel.value = cur;
         });
 
         // Gestion PWA

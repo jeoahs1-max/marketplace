@@ -1,7 +1,7 @@
 // service-worker.js
 // Fichier nécessaire pour enregistrer la Progressive Web App (PWA)
 
-const CACHE_NAME = 'jeoahs-cache-v4';
+const CACHE_NAME = 'jeoahs-cache-v5';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -50,22 +50,17 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Les documents HTML restent à jour, avec repli hors-ligne sur le cache.
-  if (event.request.mode === 'navigate') {
-    event.respondWith(fetch(event.request).catch(() => caches.match('/index.html')));
-    return;
-  }
-
+  // Stratégie Réseau en premier (Network-First) avec repli cache hors-ligne
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Cache hit - retourne la réponse du cache
-        if (response) {
-          return response;
+    fetch(event.request)
+      .then(networkResponse => {
+        if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
         }
-        // Pas dans le cache - va chercher sur le réseau
-        return fetch(event.request);
+        return networkResponse;
       })
+      .catch(() => caches.match(event.request))
   );
 });
 

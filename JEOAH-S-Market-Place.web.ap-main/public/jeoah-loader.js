@@ -347,7 +347,7 @@
     loader.id = 'jeoah-widget-loader';
     document.body.appendChild(loader);
 
-    fetch('/jeoah-widget.html')
+    fetch('/jeoah-widget.html?v=' + Date.now())
       .then(response => {
         if (!response.ok) throw new Error('Widget JEOAH indisponible');
         return response.text();
