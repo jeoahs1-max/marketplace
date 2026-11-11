@@ -1,371 +1,1167 @@
-<!-- 
-    jeoahs_marketplace.html - La vitrine centrale de la plateforme.
-    
-    Elle agrège les produits de tous les affiliés/vendeurs abonnés.
-    Intègre la taxe de 3% et la logique de redirection NEY.
--->
 <!DOCTYPE html>
 <html lang="fr">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jeoahs Marketplace</title>
-    <!-- Google Tag Manager -->
-    <script>(function (w, d, s, l, i) {
-            w[l] = w[l] || []; w[l].push({
-                'gtm.start':
-                    new Date().getTime(), event: 'gtm.js'
-            }); var f = d.getElementsByTagName(s)[0],
-                j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
-                    'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
-        })(window, document, 'script', 'dataLayer', 'GTM-W3CTBT8Q');</script>
-    <!-- End Google Tag Manager -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <meta name="description"
+        content="JEOAH'S facilite les échanges entre acheteurs, vendeurs et affiliés, avec l'aide de JEOAH.">
+    <link rel="icon" href="/public/assets/logo.png" type="image/png">
+    <link rel="apple-touch-icon" href="/public/assets/logo.png">
+    <link rel="manifest" href="/public/manifest.json">
+    <title>JEOAH'S | La communauté qui facilite le commerce</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script src="firebase-config.js"></script>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        setLogLevel('debug'); // Active les logs de débogage pour Firestore
-
-        const TAX_RATE = 0.03; // Taxe de 3% demandée par l'utilisateur
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-
-        let db;
-        let marketplaceProducts = [];
-
-        document.addEventListener('DOMContentLoaded', () => {
-            initFirebase();
-            document.getElementById('sort-select').addEventListener('change', renderProductList);
-        });
-
-        async function initFirebase() {
-            if (Object.keys(firebaseConfig).length === 0) {
-                console.error("Firebase config missing. Running in simulation mode.");
-                document.getElementById('loading-overlay').classList.add('hidden');
-                document.getElementById('marketplace-container').classList.remove('hidden');
-                marketplaceProducts = getDemoProducts();
-                renderProductList();
-                return;
-            }
-
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            const auth = getAuth(app);
-
-            try {
-                // Connexion anonyme pour les visiteurs publics
-                await signInAnonymously(auth);
-            } catch (error) {
-                console.error("Erreur d'authentification anonyme:", error);
-            }
-
-            startMarketplaceListener();
-        }
-
-        /**
-         * Simule la collecte et l'agrégation NEY des produits éligibles (vendeurs & affiliés abonnés).
-         */
-        async function startMarketplaceListener() {
-            // Collection publique des produits locaux des Vendeurs
-            const vendorProductsCollection = collection(db, `artifacts/${appId}/public/data/vendor_products`);
-            // Collection publique des produits affiliés promus par les Affiliés
-            const affiliateProductsCollection = collection(db, `artifacts/${appId}/public/data/affiliate_promos`);
-
-            // NOTE: Dans la réalité, NEY chercherait les produits des affiliés *abonnés*
-            // et les produits des vendeurs *abonnés* en croisant avec une table 'subscriptions'.
-            // Ici, nous simulons la collecte des produits et leur affichage.
-
-            // 1. Simuler l'écoute des produits Vendeurs
-            onSnapshot(vendorProductsCollection, (snapshot) => {
-                let vendorProds = [];
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    // On simule l'ajout de la taxe pour l'affichage
-                    const priceWithTax = data.price * (1 + TAX_RATE);
-                    vendorProds.push({
-                        id: doc.id,
-                        type: 'vendor',
-                        ...data,
-                        displayPrice: priceWithTax,
-                        redirection: `vendor_checkout_page.html?prodId=${doc.id}`, // Dirige vers la page du vendeur
-                        affiliateId: data.vendorId // L'ID du vendeur est important
-                    });
-                });
-                // 2. Simuler l'ajout de produits affiliés de démonstration
-                marketplaceProducts = [...vendorProds, ...getDemoAffiliateProducts()];
-                renderProductList();
-            }, (error) => {
-                console.error("Erreur onSnapshot produits vendeurs:", error);
-                marketplaceProducts = getDemoProducts(); // Fallback
-                renderProductList();
-            });
-
-            document.getElementById('loading-overlay').classList.add('hidden');
-            document.getElementById('marketplace-container').classList.remove('hidden');
-        }
-
-        /**
-         * Données de démo si Firestore est vide ou erreur.
-         */
-        function getDemoProducts() {
-            return [
-                // Produit Vendeur Local (Dirige vers la page Vendeur)
-                {
-                    id: 'vend-001',
-                    type: 'vendor',
-                    name: 'Sacoche en Cuir Artisanal',
-                    description: 'Fait main par notre vendeur Premium. Qualité exceptionnelle.',
-                    imageUrl: 'https://placehold.co/400x300/4F46E5/ffffff?text=SAC+CUIR',
-                    price: 150.00,
-                    displayPrice: 150.00 * (1 + TAX_RATE),
-                    vendorId: 'local-vend-1',
-                    redirection: `vendor_checkout_page.html?prodId=vend-001`,
-                    ranking: 10,
-                    reduction: 0
-                },
-                // Produit Affilié (Dirige vers site externe)
-                {
-                    id: 'aff-002',
-                    type: 'affiliate',
-                    name: 'Montre Connectée Tendance',
-                    description: 'Meilleur prix agrégé par NEY : trouvez-la sur Temu ou Amazon.',
-                    imageUrl: 'https://placehold.co/400x300/EC4899/ffffff?text=MONTRE+SMART',
-                    price: 55.00,
-                    displayPrice: 55.00 * (1 + TAX_RATE),
-                    affiliateId: 'affilie-jane-doe',
-                    redirection: 'https://temu.com/best_deal_affiliate_link', // Lien externe avec tag
-                    ranking: 5,
-                    reduction: 15
-                },
-            ];
-        }
-
-        /**
-         * Simule les produits affiliés externes (normalement extraits de la BDD)
-         */
-        function getDemoAffiliateProducts() {
-            return [
-                {
-                    id: 'aff-003',
-                    type: 'affiliate',
-                    name: 'Kit de Cuisine Gourmet',
-                    description: 'Les ustensiles les mieux notés sur Amazon.',
-                    imageUrl: 'https://placehold.co/400x300/10B981/ffffff?text=KIT+CUISINE',
-                    price: 75.00,
-                    displayPrice: 75.00 * (1 + TAX_RATE),
-                    affiliateId: 'affilie-bob',
-                    redirection: 'https://amazon.com/kit_cuisine_affiliate_link',
-                    ranking: 8,
-                    reduction: 5
-                },
-            ];
-        }
-
-        /**
-         * Rend la liste des produits après classement NEY et filtrage.
-         */
-        function renderProductList() {
-            const listContainer = document.getElementById('product-list-container');
-            const sortCriteria = document.getElementById('sort-select').value;
-
-            let sortedProducts = [...marketplaceProducts];
-
-            // 1. Logique de Classement NEY
-            if (sortCriteria === 'ranking') {
-                // Classement NEY par pertinence/popularité
-                sortedProducts.sort((a, b) => (b.ranking || 0) - (a.ranking || 0));
-            } else if (sortCriteria === 'price_asc') {
-                // Prix croissant (après taxe)
-                sortedProducts.sort((a, b) => a.displayPrice - b.displayPrice);
-            } else if (sortCriteria === 'reduction') {
-                // Réduction (tendances du moment)
-                sortedProducts.sort((a, b) => (b.reduction || 0) - (a.reduction || 0));
-            }
-
-            if (sortedProducts.length === 0) {
-                listContainer.innerHTML = '<div class="text-center py-10 text-gray-500 italic">Aucun produit n\'est actuellement disponible sur la Marketplace.</div>';
-                return;
-            }
-
-            const html = sortedProducts.map(p => {
-                const isVendorProduct = p.type === 'vendor';
-                const basePrice = formatCurrency(p.price);
-                const finalPrice = formatCurrency(p.displayPrice);
-                const sourceType = isVendorProduct ? 'Vendeur Local' : 'Affilié Externe';
-                const icon = isVendorProduct ? 'fas fa-shop' : 'fas fa-external-link-alt';
-
-                return `
-                    <div class="bg-white p-5 rounded-2xl shadow-lg flex flex-col space-y-3 border-t-8 ${isVendorProduct ? 'border-indigo-600' : 'border-blue-600'} hover:shadow-xl transition">
-                        
-                        <img src="${p.imageUrl}" 
-                            alt="${p.name}" 
-                            onerror="this.onerror=null;this.src='https://placehold.co/400x300/9CA3AF/ffffff?text=Image+Produit';" 
-                            class="w-full h-40 object-cover rounded-lg">
-                        
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-xl font-bold text-gray-900 truncate">${p.name}</h3>
-                            ${p.reduction > 0 ? `<span class="text-xs font-bold text-red-600 bg-red-100 py-1 px-3 rounded-full">${p.reduction}% OFF</span>` : ''}
-                        </div>
-
-                        <p class="text-gray-500 text-sm h-10 overflow-hidden">${p.description}</p>
-                        
-                        <!-- Prix et Taxe -->
-                        <div class="pt-3 border-t border-gray-100">
-                            <p class="text-sm text-gray-500">Prix de base: ${basePrice}</p>
-                            <p class="text-xs text-green-600 font-semibold mb-2">+ ${TAX_RATE * 100}% Frais de Plateforme (Inclus)</p>
-                            
-                            <div class="flex items-end justify-between">
-                                <p class="text-xl font-extrabold text-gray-800">Prix Final:</p>
-                                <p class="text-3xl font-extrabold text-blue-600">${finalPrice}</p>
-                            </div>
-                        </div>
-
-                        <!-- Redirection NEY -->
-                        <div class="pt-3">
-                            <button onclick="handleRedirect('${p.redirection}', ${isVendorProduct}, '${p.id}', '${p.affiliateId || p.vendorId}')"
-                                    class="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition duration-300 shadow-md flex items-center justify-center">
-                                <i class="${icon} mr-2"></i> ${isVendorProduct ? 'Acheter sur Jeoah\'s' : 'Voir le Meilleur Deal'}
-                            </button>
-                            <p class="text-xs text-center mt-2 text-gray-500">
-                                Source : ${sourceType} (ID: ${p.affiliateId || p.vendorId})
-                            </p>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            listContainer.innerHTML = html;
-        }
-
-        /**
-         * Gère la redirection selon la source du produit (Vendeur ou Affilié).
-         */
-        window.handleRedirect = function (url, isVendor, productId, sourceId) {
-            console.log(`REDIRECTION NEY: Type=${isVendor ? 'Vendeur' : 'Affilié'} | ID=${sourceId} | Produit=${productId}`);
-
-            // NEY: Orientations d'Achat (Ex: si Vendeur A a un stock bas, NEY pourrait rediriger vers le lien affilié Amazon)
-            // Pour l'instant, on respecte la logique de base demandée:
-
-            if (isVendor) {
-                // Redirection vers la page de paiement locale (Vendeur)
-                showCustomModal("Achat Vendeur Local", `Redirection vers la page de paiement pour le produit #${productId} du Vendeur ID ${sourceId}.`);
-                // window.location.href = url; // Remplacer par la vraie redirection
-            } else {
-                // Redirection vers le site externe (Affilié) avec le tag inclus
-                showCustomModal("Achat Affilié Externe", `Redirection vers le site partenaire pour le produit #${productId}. La commission est tracée pour l'Affilié ID ${sourceId}.`);
-                // window.open(url, '_blank'); // Remplacer par la vraie redirection
-            }
-        }
-
-        // Fonction utilitaire de formatage
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
-        }
-
-        // Modale d'alerte personnalisée (comme dans les autres fichiers)
-        window.showCustomModal = function (title, message) {
-            const modalId = 'custom-alert-modal';
-            document.getElementById(modalId)?.remove();
-
-            const modalHtml = `
-                <div id="${modalId}" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-[999]">
-                    <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full mx-4">
-                        <h3 class="text-xl font-bold ${title.includes('Erreur') ? 'text-red-600' : 'text-blue-600'} mb-4">${title}</h3>
-                        <p class="text-gray-700 mb-6">${message}</p>
-                        <button onclick="document.getElementById('${modalId}').remove()" 
-                                class="w-full py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
-                            OK
-                        </button>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-        }
-
-    </script>
-
+        crossorigin="anonymous" referrerpolicy="no-referrer">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
+        :root {
+            --ink: #102a43;
+            --blue: #1665d8;
+            --teal: #0f766e;
+            --gold: #f4b942;
+            --mist: #eef5f7;
+            --line: #d7e2e8;
         }
 
-        .marketplace-header {
-            background: linear-gradient(135deg, #FF6F00 0%, #FF9800 100%);
-            /* Orange vif pour Jeoah's */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            color: var(--ink);
+            background: #fbfdfd;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .wrap {
+            width: min(1160px, calc(100% - 40px));
+            margin: auto;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: rgba(251, 253, 253, .94);
+            border-bottom: 1px solid var(--line);
+            backdrop-filter: blur(12px);
+        }
+
+        .nav {
+            min-height: 74px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.35rem;
+        }
+
+        .brand-logo {
+            width: 44px;
+            height: 44px;
+            object-fit: cover;
+            border-radius: 10px;
+            box-shadow: 6px 6px 0 var(--gold);
+        }
+
+        .links {
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            color: #486581;
+            font-size: .94rem;
+        }
+
+        .links a:hover {
+            color: var(--blue);
+        }
+
+        .menu {
+            display: none;
+            border: 0;
+            background: transparent;
+            color: var(--ink);
+            font-size: 1.4rem;
+        }
+
+        .actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 9px;
+            padding: 11px 16px;
+            font-weight: 700;
+            border: 1px solid transparent;
+            cursor: pointer;
+        }
+
+        .button.primary {
+            background: var(--blue);
             color: white;
-            padding: 3rem 1rem;
-            box-shadow: 0 5px 20px rgba(255, 111, 0, 0.4);
+        }
+
+        .button.secondary {
+            background: white;
+            border-color: var(--line);
+            color: var(--ink);
+        }
+
+        .button:hover {
+            transform: translateY(-1px);
+        }
+
+        .hero {
+            padding: 86px 0 70px;
+            background: linear-gradient(135deg, #eaf6f5 0%, #fbfdfd 58%, #fff4d7 100%);
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.1fr .9fr;
+            align-items: center;
+            gap: 70px;
+        }
+
+        .eyebrow {
+            color: var(--teal);
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            font-size: .8rem;
+        }
+
+        h1 {
+            font-size: clamp(2.6rem, 6vw, 5.5rem);
+            line-height: .98;
+            margin: 16px 0 24px;
+            letter-spacing: -.04em;
+        }
+
+        .hero p {
+            color: #486581;
+            font-size: 1.15rem;
+            line-height: 1.7;
+            max-width: 650px;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .hero-note {
+            margin-top: 18px;
+            color: #627d98;
+            font-size: .86rem;
+        }
+
+        .orbit {
+            min-height: 380px;
+            position: relative;
+            display: grid;
+            place-items: center;
+        }
+
+        .orbit::before {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border: 1px dashed #9ccbc6;
+            border-radius: 50%;
+        }
+
+        .ney-card {
+            position: relative;
+            width: min(310px, 90%);
+            padding: 30px;
+            border-radius: 24px;
+            color: white;
+            background: var(--ink);
+            box-shadow: 18px 18px 0 var(--gold);
+        }
+
+        .ney-icon {
+            width: 54px;
+            height: 54px;
+            display: grid;
+            place-items: center;
+            border-radius: 16px;
+            background: #2aa198;
+            font-size: 1.4rem;
+        }
+
+        .ney-card h2 {
+            margin: 22px 0 8px;
+            font-size: 2rem;
+        }
+
+        .ney-card p {
+            color: #d9edf0;
+            font-size: .95rem;
+        }
+
+        .float {
+            position: absolute;
+            padding: 12px 15px;
+            border: 1px solid white;
+            border-radius: 12px;
+            background: white;
+            box-shadow: 0 10px 25px #102a4320;
+            font-weight: 700;
+            font-size: .85rem;
+        }
+
+        .float.one {
+            top: 12%;
+            left: 0;
+        }
+
+        .float.two {
+            right: -2%;
+            bottom: 16%;
+        }
+
+        .float.three {
+            bottom: 0;
+            left: 13%;
+        }
+
+        section {
+            padding: 78px 0;
+        }
+
+        .section-head {
+            max-width: 700px;
+            margin-bottom: 34px;
+        }
+
+        .section-head h2 {
+            font-size: clamp(2rem, 4vw, 3rem);
+            margin: 8px 0 12px;
+        }
+
+        .section-head p {
+            color: #627d98;
+            line-height: 1.7;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+        }
+
+        .card {
+            padding: 28px;
+            background: white;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            box-shadow: 0 12px 28px #102a430c;
+        }
+
+        .card i {
+            color: var(--blue);
+            font-size: 1.5rem;
+        }
+
+        .card h3 {
+            margin: 20px 0 10px;
+            font-size: 1.35rem;
+        }
+
+        .card p {
+            color: #627d98;
+            line-height: 1.65;
+        }
+
+        .steps {
+            background: var(--ink);
+            color: white;
+        }
+
+        .steps .section-head p {
+            color: #b9d0dc;
+        }
+
+        .steps .card {
+            background: #173b57;
+            border-color: #2b5571;
+        }
+
+        .steps .card p {
+            color: #c7dbe4;
+        }
+
+        .steps .card i {
+            color: var(--gold);
+        }
+
+        .community {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            align-items: center;
+        }
+
+        .community-box {
+            padding: 32px;
+            border-left: 5px solid var(--teal);
+            background: var(--mist);
+        }
+
+        .community-box p {
+            color: #486581;
+            line-height: 1.7;
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .pill {
+            padding: 9px 12px;
+            border-radius: 999px;
+            background: white;
+            border: 1px solid var(--line);
+            color: #486581;
+            font-size: .85rem;
+        }
+
+        .notice {
+            padding: 20px;
+            border: 1px solid #f1d28a;
+            border-radius: 12px;
+            background: #fff9e8;
+            color: #76551a;
+            line-height: 1.6;
+        }
+
+        footer {
+            padding: 45px 0 28px;
+            background: #0c2135;
+            color: white;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr 1fr;
+            gap: 35px;
+        }
+
+        .footer-grid p,
+        .footer-grid a {
+            color: #b9cbd5;
+            line-height: 1.7;
+        }
+
+        .socials {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 18px;
+            font-size: 1.25rem;
+        }
+
+        .socials a:hover {
+            color: white;
+        }
+
+        .legal {
+            border-top: 1px solid #294258;
+            margin-top: 30px;
+            padding-top: 20px;
+            color: #9fb4c1;
+            font-size: .84rem;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        @media(max-width:800px) {
+            .links {
+                display: none;
+                position: absolute;
+                top: 74px;
+                left: 0;
+                right: 0;
+                padding: 20px;
+                background: white;
+                border-bottom: 1px solid var(--line);
+                flex-direction: column;
+                align-items: flex-start
+            }
+
+            .links.open {
+                display: flex
+            }
+
+            .hero {
+                padding-top: 55px
+            }
+
+            .hero-grid,
+            .community {
+                grid-template-columns: 1fr;
+                gap: 40px
+            }
+
+            .orbit {
+                min-height: 330px
+            }
+
+            .cards {
+                grid-template-columns: 1fr
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr
+            }
+
+            .legal {
+                flex-direction: column
+            }
+
+            .actions .secondary {
+                display: none
+            }
+
+            .wrap {
+                width: min(100% - 28px, 1160px)
+            }
         }
     </style>
 </head>
 
 <body>
-    <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W3CTBT8Q" height="0" width="0"
-            style="display:none;visibility:hidden"></iframe></noscript>
-    <!-- End Google Tag Manager (noscript) -->
-
-    <!-- Overlay de Chargement -->
-    <div id="loading-overlay" class="fixed inset-0 bg-white flex items-center justify-center z-50">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-orange-600"></div>
-        <p class="ml-4 text-gray-600 text-lg">Lancement de NEY et chargement de la Vitrine...</p>
-    </div>
-
-    <!-- Contenu de la Vitrine Principale -->
-    <div id="marketplace-container" class="hidden min-h-screen">
-
-        <!-- Entête et Marque -->
-        <header class="marketplace-header">
-            <div class="max-w-6xl mx-auto text-center">
-                <i class="fas fa-gem text-5xl mb-2"></i>
-                <h1 class="text-4xl font-extrabold tracking-wider">JEOAH'S MARKETPLACE</h1>
-                <p class="text-lg font-medium opacity-90 mt-2">Propulsé par NEY : L'Intelligence de l'Achat Agrégé.</p>
-            </div>
-        </header>
-
-        <!-- Filtres et Classement -->
-        <main class="p-4 sm:p-8">
-            <div class="max-w-6xl mx-auto space-y-8">
-
-                <div class="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-xl shadow-md">
-                    <h2 class="text-2xl font-bold text-gray-800 flex items-center mb-3 sm:mb-0">
-                        <i class="fas fa-list-alt text-orange-500 mr-3"></i> Produits en Vedette
-                    </h2>
-
-                    <div class="flex items-center space-x-3 w-full sm:w-auto">
-                        <label for="sort-select" class="text-sm font-medium text-gray-700">Classer par NEY :</label>
-                        <select id="sort-select"
-                            class="py-2 px-4 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm">
-                            <option value="ranking">Meilleur Classement (Tendance)</option>
-                            <option value="reduction">Plus Grandes Réductions</option>
-                            <option value="price_asc">Prix le plus bas</option>
-                        </select>
+    <header>
+        <div class="wrap nav"><a class="brand" href="/index.html"><img class="brand-logo" src="/public/assets/logo.png"
+                    alt="JEOAH'S Market Place"><span>JEOAH'S</span></a><button class="menu" id="menu-button"
+        aria-label="Ouvrir le menu" data-home-aria="menuLabel"><i class="fa-solid fa-bars"></i></button>
+            <nav class="links" id="site-links"><a href="#services" data-nav="services">Notre service</a><a
+                    href="#parcours" data-nav="parcours">Parcours</a><a href="#communaute"
+                    data-nav="communaute">Communauté</a><a href="/fonctionnalite.html"
+                    data-nav="features">Fonctionnalités</a><a href="/plans.html" data-nav="plans">Plans</a><a
+                    href="/faq.html" data-nav="faq">FAQ</a><a href="/contact.html" data-nav="contact">Contact</a></nav>
+            <div class="actions"><select id="site-lang-select" onchange="changeLanguage(this.value)"
+                    style="padding:6px 10px;border:1px solid var(--line);border-radius:8px;font-size:12px;background:white;font-weight:700;color:var(--ink);cursor:pointer">
+                    <option value="fr">🇫🇷 FR</option>
+                    <option value="ht">🇭🇹 HT</option>
+                    <option value="en">🇺🇸 EN</option>
+                    <option value="es">🇪🇸 ES</option>
+                    <option value="zh">🇨🇳 中文</option>
+                </select><button id="pwa-install-btn"
+                    style="display:none;background:#2aa198;color:white;border:0;border-radius:8px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer"><i
+                        class="fa-solid fa-download mr-1"></i> <span data-home-copy="install">Installer</span></button><a class="button secondary"
+                    href="/showcase.html" data-action="vitrine">Voir la vitrine</a><a class="button primary"
+                    href="/public/auth.html" data-action="auth">Se connecter / S'inscrire</a></div>
+        </div>
+    </header>
+    <main>
+        <section class="hero">
+            <div class="wrap hero-grid">
+                <div>
+                    <div class="eyebrow" data-home-copy="heroEyebrow">Une communauté, plusieurs possibilités</div>
+                    <h1>Le commerce devient plus simple avec JEOAH'S.</h1>
+                    <p>Nous réunissons acheteurs, vendeurs et affiliés au même endroit. Notre assistant JEOAH aide
+                        chacun à comprendre, organiser et développer son activité.</p>
+                    <div class="hero-actions"><a class="button primary" href="/showcase.html"><span
+                                data-home-copy="heroExplore">Découvrir la vitrine</span> <i
+                                class="fa-solid fa-arrow-right"></i></a><a class="button secondary"
+                            href="/public/auth.html" data-home-copy="heroStart">Commencer avec un compte</a></div>
+                    <div class="hero-note" data-home-copy="heroNote">La vitrine est accessible sans inscription. Les paiements réels sont encore
+                        en préparation.</div>
+                </div>
+                <div class="orbit">
+                    <div class="float one"><i class="fa-solid fa-store"></i> <span data-home-copy="roleSeller">Vendeurs</span></div>
+                    <div class="float two"><i class="fa-solid fa-chart-line"></i> <span data-home-copy="roleAffiliate">Affiliés</span></div>
+                    <div class="float three"><i class="fa-solid fa-bag-shopping"></i> <span data-home-copy="roleBuyer">Acheteurs</span></div>
+                    <div class="ney-card">
+                        <div class="ney-icon"><i class="fa-solid fa-robot"></i></div>
+                        <h2 data-home-copy="assistantTitle">JEOAH est là.</h2>
+                        <p data-home-copy="assistantDescription">Un assistant qui explique, suggère et aide à avancer, en texte et progressivement en voix.
+                        </p>
                     </div>
                 </div>
-
-                <!-- Liste des Produits -->
-                <div id="product-list-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Les cartes produits seront rendues ici par JavaScript -->
-                </div>
-
             </div>
-        </main>
-
-        <footer class="text-center py-6 text-gray-500 text-sm">
-            © 2024 JEOAH'S. Tous droits réservés. | Taxe de 3% appliquée pour frais de service.
-        </footer>
+        </section>
+        <section id="services">
+            <div class="wrap">
+                <div class="section-head">
+                    <div class="eyebrow">Notre service</div>
+                    <h2>Une plateforme qui facilite les échanges.</h2>
+                    <p>JEOAH'S ne stocke pas les produits. Nous facilitons la rencontre, la visibilité, la communication
+                        et, dans le modèle prévu, le traitement des commandes.</p>
+                </div>
+                <div class="cards">
+                    <article class="card"><i class="fa-solid fa-magnifying-glass"></i>
+                        <h3>Comparer et découvrir</h3>
+                        <p>Les visiteurs trouvent des produits et peuvent consulter les offres de partenaires au même
+                            endroit.</p>
+                    </article>
+                    <article class="card"><i class="fa-solid fa-bullhorn"></i>
+                        <h3>Grandir ensemble</h3>
+                        <p>Les vendeurs et affiliés présentent leurs produits et développent leur communauté sur leurs
+                            réseaux.</p>
+                    </article>
+                    <article class="card"><i class="fa-solid fa-robot"></i>
+                        <h3>Être accompagné</h3>
+                        <p>JEOAH explique les étapes, prépare des contenus et propose des actions adaptées au rôle et au
+                            plan.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+        <section class="steps" id="parcours">
+            <div class="wrap">
+                <div class="section-head">
+                    <div class="eyebrow">Votre parcours</div>
+                    <h2>Choisissez votre façon de participer.</h2>
+                    <p>Un compte est nécessaire pour devenir vendeur ou affilié. Les visiteurs peuvent simplement
+                        explorer.</p>
+                </div>
+                <div class="cards">
+                    <article class="card"><i class="fa-solid fa-store"></i>
+                        <h3>Vendeur</h3>
+                        <p>Présente ses produits, indique ses conditions de livraison et organise sa boutique avec
+                            l'aide de JEOAH.</p>
+                    </article>
+                    <article class="card"><i class="fa-solid fa-link"></i>
+                        <h3>Affilié</h3>
+                        <p>Ajoute ses programmes partenaires, partage des produits et construit une vitrine de
+                            recommandations.</p>
+                    </article>
+                    <article class="card"><i class="fa-solid fa-user"></i>
+                        <h3>Acheteur ou visiteur</h3>
+                        <p>Découvre les produits sans obligation de compte. Le membre acheteur peut rejoindre la
+                            communauté.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+        <section id="communaute">
+            <div class="wrap community">
+                <div>
+                    <div class="eyebrow">Notre communauté</div>
+                    <h2>Des voix locales, une portée mondiale.</h2>
+                    <p>Les réseaux sociaux relient les créateurs, vendeurs et acheteurs. JEOAH'S aide à organiser cette
+                        énergie dans un espace clair.</p>
+                    <div class="pill-row"><span class="pill">Français</span><span class="pill">Kreyòl</span><span
+                            class="pill">English</span><span class="pill">中文</span><span class="pill">Voix et
+                            texte</span></div>
+                </div>
+                <div class="community-box">
+                    <h3>Des paiements adaptés aux pays</h3>
+                    <p>Les moyens de paiement comme MonCash, NatCash, cartes, virements ou autres partenaires seront
+                        proposés selon le pays et la disponibilité du service.</p>
+                    <div class="notice">Les moyens affichés aujourd'hui sont en préparation. Aucun paiement réel n'est
+                        activé dans cette version de test.</div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <footer>
+        <div class="wrap">
+            <div class="footer-grid">
+                <div><a class="brand" href="/index.html"><img class="brand-logo" src="/public/assets/logo.png"
+                            alt="JEOAH'S Market Place"><span>JEOAH'S</span></a>
+                    <p data-home-copy="footerDescription">Faciliter les échanges entre personnes, produits et communautés.</p>
+                </div>
+                <div>
+                    <h3 data-home-copy="footerExplore">Explorer</h3>
+                    <p><a href="/showcase.html" data-home-copy="footerShowcase">Vitrine</a><br><a href="/shipping.html" data-home-copy="footerShipping">Livraison et retours</a><br><a
+                            href="/faq.html" data-home-copy="footerFaq">FAQ</a><br><a href="/public/terms.html" data-home-copy="footerTerms">Conditions</a></p>
+                </div>
+                <div>
+                    <h3 data-home-copy="footerFollow">Suivez-nous</h3>
+                    <p data-home-copy="footerSocialIntro">Construisons notre communauté, réseau après réseau.</p>
+                    <div class="socials"><a href="https://www.facebook.com/jeoahsmarketplace" target="_blank"
+                            rel="noopener" aria-label="Facebook"><i class="fab fa-facebook"></i></a><a
+                            href="https://www.instagram.com/jeoahsmarketplace" target="_blank" rel="noopener"
+                            aria-label="Instagram"><i class="fab fa-instagram"></i></a><a
+                            href="https://tiktok.com/@jeoahs1" target="_blank" rel="noopener" aria-label="TikTok"><i
+                                class="fab fa-tiktok"></i></a><a href="https://www.youtube.com/@jeoahs1" target="_blank"
+                            rel="noopener" aria-label="YouTube"><i class="fab fa-youtube"></i></a><a href="#"
+                            aria-label="Telegram"><i class="fab fa-telegram"></i></a><a href="#"
+                            aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a></div>
+                </div>
+            </div>
+            <div class="legal"><span data-home-copy="footerCopyright">© 2026 JEOAH'S. Version de test.</span><span data-home-copy="footerPayments">Paiements réels en préparation.</span>
+            </div>
+        </div>
+    </footer>
+    <div id="ney-widget-container">
+        <!-- Assistant JEOAH IA -->
+        <div id="jeoah-widget" style="position:fixed;right:20px;bottom:20px;z-index:9999;font-family:Inter,Arial,sans-serif">
+            <div id="jeoah-panel" hidden
+                style="width:min(390px,calc(100vw - 32px));height:min(540px,calc(100vh - 32px));background:#fff;border:1px solid #eadff4;border-radius:20px;box-shadow:0 18px 45px rgba(36,16,79,0.3);display:none;flex-direction:column;overflow:hidden">
+                <div style="padding:14px 18px;background:linear-gradient(135deg,#24104f,#a31266);color:#fff;display:flex;align-items:center;justify-content:space-between">
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <img src="/public/assets/logo.png" alt="JEOAH"
+                            style="width:34px;height:34px;border-radius:10px;object-fit:cover;border:1px solid rgba(255,255,255,0.3)">
+                        <div>
+                            <strong style="font-size:15px;display:block;line-height:1.2">JEOAH IA</strong>
+                            <span style="font-size:11px;color:#fce7f3;opacity:0.9">Assistant intelligent de la plateforme</span>
+                        </div>
+                    </div>
+                    <button id="jeoah-close" type="button" aria-label="Fermer l'assistant JEOAH" title="Fermer l'assistant"
+                        style="border:0;background:transparent;color:#fff;font-size:22px;cursor:pointer;padding:4px 8px;line-height:1">&times;</button>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:6px;padding:8px 14px;background:#fbf9fd;border-bottom:1px solid #f0e6f8;font-size:12px">
+                    <select id="jeoah-language" onchange="changeLanguage(this.value)"
+                        style="padding:4px 8px;border:1px solid #e0d2ef;border-radius:6px;background:#fff;font-size:12px;color:#334155;outline:none">
+                        <option value="auto">Langue du message</option>
+                        <option value="fr">🇫🇷 Français</option>
+                        <option value="ht">🇭🇹 Kreyòl Ayisyen</option>
+                        <option value="en">🇺🇸 English</option>
+                        <option value="es">🇪🇸 Español</option>
+                        <option value="zh">🇨🇳 中文</option>
+                    </select>
+                    <button id="jeoah-voice" type="button" aria-pressed="false" title="Activer la synthèse vocale"
+                        style="border:1px solid #e0d2ef;border-radius:6px;background:#fff;color:#4c1d95;padding:4px 7px;font-size:11px;font-weight:700;cursor:pointer">Voix: non</button>
+                    <span id="jeoah-role-badge"
+                        style="margin-left:auto;padding:3px 8px;background:#ede9fe;color:#6d28d9;border-radius:999px;font-weight:700;font-size:11px">Visiteur</span>
+                </div>
+                <div id="jeoah-messages"
+                    style="flex:1;padding:14px;overflow-y:auto;background:#faf8ff;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.5">
+                    <div id="jeoah-welcome"
+                        style="align-self:flex-start;max-width:85%;padding:10px 14px;border-radius:14px 14px 14px 2px;background:#fff;border:1px solid #eadff4;color:#1e293b;box-shadow:0 2px 5px rgba(0,0,0,0.03)">
+                    </div>
+                </div>
+                <form id="jeoah-form" style="display:flex;gap:8px;padding:12px;background:#fff;border-top:1px solid #eadff4">
+                    <input id="jeoah-input" required placeholder="Posez votre question..."
+                        style="min-width:0;flex:1;padding:10px 12px;border:1px solid #d8b4fe;border-radius:10px;outline:none;font-size:13px">
+                    <button id="jeoah-mic" type="button" aria-label="Parler à JEOAH" title="Parler à JEOAH"
+                        style="border:1px solid #d8b4fe;border-radius:10px;padding:10px 12px;background:#fff;color:#7c3aed;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <button type="submit"
+                        style="border:0;border-radius:10px;padding:10px 16px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+            <button id="jeoah-open" aria-label="Ouvrir l'assistant JEOAH"
+                style="width:58px;height:58px;border:0;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#c026d3);color:#fff;font-size:22px;box-shadow:0 10px 25px rgba(124,58,237,0.45);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.2s">
+                ✦
+            </button>
+        </div>
     </div>
+    <script>
+        document.getElementById('menu-button').addEventListener('click', () => document.getElementById('site-links').classList.toggle('open'));
 
+        // Logique Assistant JEOAH
+        (function () {
+            const panel = document.getElementById('jeoah-panel');
+            const openBtn = document.getElementById('jeoah-open');
+            const closeBtn = document.getElementById('jeoah-close');
+            const form = document.getElementById('jeoah-form');
+            const input = document.getElementById('jeoah-input');
+            const messages = document.getElementById('jeoah-messages');
+            const voiceButton = document.getElementById('jeoah-voice');
+            const micButton = document.getElementById('jeoah-mic');
+            const roleBadge = document.getElementById('jeoah-role-badge');
+            const memory = [];
+            let voiceEnabled = false;
+            let recognition = null;
+
+            const authUser = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+            const userPlan = authUser?.selectedPlan || authUser?.plan || 'free';
+            if (authUser && authUser.role) {
+                roleBadge.textContent = authUser.role.toUpperCase();
+            }
+
+            function togglePanel(show) {
+                if (show) {
+                    panel.removeAttribute('hidden');
+                    panel.style.display = 'flex';
+                    openBtn.style.display = 'none';
+                    input.focus();
+                } else {
+                    panel.setAttribute('hidden', '');
+                    panel.style.display = 'none';
+                    openBtn.style.display = 'flex';
+                    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                }
+            }
+
+            if (openBtn) openBtn.addEventListener('click', () => togglePanel(true));
+            if (closeBtn) closeBtn.addEventListener('click', event => {
+                event.preventDefault();
+                event.stopPropagation();
+                togglePanel(false);
+            });
+
+            if (voiceButton) {
+                voiceButton.addEventListener('click', () => {
+                    voiceEnabled = !voiceEnabled;
+                    voiceButton.setAttribute('aria-pressed', String(voiceEnabled));
+                    voiceButton.textContent = voiceEnabled ? 'Voix: oui' : 'Voix: non';
+                    if (!voiceEnabled && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+                });
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition && micButton) {
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = true;
+                recognition.maxAlternatives = 1;
+                recognition.onstart = () => {
+                    micButton.style.background = '#fce7f3';
+                    micButton.style.color = '#be185d';
+                    micButton.setAttribute('aria-pressed', 'true');
+                };
+                recognition.onresult = event => {
+                    const transcript = Array.from(event.results).map(result => result[0].transcript).join('');
+                    input.value = transcript;
+                };
+                recognition.onerror = () => {
+                    appendMessage('JEOAH', 'Je n’ai pas pu entendre votre demande. Vérifiez l’autorisation du microphone et réessayez.', false);
+                };
+                recognition.onend = () => {
+                    micButton.style.background = '#fff';
+                    micButton.style.color = '#7c3aed';
+                    micButton.setAttribute('aria-pressed', 'false');
+                };
+                micButton.addEventListener('click', () => {
+                    const lang = document.getElementById('jeoah-language')?.value || 'fr';
+                    recognition.lang = lang === 'en' ? 'en-US' : (lang === 'zh' ? 'zh-CN' : (lang === 'es' ? 'es-ES' : 'fr-FR'));
+                    try { recognition.start(); } catch (_) { }
+                });
+            } else if (micButton) {
+                micButton.disabled = true;
+                micButton.title = 'La saisie vocale n’est pas disponible dans ce navigateur';
+                micButton.style.opacity = '0.45';
+            }
+
+            function appendMessage(sender, text, isUser) {
+                const msg = document.createElement('div');
+                msg.style.maxWidth = '85%';
+                msg.style.padding = '10px 14px';
+                msg.style.borderRadius = isUser ? '14px 14px 2px 14px' : '14px 14px 14px 2px';
+                msg.style.background = isUser ? 'linear-gradient(135deg,#7c3aed,#9333ea)' : '#fff';
+                msg.style.color = isUser ? '#fff' : '#1e293b';
+                msg.style.border = isUser ? 'none' : '1px solid #eadff4';
+                msg.style.alignSelf = isUser ? 'flex-end' : 'flex-start';
+                msg.style.boxShadow = '0 2px 6px rgba(0,0,0,0.04)';
+                msg.innerHTML = `<strong>${sender} :</strong> ${text}`;
+                messages.appendChild(msg);
+                messages.scrollTop = messages.scrollHeight;
+            }
+
+            function speak(text, language) {
+                if (!voiceEnabled || !('speechSynthesis' in window)) return;
+                const plainText = document.createElement('div');
+                plainText.innerHTML = text;
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(plainText.textContent || '');
+                utterance.lang = language === 'en' ? 'en-US' : (language === 'zh' ? 'zh-CN' : (language === 'es' ? 'es-ES' : 'fr-FR'));
+                utterance.rate = 0.96;
+                utterance.pitch = 1;
+                window.speechSynthesis.speak(utterance);
+            }
+
+            function getSmartFallback(q, lang) {
+                const text = q.toLowerCase();
+                const reply = {
+                    fr: {
+                        account: 'Pour vous inscrire ou vous connecter, ouvrez la page Connexion / Inscription.',
+                        product: 'Pour ajouter un produit affilié, ouvrez votre espace affilié puis importez votre lien partenaire.',
+                        storefront: 'Chaque membre dispose d’une vitrine dédiée. Vous pouvez consulter la vitrine générale ou votre espace personnel.',
+                        plans: 'Les formules disponibles sont présentées sur la page Plans JEOAH’S.',
+                        greeting: 'Bonjour ! Je peux vous guider pour votre compte, votre vitrine, vos produits ou les plans.',
+                        other: 'Je peux vous aider avec votre compte, votre vitrine, vos produits et les plans JEOAH’S.'
+                    },
+                    ht: {
+                        account: 'Pou kreye yon kont oswa konekte, ouvri paj Koneksyon / Enskripsyon an.',
+                        product: 'Pou ajoute yon pwodwi afilye, ouvri espas afilye ou epi enpòte lyen patnè ou.',
+                        storefront: 'Chak manm gen yon vitrin pa li. Ou ka wè vitrin jeneral la oswa espas pèsonèl ou.',
+                        plans: 'Plan ki disponib yo sou paj Plan JEOAH’S la.',
+                        greeting: 'Bonjou! Mwen ka gide ou pou kont ou, vitrin ou, pwodwi ou oswa plan yo.',
+                        other: 'Mwen ka ede ou ak kont ou, vitrin ou, pwodwi ou ak plan JEOAH’S yo.'
+                    },
+                    en: {
+                        account: 'To create an account or sign in, open the Sign in / Register page.',
+                        product: 'To add an affiliate product, open your affiliate space and import your partner link.',
+                        storefront: 'Each member has a dedicated storefront. You can visit the main storefront or your personal space.',
+                        plans: 'Available options are listed on the JEOAH’S Plans page.',
+                        greeting: 'Hello! I can guide you with your account, storefront, products, or plans.',
+                        other: 'I can help with your account, storefront, products, and JEOAH’S plans.'
+                    },
+                    es: {
+                        account: 'Para registrarse o iniciar sesión, abra la página Conexión / Registro.',
+                        product: 'Para agregar un producto afiliado, abra su espacio de afiliados e importe su enlace de socio.',
+                        storefront: 'Cada miembro tiene un escaparate dedicado. Puede consultar el escaparate general o su espacio personal.',
+                        plans: 'Las opciones disponibles están en la página de Planes JEOAH’S.',
+                        greeting: '¡Hola! Puedo orientarle sobre su cuenta, su escaparate, sus productos o los planes.',
+                        other: 'Puedo ayudarle con su cuenta, su escaparate, sus productos y los planes JEOAH’S.'
+                    },
+                    zh: {
+                        account: '注册或登录请打开登录/注册页面。',
+                        product: '如需添加联盟商品，请进入联盟中心并导入合作链接。',
+                        storefront: '每位会员均拥有专属橱窗，您可查看全站展厅或个人中心。',
+                        plans: '可选方案详情请查看 JEOAH’S 套餐方案页面。',
+                        greeting: '您好！我可以为您在账户设置、店铺橱窗、产品发布或套餐方案方面提供指引。',
+                        other: '我可以协助您了解账户、店铺橱窗、产品以及 JEOAH’S 套餐方案。'
+                    }
+                }[lang] || null;
+                if (!reply) return 'I am JEOAH. Please choose a language above or ask again in your preferred language.';
+                let answer = reply.other;
+                if (text.includes('inscr') || text.includes('connect') || text.includes('compte') || text.includes('login') || text.includes('sign') || text.includes('antre')) answer = reply.account;
+                else if (text.includes('produit') || text.includes('ajouter') || text.includes('import') || text.includes('product') || text.includes('pwodwi')) answer = reply.product;
+                else if (text.includes('vitrine') || text.includes('boutique') || text.includes('store')) answer = reply.storefront;
+                else if (text.includes('plan') || text.includes('abonnement') || text.includes('tarif') || text.includes('pri')) answer = reply.plans;
+                else if (text.includes('bonjour') || text.includes('salut') || text.includes('hello') || text.includes('bonjou')) answer = reply.greeting;
+                return answer;
+            }
+
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const prompt = input.value.trim();
+                    if (!prompt) return;
+
+                    const curLang = document.getElementById('jeoah-language')?.value || 'fr';
+                    const youLabels = { fr: 'Vous', ht: 'Ou', en: 'You', es: 'Tú', zh: '您' };
+                    appendMessage(youLabels[curLang] || 'Vous', prompt, true);
+                    memory.push({ role: 'user', content: prompt });
+                    input.value = '';
+                    const currentRole = authUser?.role || 'visiteur';
+
+                    const thinkingLabels = { fr: 'JEOAH réfléchit...', ht: 'JEOAH ap reflechi...', en: 'JEOAH is thinking...', es: 'JEOAH está pensando...', zh: 'JEOAH 正在思考...' };
+                    const loadingDiv = document.createElement('div');
+                    loadingDiv.style.alignSelf = 'flex-start';
+                    loadingDiv.style.padding = '8px 12px';
+                    loadingDiv.style.fontSize = '12px';
+                    loadingDiv.style.color = '#7c3aed';
+                    loadingDiv.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-1"></i> ${thinkingLabels[curLang] || thinkingLabels.fr}`;
+                    messages.appendChild(loadingDiv);
+                    messages.scrollTop = messages.scrollHeight;
+
+                    try {
+                        const res = await fetch('/api/jeoah.js', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                prompt,
+                                language: curLang,
+                                role: currentRole,
+                                plan: userPlan,
+                                memory: memory.slice(0, -1).slice(-8)
+                            })
+                        });
+
+                        const data = await res.json().catch(() => ({}));
+                        loadingDiv.remove();
+
+                        if (res.ok && data.reply) {
+                            appendMessage('JEOAH', data.reply, false);
+                            speak(data.reply, curLang);
+                            memory.push({ role: 'assistant', content: data.reply });
+                        } else {
+                            const smartReply = getSmartFallback(prompt, curLang);
+                            appendMessage('JEOAH', smartReply, false);
+                            speak(smartReply, curLang);
+                            memory.push({ role: 'assistant', content: smartReply });
+                        }
+                    } catch (err) {
+                        loadingDiv.remove();
+                        const smartReply = getSmartFallback(prompt, curLang);
+                        appendMessage('JEOAH', smartReply, false);
+                        speak(smartReply, curLang);
+                        memory.push({ role: 'assistant', content: smartReply });
+                    }
+                });
+            }
+        })();
+
+        // Gestion PWA
+        let deferredPrompt;
+        const installBtn = document.getElementById('pwa-install-btn');
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (installBtn) installBtn.style.display = 'inline-flex';
+        });
+        if (installBtn) {
+            installBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        installBtn.style.display = 'none';
+                    }
+                    deferredPrompt = null;
+                }
+            });
+        }
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(() => navigator.serviceWorker.getRegistrations())
+                .then(registrations => Promise.all(registrations
+                    .filter(registration => registration.scope.endsWith('/public/'))
+                    .map(registration => registration.unregister())))
+                .catch(() => { });
+        }
+
+        // Gestion Langue Dynamique
+        const dict = {
+            fr: {
+                services: "Notre service", parcours: "Parcours", communaute: "Communauté", features: "Fonctionnalités", plans: "Plans", shipping: "Livraison", faq: "FAQ", contact: "Contact",
+                vitrine: "Voir la vitrine", auth: "Se connecter / S'inscrire",
+                heroH1: "Le commerce devient plus simple avec JEOAH'S.",
+                heroP: "Nous réunissons acheteurs, vendeurs et affiliés au même endroit. Notre assistant JEOAH aide chacun à comprendre, organiser et développer son activité."
+            },
+            ht: {
+                services: "Sèvis Nou", parcours: "Pakou", communaute: "Kominote", features: "Fonksyon yo", plans: "Plan yo", shipping: "Livrezon", faq: "FAQ", contact: "Kontak",
+                vitrine: "Gade Vitrin", auth: "Konekte / Enskri",
+                heroH1: "Komès la vin pi fasil avèk JEOAH'S.",
+                heroP: "Nou reyini achtè, vandè ak afilye nan menm espas. Asistan JEOAH la ede chak moun konprann, òganize epi devlope aktivite yo."
+            },
+            en: {
+                services: "Our Service", parcours: "Journey", communaute: "Community", features: "Features", plans: "Plans", shipping: "Shipping", faq: "FAQ", contact: "Contact",
+                vitrine: "Explore Showcase", auth: "Sign In / Register",
+                heroH1: "Commerce made simpler with JEOAH'S.",
+                heroP: "We bring buyers, sellers, and affiliates together in one place. Our JEOAH assistant helps everyone understand, organize, and grow their business."
+            },
+            es: {
+                services: "Nuestro Servicio", parcours: "Recorrido", communaute: "Comunidad", features: "Funciones", plans: "Planes", shipping: "Envíos", faq: "Preguntas", contact: "Contacto",
+                vitrine: "Ver Vitrina", auth: "Iniciar Sesión / Registro",
+                heroH1: "El comercio es más simple con JEOAH'S.",
+                heroP: "Reunimos compradores, vendedores y afiliados en un solo lugar. Nuestro asistente JEOAH ayuda a todos a crecer."
+            },
+            zh: {
+                services: "服务介绍", parcours: "使用指南", communaute: "社区生态", features: "功能", plans: "套餐方案", shipping: "物流与配送", faq: "常见问题", contact: "联系我们",
+                vitrine: "浏览展厅", auth: "登录 / 注册",
+                heroH1: "携手 JEOAH'S，让电商更简单。",
+                heroP: "我们将买家、卖家和联盟会员聚集在一个智能生态中。JEOAH 助手助力每一位用户开拓业务。"
+            }
+        };
+
+        const homeCopy = {
+            fr: {
+                install: "Installer", menuLabel: "Ouvrir le menu",
+                heroEyebrow: "Une communauté, plusieurs possibilités",
+                heroExplore: "Découvrir la vitrine", heroStart: "Commencer avec un compte",
+                heroNote: "La vitrine est accessible sans inscription. Les paiements réels sont encore en préparation.",
+                roleSeller: "Vendeurs", roleAffiliate: "Affiliés", roleBuyer: "Acheteurs",
+                assistantTitle: "JEOAH est là.",
+                assistantDescription: "Un assistant qui explique, suggère et aide à avancer, en texte et progressivement en voix.",
+                footerDescription: "Faciliter les échanges entre personnes, produits et communautés.",
+                footerExplore: "Explorer", footerShowcase: "Vitrine", footerShipping: "Livraison et retours",
+                footerFaq: "FAQ", footerTerms: "Conditions", footerFollow: "Suivez-nous",
+                footerSocialIntro: "Construisons notre communauté, réseau après réseau.",
+                footerCopyright: "© 2026 JEOAH'S. Version de test.",
+                footerPayments: "Paiements réels en préparation."
+            },
+            ht: {
+                install: "Enstale", menuLabel: "Louvri meni an",
+                heroEyebrow: "Yon kominote, plizyè posiblite",
+                heroExplore: "Dekouvri vitrin nan", heroStart: "Kòmanse ak yon kont",
+                heroNote: "Ou ka vizite vitrin nan san ou pa enskri. Peman reyèl yo poko disponib.",
+                roleSeller: "Vandè yo", roleAffiliate: "Afilye yo", roleBuyer: "Achtè yo",
+                assistantTitle: "JEOAH la.",
+                assistantDescription: "Yon asistan ki esplike, sijere epi ede w avanse, an tèks epi piti piti ak vwa.",
+                footerDescription: "Fasilite echanj ant moun, pwodwi ak kominote yo.",
+                footerExplore: "Eksplore", footerShowcase: "Vitrin", footerShipping: "Livrezon ak retou",
+                footerFaq: "Kesyon yo poze souvan", footerTerms: "Kondisyon", footerFollow: "Swiv nou",
+                footerSocialIntro: "Ann bati kominote nou an, sou chak rezo sosyal.",
+                footerCopyright: "© 2026 JEOAH'S. Vèsyon tès.",
+                footerPayments: "Peman reyèl yo an preparasyon."
+            },
+            en: {
+                install: "Install", menuLabel: "Open menu",
+                heroEyebrow: "One community, many possibilities",
+                heroExplore: "Explore the showcase", heroStart: "Get started with an account",
+                heroNote: "Browse the showcase without signing up. Real payments are still in preparation.",
+                roleSeller: "Sellers", roleAffiliate: "Affiliates", roleBuyer: "Buyers",
+                assistantTitle: "JEOAH is here.",
+                assistantDescription: "An assistant that explains, suggests, and helps you move forward through text, with voice being introduced gradually.",
+                footerDescription: "Making it easier for people, products, and communities to connect.",
+                footerExplore: "Explore", footerShowcase: "Showcase", footerShipping: "Shipping and returns",
+                footerFaq: "FAQ", footerTerms: "Terms", footerFollow: "Follow us",
+                footerSocialIntro: "Let's build our community, one network at a time.",
+                footerCopyright: "© 2026 JEOAH'S. Test version.",
+                footerPayments: "Real payments are in preparation."
+            },
+            es: {
+                install: "Instalar", menuLabel: "Abrir el menú",
+                heroEyebrow: "Una comunidad, muchas posibilidades",
+                heroExplore: "Descubrir el escaparate", heroStart: "Empezar con una cuenta",
+                heroNote: "Puedes explorar el escaparate sin registrarte. Los pagos reales aún están en preparación.",
+                roleSeller: "Vendedores", roleAffiliate: "Afiliados", roleBuyer: "Compradores",
+                assistantTitle: "JEOAH está aquí.",
+                assistantDescription: "Un asistente que explica, sugiere y te ayuda a avanzar por texto, con la voz incorporándose poco a poco.",
+                footerDescription: "Facilitamos las conexiones entre personas, productos y comunidades.",
+                footerExplore: "Explorar", footerShowcase: "Escaparate", footerShipping: "Envíos y devoluciones",
+                footerFaq: "Preguntas frecuentes", footerTerms: "Condiciones", footerFollow: "Síguenos",
+                footerSocialIntro: "Construyamos nuestra comunidad, red tras red.",
+                footerCopyright: "© 2026 JEOAH'S. Versión de prueba.",
+                footerPayments: "Los pagos reales están en preparación."
+            },
+            zh: {
+                install: "安装", menuLabel: "打开菜单",
+                heroEyebrow: "一个社区，多种可能",
+                heroExplore: "浏览展厅", heroStart: "创建账户并开始",
+                heroNote: "无需注册即可浏览展厅。真实支付功能仍在准备中。",
+                roleSeller: "卖家", roleAffiliate: "联盟会员", roleBuyer: "买家",
+                assistantTitle: "JEOAH 在这里。",
+                assistantDescription: "一位通过文字解释、提出建议并帮助你前进的助手，语音功能也将逐步推出。",
+                footerDescription: "让人与人、商品与社区之间的交流更加便捷。",
+                footerExplore: "探索", footerShowcase: "商品展厅", footerShipping: "配送与退货",
+                footerFaq: "常见问题", footerTerms: "条款", footerFollow: "关注我们",
+                footerSocialIntro: "携手各个社交平台，共同建设我们的社区。",
+                footerCopyright: "© 2026 JEOAH'S。测试版本。",
+                footerPayments: "真实支付功能正在准备中。"
+            }
+        };
+
+        function changeLanguage(lang) {
+            if (!lang || !dict[lang]) lang = 'fr';
+            localStorage.setItem('jeoahs-lang', lang);
+
+            const sSelect = document.getElementById('site-lang-select');
+            if (sSelect && sSelect.value !== lang) {
+                sSelect.value = lang;
+            }
+
+            const jSelect = document.getElementById('jeoah-language');
+            if (jSelect && jSelect.value !== lang) {
+                jSelect.value = lang;
+            }
+
+            const jWelcome = document.getElementById('jeoah-welcome');
+            const greetings = {
+                fr: "Bonjour ! Je suis votre copilote JEOAH. Comment puis-je vous aider aujourd'hui ?",
+                ht: "Bonjou! Mwen se kopilot JEOAH ou. Kijan mwen ka ede ou?",
+                en: "Hello! I am your JEOAH copilot. How can I help you today?",
+                es: "¡Hola! Soy tu copiloto JEOAH. ¿Cómo puedo ayudarte hoy?",
+                zh: "您好！我是您的智能副驾 JEOAH。今天有什么我可以帮您的？"
+            };
+            if (jWelcome && greetings[lang]) {
+                jWelcome.innerHTML = `<strong>JEOAH :</strong> ${greetings[lang]}`;
+            }
+
+            const jInput = document.getElementById('jeoah-input');
+            const placeholders = {
+                fr: "Posez votre question...",
+                ht: "Poze kesyon ou...",
+                en: "Ask your question...",
+                es: "Haz tu pregunta...",
+                zh: "请输入您的问题..."
+            };
+            if (jInput && placeholders[lang]) {
+                jInput.placeholder = placeholders[lang];
+            }
+
+            if (typeof window.applyJeoahLanguage === 'function') {
+                window.applyJeoahLanguage(lang);
+            }
+
+            window.dispatchEvent(new CustomEvent('jeoahs-lang-changed', { detail: { lang } }));
+            const d = dict[lang] || dict.fr;
+            const pageCopy = homeCopy[lang] || homeCopy.fr;
+            document.documentElement.lang = dict[lang] ? lang : 'fr';
+            document.querySelectorAll('[data-home-copy]').forEach(el => {
+                const key = el.getAttribute('data-home-copy');
+                if (pageCopy[key]) el.textContent = pageCopy[key];
+            });
+            document.querySelectorAll('[data-home-aria]').forEach(el => {
+                const key = el.getAttribute('data-home-aria');
+                if (pageCopy[key]) el.setAttribute('aria-label', pageCopy[key]);
+            });
+            document.querySelectorAll('[data-nav]').forEach(el => {
+                const k = el.getAttribute('data-nav');
+                if (d[k]) el.textContent = d[k];
+            });
+            document.querySelectorAll('[data-action]').forEach(el => {
+                const k = el.getAttribute('data-action');
+                if (d[k]) el.textContent = d[k];
+            });
+            const h1 = document.querySelector('h1');
+            if (h1 && d.heroH1) h1.textContent = d.heroH1;
+            const heroP = document.querySelector('.hero p');
+            if (heroP && d.heroP) heroP.textContent = d.heroP;
+            const copy = {
+                fr: { service: ['Notre service', 'Une plateforme qui facilite les échanges.', "JEOAH'S ne stocke pas les produits. Nous facilitons la rencontre, la visibilité, la communication et, dans le modèle prévu, le traitement des commandes."], serviceCards: [['Comparer et découvrir', 'Les visiteurs trouvent des produits et consultent les offres partenaires au même endroit.'], ['Grandir ensemble', 'Les vendeurs et affiliés présentent leurs produits et développent leur communauté.'], ['Être accompagné', 'JEOAH explique les étapes et propose des actions adaptées au rôle et au plan.']], journey: ['Votre parcours', 'Choisissez votre façon de participer.', 'Un compte est nécessaire pour devenir vendeur ou affilié. Les visiteurs peuvent simplement explorer.'], roles: [['Vendeur', "Présente ses produits et organise sa boutique avec l'aide de JEOAH."], ['Affilié', 'Partage des produits et construit une vitrine de recommandations.'], ['Acheteur ou visiteur', 'Découvre les produits sans obligation de compte.']], community: ['Notre communauté', 'Des voix locales, une portée mondiale.', 'Les réseaux sociaux relient les créateurs, vendeurs et acheteurs. JEOAH’S aide à organiser cette énergie.', 'Des paiements adaptés aux pays', 'Les moyens de paiement dépendent du pays et de la disponibilité du service.', "Les paiements réels ne sont pas activés dans cette version de test."] },
+                ht: { service: ['Sèvis nou', 'Yon platfòm ki fasilite echanj yo.', "JEOAH'S pa estoke pwodwi yo. Nou fasilite rankont, vizibilite ak kominikasyon."], serviceCards: [['Dekouvri ak konpare', 'Vizitè yo jwenn pwodwi ak òf patnè yo nan menm kote.'], ['Grandi ansanm', 'Vandè ak afilye yo prezante pwodwi yo epi devlope kominote yo.'], ['Jwenn akonpayman', 'JEOAH esplike etap yo epi pwopoze aksyon pou chak wòl.']], journey: ['Pakou ou', 'Chwazi fason ou vle patisipe.', 'Yon kont nesesè pou vin vandè oswa afilye. Vizitè yo ka eksplore.'], roles: [['Vandè', 'Prezante pwodwi yo epi òganize boutik li ak JEOAH.'], ['Afilye', 'Pataje pwodwi yo epi konstwi yon vitrin rekòmandasyon.'], ['Achtè oswa vizitè', 'Dekouvri pwodwi yo san obligasyon kont.']], community: ['Kominote nou', 'Vwa lokal, yon rive mondyal.', 'Rezo sosyal yo konekte kreyatè, vandè ak achtè. JEOAH’S ede òganize enèji sa a.', 'Peman pou peyi yo', 'Mwayen peman yo depann de peyi a ak sèvis ki disponib.', 'Peman reyèl yo poko aktive nan vèsyon tès sa a.'] },
+                en: { service: ['Our service', 'A platform that makes commerce easier.', "JEOAH'S does not store products. We make discovery, visibility and communication easier."], serviceCards: [['Compare and discover', 'Visitors find products and partner offers in one place.'], ['Grow together', 'Sellers and affiliates present products and grow their communities.'], ['Get guidance', 'JEOAH explains the steps and suggests actions for each role.']], journey: ['Your journey', 'Choose how you want to participate.', 'An account is required to become a seller or affiliate. Visitors can explore.'], roles: [['Seller', 'Present products and organize your store with JEOAH.'], ['Affiliate', 'Share products and build a recommendation storefront.'], ['Buyer or visitor', 'Discover products without an account.']], community: ['Our community', 'Local voices, global reach.', "Social networks connect creators, sellers and buyers. JEOAH’S helps organize that energy.", 'Payments by country', 'Payment methods depend on the country and availability.', 'Real payments are not active in this test version.'] },
+                es: { service: ['Nuestro servicio', 'Una plataforma que facilita el comercio.', "JEOAH'S no almacena productos. Facilitamos el descubrimiento, la visibilidad y la comunicación."], serviceCards: [['Comparar y descubrir', 'Los visitantes encuentran productos y ofertas de socios en un solo lugar.'], ['Crecer juntos', 'Vendedores y afiliados presentan productos y desarrollan sus comunidades.'], ['Recibir orientación', 'JEOAH explica los pasos y propone acciones según el rol.']], journey: ['Tu recorrido', 'Elige cómo quieres participar.', 'Se necesita una cuenta para ser vendedor o afiliado. Los visitantes pueden explorar.'], roles: [['Vendedor', 'Presenta sus productos y organiza su tienda con JEOAH.'], ['Afiliado', 'Comparte productos y crea una vitrina de recomendaciones.'], ['Comprador o visitante', 'Descubre productos sin registrarse.']], community: ['Nuestra comunidad', 'Voces locales, alcance mundial.', "Las redes sociales conectan creadores, vendedores y compradores. JEOAH’S ayuda a organizar esa energía.", 'Pagos según el país', 'Los medios de pago dependen del país y la disponibilidad.', 'Los pagos reales no están activos en esta versión de prueba.'] },
+                zh: { service: ['我们的服务', '让交易更简单的平台', "JEOAH'S 不储存商品，而是帮助用户发现商品、提升曝光并进行沟通。"], serviceCards: [['比较与发现', '访客可以在一个地方找到商品和合作伙伴报价。'], ['共同成长', '卖家和联盟会员展示商品并发展社区。'], ['获得帮助', 'JEOAH 根据角色解释步骤并提出建议。']], journey: ['您的路径', '选择您的参与方式', '成为卖家或联盟会员需要账户，访客可以直接浏览。'], roles: [['卖家', '展示商品并在 JEOAH 的帮助下管理店铺。'], ['联盟会员', '分享商品并建立推荐展示页。'], ['买家或访客', '无需注册即可发现商品。']], community: ['我们的社区', '本地声音，全球影响力', "社交网络连接创作者、卖家和买家，JEOAH’S 帮助组织这些活力。", '适合各国的支付方式', '支付方式将根据地区和服务情况提供。', '真实支付尚未在测试版本中启用。'] }
+            }[lang] || null;
+            if (!copy) return;
+            const serviceHead = document.querySelector('#services .section-head');
+            if (serviceHead) { serviceHead.querySelector('.eyebrow').textContent = copy.service[0]; serviceHead.querySelector('h2').textContent = copy.service[1]; serviceHead.querySelector('p').textContent = copy.service[2]; }
+            document.querySelectorAll('#services .card').forEach((card, index) => { card.querySelector('h3').textContent = copy.serviceCards[index][0]; card.querySelector('p').textContent = copy.serviceCards[index][1]; });
+            const journeyHead = document.querySelector('#parcours .section-head');
+            if (journeyHead) { journeyHead.querySelector('.eyebrow').textContent = copy.journey[0]; journeyHead.querySelector('h2').textContent = copy.journey[1]; journeyHead.querySelector('p').textContent = copy.journey[2]; }
+            document.querySelectorAll('#parcours .card').forEach((card, index) => { card.querySelector('h3').textContent = copy.roles[index][0]; card.querySelector('p').textContent = copy.roles[index][1]; });
+            const community = document.querySelector('#communaute');
+            if (community) { const heading = community.querySelector('.eyebrow'); const title = community.querySelector('h2'); const text = community.querySelector(':scope > .wrap > div > p'); const box = community.querySelector('.community-box'); if (heading) heading.textContent = copy.community[0]; if (title) title.textContent = copy.community[1]; if (text) text.textContent = copy.community[2]; if (box) { box.querySelector('h3').textContent = copy.community[3]; box.querySelector('p').textContent = copy.community[4]; box.querySelector('.notice').textContent = copy.community[5]; } }
+        }
+
+        window.changeLanguage = changeLanguage;
+        window.setSiteLanguage = changeLanguage;
+        window.setLang = changeLanguage;
+
+        const savedLang = localStorage.getItem('jeoahs-lang') || 'fr';
+        const langSelect = document.getElementById('site-lang-select');
+        if (langSelect) langSelect.value = savedLang;
+        changeLanguage(savedLang);
+
+        window.addEventListener('jeoahs-lang-changed', (e) => {
+            if (e && e.detail && e.detail.lang) {
+                const lang = e.detail.lang;
+                const select = document.getElementById('site-lang-select');
+                if (select && select.value !== lang) {
+                    select.value = lang;
+                }
+            }
+        });
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'jeoahs-lang' && e.newValue) {
+                changeLanguage(e.newValue);
+            }
+        });
+    </script>
 </body>
 
 </html>
