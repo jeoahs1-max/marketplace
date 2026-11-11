@@ -11,11 +11,23 @@
 
 <body class="min-h-screen bg-slate-50 text-slate-900">
     <main class="mx-auto max-w-7xl px-5 py-12">
-        <header class="mb-10 max-w-3xl">
-            <a href="/index.html" class="text-sm font-semibold text-indigo-700 hover:underline">JEOAH'S Market Place</a>
-            <h1 class="mt-3 text-4xl font-extrabold tracking-normal">Plans et quotas</h1>
-            <p class="mt-3 text-slate-600">Choisissez le niveau adapté à votre activité. Les créations IA et les
-                publications sont toujours soumises à validation avant exécution.</p>
+        <header class="mb-10 flex flex-wrap items-center justify-between gap-4">
+            <div class="max-w-2xl">
+                <a href="/index.html" class="text-sm font-semibold text-indigo-700 hover:underline">JEOAH'S Market Place</a>
+                <h1 class="mt-3 text-4xl font-extrabold tracking-normal">Plans et quotas</h1>
+                <p class="mt-3 text-slate-600">Choisissez le niveau adapté à votre activité. Les créations IA et les
+                    publications sont toujours soumises à validation avant exécution.</p>
+            </div>
+            <div>
+                <select id="site-lang-select" onchange="window.setSiteLanguage ? window.setSiteLanguage(this.value) : (localStorage.setItem('jeoahs-lang', this.value), window.dispatchEvent(new CustomEvent('jeoahs-lang-changed', {detail:{lang:this.value}})))"
+                    style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:12px;background:#fff;font-weight:700;color:#1e293b;cursor:pointer">
+                    <option value="fr">🇫🇷 FR</option>
+                    <option value="ht">🇭🇹 HT</option>
+                    <option value="en">🇺🇸 EN</option>
+                    <option value="es">🇪🇸 ES</option>
+                    <option value="zh">🇨🇳 中文</option>
+                </select>
+            </div>
         </header>
         <section class="mb-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
             aria-labelledby="currency-title">

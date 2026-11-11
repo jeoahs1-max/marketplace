@@ -1,6 +1,16 @@
 (function () {
   const LANG_KEY = 'jeoahs-lang';
 
+  // Sécuriser globalement setLang pour les boutons onclick du footer
+  window.setLang = function (newLang) {
+    if (typeof window.setSiteLanguage === 'function') {
+      window.setSiteLanguage(newLang);
+    } else {
+      localStorage.setItem(LANG_KEY, newLang);
+      window.dispatchEvent(new CustomEvent('jeoahs-lang-changed', { detail: { lang: newLang } }));
+    }
+  };
+
   const translations = {
     fr: {
       siteName: "JEOAH'S Market Place",

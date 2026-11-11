@@ -22,11 +22,21 @@
           class="fas fa-search absolute left-4 top-3.5 text-slate-400"></i><input id="market-search"
           class="w-full rounded-full border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none focus:border-fuchsia-500"
           placeholder="Rechercher un produit, une boutique, une catégorie..."></label>
-      <nav class="ml-auto flex items-center gap-4 text-sm font-semibold"><a href="/index.html"
-          class="hidden sm:block">Accueil</a><a href="#categories" class="hidden sm:block">Catégories</a><a
-          href="/public/auth.html" title="Messages"><i class="fas fa-comment-dots"></i></a><a href="/panier.html"
-          title="Panier"><i class="fas fa-shopping-cart"></i></a><a href="/public/auth.html"
-          class="rounded-lg bg-fuchsia-600 px-3 py-2 text-white">Mon compte</a></nav>
+      <nav class="ml-auto flex items-center gap-4 text-sm font-semibold">
+        <a href="/index.html" class="hidden sm:block" id="nav-home">Accueil</a>
+        <a href="#categories" class="hidden sm:block" id="nav-categories">Catégories</a>
+        <a href="/public/auth.html" title="Messages"><i class="fas fa-comment-dots"></i></a>
+        <a href="/panier.html" title="Panier"><i class="fas fa-shopping-cart"></i></a>
+        <a href="/public/auth.html" class="rounded-lg bg-fuchsia-600 px-3 py-2 text-white" id="nav-account">Mon compte</a>
+        <select id="site-lang-select" onchange="window.setSiteLanguage ? window.setSiteLanguage(this.value) : (localStorage.setItem('jeoahs-lang', this.value), window.dispatchEvent(new CustomEvent('jeoahs-lang-changed', {detail:{lang:this.value}})))"
+          style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:12px;background:#fff;font-weight:700;color:#1e293b;cursor:pointer">
+          <option value="fr">🇫🇷 FR</option>
+          <option value="ht">🇭🇹 HT</option>
+          <option value="en">🇺🇸 EN</option>
+          <option value="es">🇪🇸 ES</option>
+          <option value="zh">🇨🇳 中文</option>
+        </select>
+      </nav>
     </div>
   </header>
   <main class="mx-auto max-w-7xl px-5 py-6">
@@ -75,21 +85,89 @@
   <script type="module">
     import { getApps, initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
     import { collection, getDocs, getFirestore } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
-    const categories = ['Toutes les catégories', 'Mode & Accessoires', 'Beauté & Soins', 'Maison & Décoration', 'Électronique', 'Alimentation'];
+    let categories = ['Toutes les catégories', 'Mode & Accessoires', 'Beauté & Soins', 'Maison & Décoration', 'Électronique', 'Alimentation'];
+    const categoriesByLang = {
+      fr: ['Toutes les catégories', 'Mode & Accessoires', 'Beauté & Soins', 'Maison & Décoration', 'Électronique', 'Alimentation'],
+      ht: ['Tout kategori yo', 'Mòd ak Akseswa', 'Bote ak Swen', 'Kay ak Dekorasyon', 'Elektwonik', 'Manje ak Pwovizyon'],
+      en: ['All categories', 'Fashion & Accessories', 'Beauty & Personal Care', 'Home & Living', 'Electronics', 'Food & Grocery'],
+      es: ['Todas las categorías', 'Moda y Accesorios', 'Belleza y Cuidado', 'Hogar y Decoración', 'Electrónica', 'Alimentación'],
+      zh: ['全部分类', '时尚与配饰', '美妆与个护', '家居与装饰', '数码电子', '食品生鲜']
+    };
+    const uiText = {
+      fr: { bannerWelcome: "BIENVENUE SUR", bannerDesc: "Comparez les offres des vendeurs et affiliés. Choisissez le produit qui vous convient puis achetez sur la plateforme indiquée.", badgeSecure: "Paiement sécurisé par JEOAH'S", badgeFee: "Frais de service 3%", badgeTracking: "Suivi de livraison", featuredStores: "Boutiques en vedette", popularProducts: "Produits populaires", seeAll: "Voir tout", viewOffer: "Voir l'offre", home: "Accueil", categories: "Catégories", myAccount: "Mon compte", searchPlaceholder: "Rechercher un produit, une boutique, une catégorie...", empty: "Aucun produit ne correspond à cette recherche.", storesEmpty: "Les boutiques apparaîtront lorsque les produits seront publiés par JEOAH." },
+      ht: { bannerWelcome: "BYENVENI SOU", bannerDesc: "Konpare òf vandè ak afilye yo. Chwazi pwodwi ki bon pou ou a epi achte sou platfòm ki endike a.", badgeSecure: "Peman an sekirite pa JEOAH'S", badgeFee: "Frè sèvis 3%", badgeTracking: "Swivi livrezon", featuredStores: "Boutik an vedèt", popularProducts: "Pwodwi popilè yo", seeAll: "Wè tout", viewOffer: "Wè òf la", home: "Akèy", categories: "Kategori yo", myAccount: "Kont mwen", searchPlaceholder: "Chèche yon pwodwi, yon boutik, yon kategori...", empty: "Pa gen okenn pwodwi ki koresponn ak rechèch sa a.", storesEmpty: "Boutik yo ap parèt lè pwodwi yo pibliye pa JEOAH." },
+      en: { bannerWelcome: "WELCOME TO", bannerDesc: "Compare offers from sellers and affiliates. Choose the product that suits you then purchase on the indicated platform.", badgeSecure: "Secure payment by JEOAH'S", badgeFee: "3% Service Fee", badgeTracking: "Delivery tracking", featuredStores: "Featured Stores", popularProducts: "Popular Products", seeAll: "See all", viewOffer: "View offer", home: "Home", categories: "Categories", myAccount: "My account", searchPlaceholder: "Search for a product, store, category...", empty: "No products match this search.", storesEmpty: "Stores will appear once products are published by JEOAH." },
+      es: { bannerWelcome: "BIENVENIDO A", bannerDesc: "Compare ofertas de vendedores y afiliados. Elija el producto que le convenga y compre en la plataforma indicada.", badgeSecure: "Pago seguro por JEOAH'S", badgeFee: "Tarifa de servicio 3%", badgeTracking: "Seguimiento de envío", featuredStores: "Tiendas destacadas", popularProducts: "Productos populares", seeAll: "Ver todo", viewOffer: "Ver oferta", home: "Inicio", categories: "Categorías", myAccount: "Mi cuenta", searchPlaceholder: "Buscar un producto, tienda, categoría...", empty: "Ningún producto coincide con esta búsqueda.", storesEmpty: "Las tiendas aparecerán cuando los productos sean publicados por JEOAH." },
+      zh: { bannerWelcome: "欢迎来到", bannerDesc: "对比精选卖家与联盟商品。选择心仪商品并在指定平台完成安全交易。", badgeSecure: "JEOAH'S 安全担保交易", badgeFee: "3% 平台服务费", badgeTracking: "实时物流追踪", featuredStores: "精选推荐店铺", popularProducts: "热门畅销商品", seeAll: "查看全部", viewOffer: "查看优惠", home: "首页", categories: "商品分类", myAccount: "我的账户", searchPlaceholder: "搜索商品、店铺、分类...", empty: "未找到符合条件的商品。", storesEmpty: "商品发布后即可在此查看特色店铺。" }
+    };
+    let currentLang = localStorage.getItem('jeoahs-lang') || 'fr';
     const rates = { USD: 1, EUR: .92, HTG: 131, CAD: 1.36 };
     let products = [];
-    let selectedCategory = 'Toutes les catégories';
+    let selectedCategory = categories[0];
     const escape = value => String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
     function renderCategories() { document.getElementById('category-list').innerHTML = categories.map(category => `<button data-category="${escape(category)}" class="category w-full rounded-lg px-3 py-2 text-left ${category === selectedCategory ? 'bg-fuchsia-50 font-bold text-fuchsia-700' : 'hover:bg-slate-50'}">${category}</button>`).join(''); document.querySelectorAll('.category').forEach(button => button.onclick = () => { selectedCategory = button.dataset.category; renderCategories(); renderProducts(); }); }
     function price(product) { const raw = Number(String(product.price || product.priceUsd || '0').replace(/[^0-9.]/g, '')) || 0; const code = document.getElementById('currency').value; return new Intl.NumberFormat(code === 'HTG' ? 'fr-HT' : 'fr-FR', { style: 'currency', currency: code, maximumFractionDigits: code === 'HTG' ? 0 : 2 }).format(raw * rates[code]); }
-    function matches(product) { const text = document.getElementById('market-search').value.trim().toLowerCase(); const categoryMatch = selectedCategory === 'Toutes les catégories' || String(product.category || '').toLowerCase().includes(selectedCategory.split(' ')[0].toLowerCase()); return categoryMatch && (!text || `${product.name || product.title || ''} ${product.category || ''} ${product.source || ''}`.toLowerCase().includes(text)); }
+    function matches(product) { const text = document.getElementById('market-search').value.trim().toLowerCase(); const isAll = selectedCategory === categories[0] || selectedCategory === 'Toutes les catégories'; const categoryMatch = isAll || String(product.category || '').toLowerCase().includes(selectedCategory.split(' ')[0].toLowerCase()); return categoryMatch && (!text || `${product.name || product.title || ''} ${product.category || ''} ${product.source || ''}`.toLowerCase().includes(text)); }
     function hasActivePlan(product) { const value = product.subscriptionExpiresAt; const expiresAt = value?.toDate ? value.toDate().getTime() : new Date(value).getTime(); return product.subscriptionActive === true && Number.isFinite(expiresAt) && expiresAt > Date.now(); }
     function renderProducts() {
-      const visible = products.filter(matches); document.getElementById('products-grid').innerHTML = visible.length ? visible.map(product => {
-        const name = product.name || product.title || "Produit JEOAH'S"; const image = product.imageUrl || product.image || 'https://placehold.co/600x600/e2e8f0/334155?text=Produit'; const link = product.url || product.redirection || '#'; const platform = product.source || product.platform || 'Partenaire'; return `<article class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><img src="${escape(image)}" alt="${escape(name)}" class="h-44 w-full object-cover"><div class="p-4"><p class="text-xs font-bold uppercase text-fuchsia-700">${escape(platform)}</p><h3 class="mt-1 min-h-10 font-bold">${escape(name)}</h3><div class="mt-3 flex items-center justify-between gap-2"><strong>${price(product)}</strong><a href="/api/affiliate-click.js?affiliate_id=${encodeURIComponent(product.affiliateId || product.ownerId || 'marketplace')}&url=${encodeURIComponent(link)}" class="rounded-lg bg-fuchsia-600 px-3 py-2 text-xs font-bold text-white">Voir l'offre</a></div></div></article>`; }).join('') : '<p class="col-span-full rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">Aucun produit ne correspond à cette recherche.</p>'; }
-        function renderStores() { const stores = [...new Set(products.map(product => product.storeName || product.sellerName || product.affiliateName || product.source).filter(Boolean))].slice(0, 4); document.getElementById('stores').innerHTML = stores.length ? stores.map(store => `<a href="#products" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-fuchsia-300"><p class="font-bold">${escape(store)}</p><p class="mt-1 text-xs text-slate-500">Voir les offres disponibles</p></a>`).join('') : '<p class="text-sm text-slate-500">Les boutiques apparaîtront lorsque les produits seront publiés par JEOAH.</p>'; }
-        async function loadProducts() { try { const config = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : null; if (!config?.apiKey) throw new Error('Configuration Firebase indisponible'); const app = getApps()[0] || initializeApp(config); const snapshot = await getDocs(collection(getFirestore(app), 'artifacts/jeoahs1-max-03326376-49b27/public/data/products')); products = snapshot.docs.map(item => ({ id: item.id, ...item.data() })).filter(hasActivePlan); document.getElementById('market-status').textContent = `${products.length} offre(s) disponible(s). Prix convertis à titre indicatif.`; } catch (error) { document.getElementById('market-status').textContent = 'Les offres seront disponibles dès que la connexion sécurisée est établie.'; } renderStores(); renderProducts(); }
-        document.getElementById('market-search').addEventListener('input', renderProducts); document.getElementById('currency').addEventListener('change', renderProducts); renderCategories(); loadProducts();
+      const visible = products.filter(matches);
+      const t = uiText[currentLang] || uiText.fr;
+      document.getElementById('products-grid').innerHTML = visible.length ? visible.map(product => {
+        const name = product.name || product.title || "Produit JEOAH'S"; const image = product.imageUrl || product.image || 'https://placehold.co/600x600/e2e8f0/334155?text=Produit'; const link = product.url || product.redirection || '#'; const platform = product.source || product.platform || 'Partenaire'; return `<article class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><img src="${escape(image)}" alt="${escape(name)}" class="h-44 w-full object-cover"><div class="p-4"><p class="text-xs font-bold uppercase text-fuchsia-700">${escape(platform)}</p><h3 class="mt-1 min-h-10 font-bold">${escape(name)}</h3><div class="mt-3 flex items-center justify-between gap-2"><strong>${price(product)}</strong><a href="/api/affiliate-click.js?affiliate_id=${encodeURIComponent(product.affiliateId || product.ownerId || 'marketplace')}&url=${encodeURIComponent(link)}" class="rounded-lg bg-fuchsia-600 px-3 py-2 text-xs font-bold text-white">${t.viewOffer}</a></div></div></article>`; }).join('') : `<p class="col-span-full rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">${t.empty}</p>`; }
+    function renderStores() {
+      const t = uiText[currentLang] || uiText.fr;
+      const stores = [...new Set(products.map(product => product.storeName || product.sellerName || product.affiliateName || product.source).filter(Boolean))].slice(0, 4); document.getElementById('stores').innerHTML = stores.length ? stores.map(store => `<a href="#products" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-fuchsia-300"><p class="font-bold">${escape(store)}</p><p class="mt-1 text-xs text-slate-500">Voir les offres disponibles</p></a>`).join('') : `<p class="text-sm text-slate-500">${t.storesEmpty}</p>`; }
+    async function loadProducts() { try { const config = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : null; if (!config?.apiKey) throw new Error('Configuration Firebase indisponible'); const app = getApps()[0] || initializeApp(config); const snapshot = await getDocs(collection(getFirestore(app), 'artifacts/jeoahs1-max-03326376-49b27/public/data/products')); products = snapshot.docs.map(item => ({ id: item.id, ...item.data() })).filter(hasActivePlan); document.getElementById('market-status').textContent = `${products.length} offre(s) disponible(s). Prix convertis à titre indicatif.`; } catch (error) { document.getElementById('market-status').textContent = 'Les offres seront disponibles dès que la connexion sécurisée est établie.'; } renderStores(); renderProducts(); }
+    
+    function updateShowcaseLanguage(lang) {
+      currentLang = lang || localStorage.getItem('jeoahs-lang') || 'fr';
+      const t = uiText[currentLang] || uiText.fr;
+      document.documentElement.lang = currentLang;
+      const select = document.getElementById('site-lang-select');
+      if (select && select.value !== currentLang) select.value = currentLang;
+
+      const welcome = document.querySelector('section.bg-gradient-to-r p.text-fuchsia-200');
+      if (welcome) welcome.textContent = t.bannerWelcome;
+      const desc = document.querySelector('section.bg-gradient-to-r p.text-indigo-100');
+      if (desc) desc.textContent = t.bannerDesc;
+      const badges = document.querySelectorAll('section.bg-gradient-to-r .mt-6 span');
+      if (badges.length >= 3) {
+        badges[0].textContent = t.badgeSecure;
+        badges[1].textContent = t.badgeFee;
+        badges[2].textContent = t.badgeTracking;
+      }
+      const navHome = document.getElementById('nav-home');
+      if (navHome) navHome.textContent = t.home;
+      const navCat = document.getElementById('nav-categories');
+      if (navCat) navCat.textContent = t.categories;
+      const navAcc = document.getElementById('nav-account');
+      if (navAcc) navAcc.textContent = t.myAccount;
+      const catH2 = document.querySelector('#categories h2');
+      if (catH2) catH2.textContent = t.categories;
+      const storesH2 = document.querySelector('section > div > h2');
+      if (storesH2) storesH2.textContent = t.featuredStores;
+      const storesAll = document.querySelector('a[href="#products"].text-fuchsia-700');
+      if (storesAll) storesAll.textContent = t.seeAll;
+      const prodH2 = document.querySelector('#products h2');
+      if (prodH2) prodH2.textContent = t.popularProducts;
+      const search = document.getElementById('market-search');
+      if (search) search.placeholder = t.searchPlaceholder;
+
+      const list = categoriesByLang[currentLang] || categoriesByLang.fr;
+      categories = list;
+      selectedCategory = list[0];
+      renderCategories();
+      renderProducts();
+      renderStores();
+    }
+
+    document.getElementById('market-search').addEventListener('input', renderProducts);
+    document.getElementById('currency').addEventListener('change', renderProducts);
+    window.addEventListener('jeoahs-lang-changed', (e) => {
+      if (e.detail?.lang) updateShowcaseLanguage(e.detail.lang);
+    });
+    updateShowcaseLanguage(currentLang);
+    loadProducts();
   </script>
   <script src="/public/jeoah-loader.js" defer></script>
 </body>
