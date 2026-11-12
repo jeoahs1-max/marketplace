@@ -569,6 +569,84 @@
         const adminVoiceLocales = { auto: navigator.language || 'fr-FR', fr: 'fr-FR', ht: 'fr-FR', en: 'en-US', es: 'es-ES' };
         const neyLanguageLabels = { auto: 'Auto', fr: 'FR', ht: 'HT', en: 'EN', es: 'ES' };
         let lastNeyReply = '';
+        let neyAdminAudio = null;
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+            }
+        }
+
+        function pickAdminFeminineVoice(locale) {
+            if (!('speechSynthesis' in window)) return null;
+            const voices = window.speechSynthesis.getVoices() || [];
+            if (!voices.length) return null;
+            const langPrefix = (locale || 'fr-FR').split('-')[0].toLowerCase();
+            const femaleKeywords = ['vivienne', 'denise', 'eloise', 'éloïse', 'coralie', 'celeste', 'céleste', 'brigitte', 'amelie', 'amélie', 'audrey', 'aurelie', 'aurélie', 'julie', 'hortense', 'marie', 'aria', 'jenny', 'ava', 'emma', 'sonia', 'samantha', 'victoria', 'elvira', 'dalia', 'paloma', 'helena', 'paulina', 'monica', 'female', 'femme', 'féminin'];
+            const maleKeywords = ['henri', 'remy', 'rémy', 'paul', 'thomas', 'claude', 'jerome', 'jérôme', 'alain', 'daniel', 'andrew', 'brian', 'christopher', 'guy', 'alvaro', 'jorge', 'pablo', 'male', 'homme', 'masculin'];
+            const naturalKeywords = ['natural', 'online', 'neural', 'multilingual', 'premium', 'enhanced', 'google', 'wavenet', 'siri'];
+            let bestVoice = null;
+            let bestScore = -999;
+            for (const v of voices) {
+                const vLang = (v.lang || '').toLowerCase();
+                if (!vLang.startsWith(langPrefix)) continue;
+                const nameLower = `${v.name} ${v.voiceURI}`.toLowerCase();
+                let score = 10;
+                if (vLang === locale.toLowerCase()) score += 15;
+                if (naturalKeywords.some(k => nameLower.includes(k))) score += 80;
+                if (!v.localService) score += 25;
+                if (femaleKeywords.some(k => nameLower.includes(k))) score += 100;
+                if (maleKeywords.some(k => nameLower.includes(k))) score -= 120;
+                if (score > bestScore) { bestScore = score; bestVoice = v; }
+            }
+            return bestVoice;
+        }
+
+        async function speakNeyAdmin(text) {
+            if (!text) return;
+            const cleanText = String(text).replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}✦✨💬🔊🔇🎤]/gu, '').trim();
+            if (!cleanText) return;
+            if (neyAdminAudio) {
+                try { neyAdminAudio.pause(); neyAdminAudio.currentTime = 0; } catch (_) {}
+                neyAdminAudio = null;
+            }
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            const langVal = document.getElementById('admin-ai-language')?.value || 'fr';
+            const locale = adminVoiceLocales[langVal] || 'fr-FR';
+
+            try {
+                const res = await fetch('/api/tts.js', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: cleanText, persona: 'ney', language: langVal === 'auto' ? 'fr' : langVal })
+                });
+                const ct = res.headers.get('content-type') || '';
+                if (res.ok && ct.includes('audio/')) {
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    neyAdminAudio = new Audio(url);
+                    neyAdminAudio.onended = () => URL.revokeObjectURL(url);
+                    await neyAdminAudio.play();
+                    return;
+                }
+            } catch (_) {}
+
+            if ('speechSynthesis' in window) {
+                const chosenVoice = pickAdminFeminineVoice(locale);
+                const sentences = cleanText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleanText];
+                sentences.forEach(s => {
+                    const trimmed = s.trim();
+                    if (!trimmed) return;
+                    const u = new SpeechSynthesisUtterance(trimmed);
+                    u.lang = locale;
+                    if (chosenVoice) u.voice = chosenVoice;
+                    u.rate = 1.02;
+                    u.pitch = 1.07;
+                    window.speechSynthesis.speak(u);
+                });
+            }
+        }
 
         function setupNeyVoice() {
             const mic = document.getElementById('admin-ai-mic');
@@ -599,11 +677,7 @@
                 mic.classList.add('opacity-50');
             }
             speak.addEventListener('click', () => {
-                if (!lastNeyReply || !('speechSynthesis' in window)) return;
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(lastNeyReply);
-                utterance.lang = adminVoiceLocales[document.getElementById('admin-ai-language').value] || 'fr-FR';
-                window.speechSynthesis.speak(utterance);
+                if (lastNeyReply) speakNeyAdmin(lastNeyReply);
             });
         }
         setupNeyVoice();
@@ -642,12 +716,14 @@
                 output.textContent = reply;
                 lastNeyReply = reply;
                 document.getElementById('admin-ai-speak').classList.remove('hidden');
+                speakNeyAdmin(reply);
                 neyAdminMemory.push({ role: 'assistant', content: reply });
             } catch (error) {
                 const reply = error.message === 'ADMIN_SESSION_REQUIRED' ? 'Connectez-vous avec votre session administrateur pour utiliser Ney.' : localNeyReply(prompt);
                 output.textContent = reply;
                 lastNeyReply = reply;
                 document.getElementById('admin-ai-speak').classList.remove('hidden');
+                speakNeyAdmin(reply);
             }
         }
 

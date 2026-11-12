@@ -120,8 +120,10 @@
                     <span style="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block"></span>
                     <span id="ney-online-indicator">En ligne</span>
                 </div>
+                <button id="ney-chat-voice" type="button" aria-pressed="true" title="Activer ou couper la voix de Ney"
+                    style="margin-left:auto;border:1px solid #c7d2fe;border-radius:6px;background:#eef2ff;color:#3730a3;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer">🔊 Voix: oui</button>
                 <span id="ney-role-tag"
-                    style="display:none;margin-left:auto;padding:2px 8px;background:#e0e7ff;color:#4338ca;border-radius:999px;font-weight:700;font-size:11px"></span>
+                    style="display:none;padding:2px 8px;background:#e0e7ff;color:#4338ca;border-radius:999px;font-weight:700;font-size:11px"></span>
             </div>
 
             <!-- Messages -->
@@ -321,7 +323,7 @@
         window.setSiteLanguage = changeLanguage;
         window.setLang = changeLanguage;
 
-        // Logique du Widget Chat NEY
+        // Logique du Widget Chat NEY (Neyslyne - Voix Féminine Douce & Humaine)
         (function () {
             const panel = document.getElementById('ney-chat-panel');
             const openBtn = document.getElementById('ney-chat-open');
@@ -330,6 +332,150 @@
             const input = document.getElementById('ney-chat-input');
             const messages = document.getElementById('ney-chat-messages');
             const micBtn = document.getElementById('ney-chat-mic');
+            const voiceBtn = document.getElementById('ney-chat-voice');
+
+            let neyVoiceEnabled = true;
+            let neyCurrentAudio = null;
+
+            const neyVoiceLabels = {
+                fr: { on: '🔊 Voix: oui', off: '🔇 Voix: non', locale: 'fr-FR' },
+                ht: { on: '🔊 Vwa: wi', off: '🔇 Vwa: non', locale: 'fr-FR' },
+                en: { on: '🔊 Voice: on', off: '🔇 Voice: off', locale: 'en-US' },
+                es: { on: '🔊 Voz: sí', off: '🔇 Voz: no', locale: 'es-ES' },
+                zh: { on: '🔊 语音：开', off: '🔇 语音：关', locale: 'zh-CN' }
+            };
+
+            function updateNeyVoiceBtn(lang) {
+                if (!voiceBtn) return;
+                const cfg = neyVoiceLabels[lang || currentLang] || neyVoiceLabels.fr;
+                voiceBtn.textContent = neyVoiceEnabled ? cfg.on : cfg.off;
+                voiceBtn.setAttribute('aria-pressed', String(neyVoiceEnabled));
+                voiceBtn.style.background = neyVoiceEnabled ? '#eef2ff' : '#fff';
+            }
+
+            function stopNeySpeech() {
+                if (neyCurrentAudio) {
+                    try { neyCurrentAudio.pause(); neyCurrentAudio.currentTime = 0; } catch (_) {}
+                    neyCurrentAudio = null;
+                }
+                if ('speechSynthesis' in window) {
+                    try { window.speechSynthesis.cancel(); } catch (_) {}
+                }
+            }
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.getVoices();
+                if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+                }
+            }
+
+            function pickBestFeminineVoice(locale) {
+                if (!('speechSynthesis' in window)) return null;
+                const voices = window.speechSynthesis.getVoices() || [];
+                if (!voices.length) return null;
+                const langPrefix = (locale || 'fr-FR').split('-')[0].toLowerCase();
+                const femaleKeywords = ['vivienne', 'denise', 'eloise', 'éloïse', 'coralie', 'celeste', 'céleste', 'brigitte', 'amelie', 'amélie', 'audrey', 'aurelie', 'aurélie', 'julie', 'hortense', 'marie', 'claire', 'pauline', 'aria', 'jenny', 'ava', 'emma', 'sonia', 'libby', 'natasha', 'samantha', 'victoria', 'karen', 'elvira', 'dalia', 'paloma', 'salome', 'helena', 'paulina', 'monica', 'xiaoxiao', 'xiaoyi', 'xiaohan', 'ting-ting', 'huihui', 'female', 'femme', 'féminin'];
+                const maleKeywords = ['henri', 'remy', 'rémy', 'paul', 'thomas', 'claude', 'jerome', 'jérôme', 'alain', 'nicolas', 'daniel', 'andrew', 'brian', 'christopher', 'guy', 'eric', 'roger', 'alvaro', 'álvaro', 'jorge', 'pablo', 'yunxi', 'yunjian', 'male', 'homme', 'masculin'];
+                const naturalKeywords = ['natural', 'online', 'neural', 'multilingual', 'premium', 'enhanced', 'google', 'wavenet', 'siri'];
+
+                let bestVoice = null;
+                let bestScore = -999;
+
+                for (const v of voices) {
+                    const vLang = (v.lang || '').toLowerCase();
+                    if (!vLang.startsWith(langPrefix)) continue;
+                    const nameLower = `${v.name} ${v.voiceURI}`.toLowerCase();
+                    let score = 10;
+                    if (vLang === locale.toLowerCase()) score += 15;
+                    if (naturalKeywords.some(k => nameLower.includes(k))) score += 80;
+                    if (!v.localService) score += 25;
+                    if (femaleKeywords.some(k => nameLower.includes(k))) score += 100;
+                    if (maleKeywords.some(k => nameLower.includes(k))) score -= 120;
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestVoice = v;
+                    }
+                }
+                return bestVoice;
+            }
+
+            function cleanNeySpeechText(htmlText) {
+                const div = document.createElement('div');
+                div.innerHTML = htmlText || '';
+                div.querySelectorAll('a, button').forEach(el => el.remove());
+                return (div.textContent || div.innerText || '')
+                    .replace(/^(Ney|JEOAH)\s*:\s*/i, '')
+                    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}✦✨💬🔊🔇🎤]/gu, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+            }
+
+            function speakNeyBrowserFeminine(cleanText, locale) {
+                if (!('speechSynthesis' in window) || !cleanText) return;
+                window.speechSynthesis.cancel();
+                const chosenVoice = pickBestFeminineVoice(locale);
+                const sentences = cleanText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleanText];
+                sentences.forEach(sentence => {
+                    const trimmed = sentence.trim();
+                    if (!trimmed) return;
+                    const utterance = new SpeechSynthesisUtterance(trimmed);
+                    utterance.lang = locale;
+                    if (chosenVoice) utterance.voice = chosenVoice;
+                    utterance.rate = 1.02;
+                    utterance.pitch = 1.07;
+                    window.speechSynthesis.speak(utterance);
+                });
+            }
+
+            async function speakNey(text, lang) {
+                if (!neyVoiceEnabled) return;
+                const cleanText = cleanNeySpeechText(text);
+                if (!cleanText) return;
+                stopNeySpeech();
+                const selectedLang = lang || currentLang || 'fr';
+                const locale = (neyVoiceLabels[selectedLang] || neyVoiceLabels.fr).locale;
+
+                try {
+                    const res = await fetch('/api/tts.js', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: cleanText, persona: 'ney', language: selectedLang })
+                    });
+                    const contentType = res.headers.get('content-type') || '';
+                    if (res.ok && contentType.includes('audio/')) {
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        neyCurrentAudio = new Audio(url);
+                        neyCurrentAudio.onended = () => URL.revokeObjectURL(url);
+                        await neyCurrentAudio.play();
+                        return;
+                    }
+                } catch (_) {}
+
+                speakNeyBrowserFeminine(cleanText, locale);
+            }
+
+            function enableNeyVoiceAutomatically() {
+                if (!neyVoiceEnabled) {
+                    neyVoiceEnabled = true;
+                    updateNeyVoiceBtn(currentLang);
+                }
+            }
+
+            if (voiceBtn) {
+                voiceBtn.addEventListener('click', () => {
+                    neyVoiceEnabled = !neyVoiceEnabled;
+                    updateNeyVoiceBtn(currentLang);
+                    if (!neyVoiceEnabled) stopNeySpeech();
+                });
+            }
+
+            window.addEventListener('jeoahs-lang-changed', (e) => {
+                if (e && e.detail && e.detail.lang) {
+                    updateNeyVoiceBtn(e.detail.lang);
+                }
+            });
 
             function toggleNey(show) {
                 if (show) {
@@ -341,6 +487,7 @@
                     panel.setAttribute('hidden', '');
                     panel.style.display = 'none';
                     openBtn.style.display = 'flex';
+                    stopNeySpeech();
                 }
             }
 
@@ -355,10 +502,22 @@
                 const rec = new SpeechRec();
                 rec.continuous = false;
                 rec.interimResults = true;
-                rec.onstart = () => { micBtn.style.background = '#e0e7ff'; micBtn.style.color = '#4338ca'; };
+                rec.onstart = () => {
+                    stopNeySpeech();
+                    enableNeyVoiceAutomatically();
+                    micBtn.style.background = '#e0e7ff';
+                    micBtn.style.color = '#4338ca';
+                };
                 rec.onresult = (e) => { input.value = Array.from(e.results).map(r => r[0].transcript).join(''); };
-                rec.onend = () => { micBtn.style.background = '#fff'; micBtn.style.color = '#4338ca'; };
+                rec.onend = () => {
+                    micBtn.style.background = '#fff';
+                    micBtn.style.color = '#4338ca';
+                    if (input.value.trim() && form) {
+                        form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true }));
+                    }
+                };
                 micBtn.addEventListener('click', () => {
+                    enableNeyVoiceAutomatically();
                     rec.lang = currentLang === 'en' ? 'en-US' : (currentLang === 'es' ? 'es-ES' : (currentLang === 'zh' ? 'zh-CN' : 'fr-FR'));
                     try { rec.start(); } catch (_) {}
                 });
@@ -407,31 +566,98 @@
                         paiement: "We support secure payments via MonCash, Natcash, and credit cards. A 3% service fee applies to ensure transaction protection.",
                         vendeur: "To become a seller or affiliate, register your account and select a tier on the Plans page. JEOAH will help you list your products!",
                         default: "I have recorded your customer support question. I can assist with orders, deliveries, payments, or connect you with JEOAH for registration."
+                    },
+                    es: {
+                        inscrire: "¡JEOAH está especialmente entrenado para guiarte en tu registro paso a paso! <br><a href='/public/auth.html' style='color:#4338ca;font-weight:700;text-decoration:underline'>Haz clic aquí para crear tu cuenta con JEOAH</a>.",
+                        commande: "Los pedidos están protegidos por JEOAH'S. Los fondos permanecen en depósito seguro hasta que confirmes la entrega.",
+                        livraison: "Los plazos de entrega dependen de cada vendedor. En caso de retrasos superiores a 7 días, puedes abrir una reclamación directamente conmigo.",
+                        paiement: "Aceptamos pagos seguros mediante MonCash, Natcash y tarjeta bancaria. Se aplica una comisión de servicio del 3% para proteger tu transacción.",
+                        vendeur: "Para ser vendedor o afiliado, crea tu cuenta y elige una opción en la página de Planes. ¡JEOAH te ayudará a publicar tus productos!",
+                        default: "He registrado tu consulta para el servicio al cliente. Puedo ayudarte con pedidos, entregas, pagos o conectarte con JEOAH para registrarte."
+                    },
+                    zh: {
+                        inscrire: "JEOAH 专门为您提供一步步的注册引导！<br><a href='/public/auth.html' style='color:#4338ca;font-weight:700;text-decoration:underline'>点击此处在 JEOAH 的陪同下创建账户</a>。",
+                        commande: "所有订单均受 JEOAH'S 担保。资金将安全托管，直至您确认收货。",
+                        livraison: "配送时间由各卖家设定。若延迟超过 7 天，您可以直接向我发起售后申诉。",
+                        paiement: "我们支持 MonCash、Natcash 及银行卡安全支付。平台收取 3% 服务费以保障交易安全。",
+                        vendeur: "如需成为卖家或联盟会员，请先注册账户并在“套餐方案”页面选择等级。JEOAH 会协助您上架商品！",
+                        default: "我已记录您的客服咨询。我可以协助您处理订单、物流、支付问题，或引导您前往 JEOAH 完成注册。"
                     }
                 };
 
                 const langReplies = replies[lang] || replies.fr;
-                if (query.includes('inscr') || query.includes('créer') || query.includes('compte') || query.includes('sign') || query.includes('antre')) return langReplies.inscrire;
-                if (query.includes('command') || query.includes('order') || query.includes('acht') || query.includes('achète')) return langReplies.commande;
-                if (query.includes('livr') || query.includes('delai') || query.includes('délai') || query.includes('ship')) return langReplies.livraison;
-                if (query.includes('pai') || query.includes('pay') || query.includes('moncash') || query.includes('natcash') || query.includes('argent') || query.includes('pri')) return langReplies.paiement;
-                if (query.includes('vend') || query.includes('sell') || query.includes('afily') || query.includes('affili')) return langReplies.vendeur;
+                if (query.includes('inscr') || query.includes('créer') || query.includes('compte') || query.includes('sign') || query.includes('antre') || query.includes('registr') || query.includes('注册')) return langReplies.inscrire;
+                if (query.includes('command') || query.includes('order') || query.includes('acht') || query.includes('achète') || query.includes('pedido') || query.includes('订单')) return langReplies.commande;
+                if (query.includes('livr') || query.includes('delai') || query.includes('délai') || query.includes('ship') || query.includes('entreg') || query.includes('envío') || query.includes('物流')) return langReplies.livraison;
+                if (query.includes('pai') || query.includes('pay') || query.includes('moncash') || query.includes('natcash') || query.includes('argent') || query.includes('pri') || query.includes('pag') || query.includes('支付')) return langReplies.paiement;
+                if (query.includes('vend') || query.includes('sell') || query.includes('afily') || query.includes('affili') || query.includes('卖家')) return langReplies.vendeur;
                 return langReplies.default;
             }
 
-            form.addEventListener('submit', (e) => {
+            const neyMemory = [];
+
+            form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const q = input.value.trim();
                 if (!q) return;
 
+                if (/\b(parle|voix|écoute|ecoute|audio|pale|vwa|speak|voice|talk|habla|voz)\b/i.test(q)) {
+                    enableNeyVoiceAutomatically();
+                }
+
                 const youLabel = currentLang === 'ht' ? 'Ou' : (currentLang === 'en' ? 'You' : (currentLang === 'es' ? 'Tú' : (currentLang === 'zh' ? '您' : 'Vous')));
                 appendNeyMessage(youLabel, q, true);
+                neyMemory.push({ role: 'user', content: q });
                 input.value = '';
 
-                setTimeout(() => {
+                let authUser = null;
+                try {
+                    authUser = JSON.parse(localStorage.getItem('jeoahs_user') || 'null');
+                } catch (_) {}
+
+                const thinkingLabels = {
+                    fr: 'Ney vous répond...',
+                    ht: 'Ney ap reponn ou...',
+                    en: 'Ney is replying...',
+                    es: 'Ney te está respondiendo...',
+                    zh: 'Ney 正在为您解答...'
+                };
+                const loadingDiv = document.createElement('div');
+                loadingDiv.style.alignSelf = 'flex-start';
+                loadingDiv.style.padding = '8px 12px';
+                loadingDiv.style.fontSize = '12px';
+                loadingDiv.style.color = '#4338ca';
+                loadingDiv.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-1"></i> ${thinkingLabels[currentLang] || thinkingLabels.fr}`;
+                messages.appendChild(loadingDiv);
+                messages.scrollTop = messages.scrollHeight;
+
+                try {
+                    const res = await fetch('/api/ney-proxy.js', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            prompt: q,
+                            language: currentLang,
+                            role: authUser?.role || 'visiteur',
+                            userName: authUser?.displayName || authUser?.name || '',
+                            uid: authUser?.uid || 'guest',
+                            memory: neyMemory.slice(0, -1).slice(-8)
+                        })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    loadingDiv.remove();
+
+                    const reply = (res.ok && data.reply && !data.local) ? data.reply : getNeySmartReply(q, currentLang);
+                    appendNeyMessage('Ney', reply, false);
+                    speakNey(reply, currentLang);
+                    neyMemory.push({ role: 'assistant', content: reply });
+                } catch (_) {
+                    loadingDiv.remove();
                     const reply = getNeySmartReply(q, currentLang);
                     appendNeyMessage('Ney', reply, false);
-                }, 400);
+                    speakNey(reply, currentLang);
+                    neyMemory.push({ role: 'assistant', content: reply });
+                }
             });
         })();
 

@@ -11,12 +11,13 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 && !admin.apps.length) {
 }
 
 const modelFor = prompt => /analyse|rapport|formation|publicit[eé]|traduction|description|complexe/i.test(prompt || '') ? (process.env.JEOAH_COMPLEX_MODEL || 'gpt-5.6-luna') : (process.env.JEOAH_MODEL || 'gpt-5.6-luna');
-const languageNames = { auto: 'la langue utilisee dans le dernier message de l utilisateur', fr: 'francais', ht: 'kreyol ayisyen', en: 'anglais', es: 'espagnol' };
+const languageNames = { auto: 'la langue utilisee dans le dernier message de l utilisateur', fr: 'francais', ht: 'kreyol ayisyen', en: 'anglais', es: 'espagnol', zh: 'chinois simplifie' };
 const unavailableReplies = {
   fr: 'Je peux vous guider maintenant en mode intégré. Demandez-moi votre inscription, votre vitrine, un produit, une suggestion publicitaire ou votre parcours.',
   ht: 'Mwen ka gide ou kounye a nan mòd entegre. Mande m sou enskripsyon, vitrin, pwodwi, piblisite oswa etap ou.',
   en: 'I can guide you now in integrated mode. Ask me about registration, your storefront, a product, advertising, or your next step.',
-  es: 'Puedo orientarte ahora en modo integrado. Pregunta sobre registro, vitrina, productos, publicidad o tu siguiente paso.'
+  es: 'Puedo orientarte ahora en modo integrado. Pregunta sobre registro, vitrina, productos, publicidad o tu siguiente paso.',
+  zh: '我现在可以在内置模式下为您提供指引。您可以询问有关注册、店铺橱窗、商品、推广或下一步操作的问题。'
 };
 
 module.exports = async (req, res) => {
@@ -27,7 +28,7 @@ module.exports = async (req, res) => {
   const responseLanguage = languageNames[selectedLanguage];
   const model = modelFor(prompt);
   const complex = model !== (process.env.JEOAH_MODEL || 'gpt-5.6-luna');
-  const system = `Tu es JEOAH, l'assistant public de JEOAH'S. Reponds uniquement en ${responseLanguage}. Si la langue est automatique, reponds dans la langue du dernier message utilisateur. Ne repete jamais une reponse, une introduction ou une formulation deja presente dans l historique : reponds a la nouvelle demande de maniere specifique. Tu aides les visiteurs, acheteurs, vendeurs et affilies. Role: ${role}. Plan: ${plan}. Sois pratique et concise. Pour une creation couteuse (image, video, voix ou publication), explique le quota du plan et demande validation avant execution. Tu ne dois jamais pretendre avoir acces aux ventes ou retraits des plateformes affiliees. Modele: ${model}.`;
+  const system = `Tu es JEOAH, le copilote public masculin de JEOAH'S. Reponds uniquement en ${responseLanguage}. Si la langue est automatique, reponds dans la langue du dernier message utilisateur. Ne repete jamais une reponse, une introduction ou une formulation deja presente dans l historique : reponds a la nouvelle demande de maniere specifique. Tu aides les visiteurs, acheteurs, vendeurs et affilies pour l inscription, la creation de vitrine, l ajout de produits et le choix des plans. Role: ${role}. Plan: ${plan}. Si l utilisateur a un litige, un retard de livraison, une demande de remboursement ou un probleme de service client sur une commande, oriente-le vers ta collegue Ney (Responsable Service Client & Support) sur la page Contact (/contact.html). Sois pratique, chaleureux et concis. Pour une creation couteuse (image, video, voix ou publication), explique le quota du plan et demande validation avant execution. Tu ne dois jamais pretendre avoir acces aux ventes ou retraits des plateformes affiliees. Modele: ${model}.`;
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return res.status(200).json({ reply: unavailableReplies[selectedLanguage], model: 'local', local: true });
   try {

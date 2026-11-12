@@ -659,8 +659,8 @@
                         <span style="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block"></span>
                         <span data-home-copy="aiOnline">En ligne</span>
                     </div>
-                    <button id="jeoah-voice" type="button" aria-pressed="false" title="Activer la synthèse vocale"
-                        style="margin-left:auto;border:1px solid #e0d2ef;border-radius:6px;background:#fff;color:#4c1d95;padding:4px 7px;font-size:11px;font-weight:700;cursor:pointer">Voix: non</button>
+                    <button id="jeoah-voice" type="button" aria-pressed="true" title="Activer ou couper la voix de JEOAH"
+                        style="margin-left:auto;border:1px solid #c4b5fd;border-radius:6px;background:#f5f3ff;color:#4c1d95;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer">🔊 Voix: oui</button>
                     <span id="jeoah-role-badge"
                         style="display:none;padding:3px 8px;background:#ede9fe;color:#6d28d9;border-radius:999px;font-weight:700;font-size:11px"></span>
                 </div>
@@ -719,8 +719,94 @@
             const micButton = document.getElementById('jeoah-mic');
             const roleBadge = document.getElementById('jeoah-role-badge');
             const memory = [];
-            let voiceEnabled = false;
+            let voiceEnabled = true;
+            let currentAudio = null;
             let recognition = null;
+
+            const voiceLabels = {
+                fr: { on: '🔊 Voix: oui', off: '🔇 Voix: non' },
+                ht: { on: '🔊 Vwa: wi', off: '🔇 Vwa: non' },
+                en: { on: '🔊 Voice: on', off: '🔇 Voice: off' },
+                es: { on: '🔊 Voz: sí', off: '🔇 Voz: no' },
+                zh: { on: '🔊 语音：开', off: '🔇 语音：关' }
+            };
+
+            function updateVoiceBtnLabel(lang) {
+                if (!voiceButton) return;
+                const l = lang || document.getElementById('jeoah-language')?.value || localStorage.getItem('jeoahs-lang') || 'fr';
+                const cfg = voiceLabels[l] || voiceLabels.fr;
+                voiceButton.textContent = voiceEnabled ? cfg.on : cfg.off;
+                voiceButton.setAttribute('aria-pressed', String(voiceEnabled));
+                voiceButton.style.background = voiceEnabled ? '#f5f3ff' : '#fff';
+            }
+
+            window.applyJeoahLanguage = function(lang) {
+                updateVoiceBtnLabel(lang);
+            };
+
+            function stopAllSpeech() {
+                if (currentAudio) {
+                    try { currentAudio.pause(); currentAudio.currentTime = 0; } catch (_) {}
+                    currentAudio = null;
+                }
+                if ('speechSynthesis' in window) {
+                    try { window.speechSynthesis.cancel(); } catch (_) {}
+                }
+            }
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.getVoices();
+                if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+                }
+            }
+
+            function pickBestMasculineVoice(locale) {
+                if (!('speechSynthesis' in window)) return null;
+                const voices = window.speechSynthesis.getVoices() || [];
+                if (!voices.length) return null;
+                const langPrefix = (locale || 'fr-FR').split('-')[0].toLowerCase();
+                const maleKeywords = ['henri', 'remy', 'rémy', 'paul', 'thomas', 'claude', 'jerome', 'jérôme', 'alain', 'nicolas', 'mathieu', 'daniel', 'andrew', 'brian', 'christopher', 'guy', 'eric', 'roger', 'steffan', 'alex', 'oliver', 'alvaro', 'álvaro', 'jorge', 'tomas', 'tomás', 'pablo', 'alonso', 'yunxi', 'yunjian', 'yunyang', 'kangkang', 'male', 'homme', 'masculin'];
+                const femaleKeywords = ['denise', 'vivienne', 'eloise', 'éloïse', 'brigitte', 'coralie', 'celeste', 'céleste', 'amelie', 'amélie', 'audrey', 'aurelie', 'aurélie', 'julie', 'hortense', 'marie', 'aria', 'jenny', 'ava', 'emma', 'sonia', 'samantha', 'victoria', 'karen', 'elvira', 'dalia', 'paloma', 'helena', 'paulina', 'monica', 'xiaoxiao', 'xiaoyi', 'female', 'femme', 'féminin'];
+                const naturalKeywords = ['natural', 'online', 'neural', 'multilingual', 'premium', 'enhanced', 'google', 'wavenet', 'siri'];
+
+                let bestVoice = null;
+                let bestScore = -999;
+
+                for (const v of voices) {
+                    const vLang = (v.lang || '').toLowerCase();
+                    if (!vLang.startsWith(langPrefix)) continue;
+                    const nameLower = `${v.name} ${v.voiceURI}`.toLowerCase();
+                    let score = 10;
+                    if (vLang === locale.toLowerCase()) score += 15;
+                    if (naturalKeywords.some(k => nameLower.includes(k))) score += 80;
+                    if (!v.localService) score += 25;
+                    if (maleKeywords.some(k => nameLower.includes(k))) score += 100;
+                    if (femaleKeywords.some(k => nameLower.includes(k))) score -= 120;
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestVoice = v;
+                    }
+                }
+                return bestVoice;
+            }
+
+            function cleanSpeechText(htmlText) {
+                const div = document.createElement('div');
+                div.innerHTML = htmlText || '';
+                return (div.textContent || div.innerText || '')
+                    .replace(/^(JEOAH|Ney)\s*:\s*/i, '')
+                    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}✦✨💬🔊🔇🎤]/gu, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+            }
+
+            function enableVoiceAutomatically() {
+                if (!voiceEnabled) {
+                    voiceEnabled = true;
+                    updateVoiceBtnLabel();
+                }
+            }
 
             const authUser = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
             const userPlan = authUser?.selectedPlan || authUser?.plan || 'free';
@@ -741,7 +827,7 @@
                     panel.setAttribute('hidden', '');
                     panel.style.display = 'none';
                     openBtn.style.display = 'flex';
-                    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                    stopAllSpeech();
                 }
             }
 
@@ -761,9 +847,8 @@
             if (voiceButton) {
                 voiceButton.addEventListener('click', () => {
                     voiceEnabled = !voiceEnabled;
-                    voiceButton.setAttribute('aria-pressed', String(voiceEnabled));
-                    voiceButton.textContent = voiceEnabled ? 'Voix: oui' : 'Voix: non';
-                    if (!voiceEnabled && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+                    updateVoiceBtnLabel();
+                    if (!voiceEnabled) stopAllSpeech();
                 });
             }
 
@@ -774,6 +859,8 @@
                 recognition.interimResults = true;
                 recognition.maxAlternatives = 1;
                 recognition.onstart = () => {
+                    stopAllSpeech();
+                    enableVoiceAutomatically();
                     micButton.style.background = '#fce7f3';
                     micButton.style.color = '#be185d';
                     micButton.setAttribute('aria-pressed', 'true');
@@ -789,8 +876,12 @@
                     micButton.style.background = '#fff';
                     micButton.style.color = '#7c3aed';
                     micButton.setAttribute('aria-pressed', 'false');
+                    if (input.value.trim() && form) {
+                        form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true }));
+                    }
                 };
                 micButton.addEventListener('click', () => {
+                    enableVoiceAutomatically();
                     const lang = document.getElementById('jeoah-language')?.value || 'fr';
                     recognition.lang = lang === 'en' ? 'en-US' : (lang === 'zh' ? 'zh-CN' : (lang === 'es' ? 'es-ES' : 'fr-FR'));
                     try { recognition.start(); } catch (_) { }
@@ -816,16 +907,49 @@
                 messages.scrollTop = messages.scrollHeight;
             }
 
-            function speak(text, language) {
-                if (!voiceEnabled || !('speechSynthesis' in window)) return;
-                const plainText = document.createElement('div');
-                plainText.innerHTML = text;
+            function speakBrowserMasculine(cleanText, locale) {
+                if (!('speechSynthesis' in window) || !cleanText) return;
                 window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(plainText.textContent || '');
-                utterance.lang = language === 'en' ? 'en-US' : (language === 'zh' ? 'zh-CN' : (language === 'es' ? 'es-ES' : 'fr-FR'));
-                utterance.rate = 0.96;
-                utterance.pitch = 1;
-                window.speechSynthesis.speak(utterance);
+                const chosenVoice = pickBestMasculineVoice(locale);
+                const sentences = cleanText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleanText];
+                sentences.forEach(sentence => {
+                    const trimmed = sentence.trim();
+                    if (!trimmed) return;
+                    const utterance = new SpeechSynthesisUtterance(trimmed);
+                    utterance.lang = locale;
+                    if (chosenVoice) utterance.voice = chosenVoice;
+                    utterance.rate = 1.0;
+                    utterance.pitch = 0.94;
+                    window.speechSynthesis.speak(utterance);
+                });
+            }
+
+            async function speak(text, language) {
+                if (!voiceEnabled) return;
+                const cleanText = cleanSpeechText(text);
+                if (!cleanText) return;
+                stopAllSpeech();
+                const selectedLanguage = (!language || language === 'auto') ? (localStorage.getItem('jeoahs-lang') || 'fr') : language;
+                const locale = selectedLanguage === 'en' ? 'en-US' : (selectedLanguage === 'zh' ? 'zh-CN' : (selectedLanguage === 'es' ? 'es-ES' : 'fr-FR'));
+
+                try {
+                    const res = await fetch('/api/tts.js', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: cleanText, persona: 'jeoah', language: selectedLanguage })
+                    });
+                    const contentType = res.headers.get('content-type') || '';
+                    if (res.ok && contentType.includes('audio/')) {
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        currentAudio = new Audio(url);
+                        currentAudio.onended = () => URL.revokeObjectURL(url);
+                        await currentAudio.play();
+                        return;
+                    }
+                } catch (_) {}
+
+                speakBrowserMasculine(cleanText, locale);
             }
 
             function getSmartFallback(q, lang) {
@@ -836,6 +960,7 @@
                         product: 'Pour ajouter un produit affilié, ouvrez votre espace affilié puis importez votre lien partenaire.',
                         storefront: 'Chaque membre dispose d’une vitrine dédiée. Vous pouvez consulter la vitrine générale ou votre espace personnel.',
                         plans: 'Les formules disponibles sont présentées sur la page Plans JEOAH’S.',
+                        support: 'Pour toute réclamation, retard de livraison, remboursement ou suivi de litige, ma collègue <strong>Ney (Neyslyne)</strong> du Service Client vous attend sur <a href="/contact.html" style="color:#7c3aed;font-weight:700;text-decoration:underline">la page Contact</a>.',
                         greeting: 'Bonjour ! Je peux vous guider pour votre compte, votre vitrine, vos produits ou les plans.',
                         other: 'Je peux vous aider avec votre compte, votre vitrine, vos produits et les plans JEOAH’S.'
                     },
@@ -844,6 +969,7 @@
                         product: 'Pou ajoute yon pwodwi afilye, ouvri espas afilye ou epi enpòte lyen patnè ou.',
                         storefront: 'Chak manm gen yon vitrin pa li. Ou ka wè vitrin jeneral la oswa espas pèsonèl ou.',
                         plans: 'Plan ki disponib yo sou paj Plan JEOAH’S la.',
+                        support: 'Pou nenpòt reklamasyon, reta livrezon, ranbousman oswa pwoblèm kòmand, kolèg mwen <strong>Ney (Neyslyne)</strong> nan Sèvis Kliyan an ap tann ou sou <a href="/contact.html" style="color:#7c3aed;font-weight:700;text-decoration:underline">paj Kontak la</a>.',
                         greeting: 'Bonjou! Mwen ka gide ou pou kont ou, vitrin ou, pwodwi ou oswa plan yo.',
                         other: 'Mwen ka ede ou ak kont ou, vitrin ou, pwodwi ou ak plan JEOAH’S yo.'
                     },
@@ -852,6 +978,7 @@
                         product: 'To add an affiliate product, open your affiliate space and import your partner link.',
                         storefront: 'Each member has a dedicated storefront. You can visit the main storefront or your personal space.',
                         plans: 'Available options are listed on the JEOAH’S Plans page.',
+                        support: 'For order disputes, delivery delays, refunds, or customer support, my colleague <strong>Ney (Neyslyne)</strong> is ready to assist you on the <a href="/contact.html" style="color:#7c3aed;font-weight:700;text-decoration:underline">Contact page</a>.',
                         greeting: 'Hello! I can guide you with your account, storefront, products, or plans.',
                         other: 'I can help with your account, storefront, products, and JEOAH’S plans.'
                     },
@@ -860,6 +987,7 @@
                         product: 'Para agregar un producto afiliado, abra su espacio de afiliados e importe su enlace de socio.',
                         storefront: 'Cada miembro tiene un escaparate dedicado. Puede consultar el escaparate general o su espacio personal.',
                         plans: 'Las opciones disponibles están en la página de Planes JEOAH’S.',
+                        support: 'Para reclamaciones, retrasos de entrega, reembolsos o atención al cliente, mi colega <strong>Ney (Neyslyne)</strong> te atenderá en la <a href="/contact.html" style="color:#7c3aed;font-weight:700;text-decoration:underline">página de Contacto</a>.',
                         greeting: '¡Hola! Puedo orientarle sobre su cuenta, su escaparate, sus productos o los planes.',
                         other: 'Puedo ayudarle con su cuenta, su escaparate, sus productos y los planes JEOAH’S.'
                     },
@@ -868,13 +996,15 @@
                         product: '如需添加联盟商品，请进入联盟中心并导入合作链接。',
                         storefront: '每位会员均拥有专属橱窗，您可查看全站展厅或个人中心。',
                         plans: '可选方案详情请查看 JEOAH’S 套餐方案页面。',
+                        support: '如需处理订单纠纷、物流延迟、退款或联系客服，我的同事 <strong>Ney (Neyslyne)</strong> 将在 <a href="/contact.html" style="color:#7c3aed;font-weight:700;text-decoration:underline">联系我们页面</a> 为您服务。',
                         greeting: '您好！我可以为您在账户设置、店铺橱窗、产品发布或套餐方案方面提供指引。',
                         other: '我可以协助您了解账户、店铺橱窗、产品以及 JEOAH’S 套餐方案。'
                     }
                 }[lang] || null;
                 if (!reply) return 'I am JEOAH. Please choose a language above or ask again in your preferred language.';
                 let answer = reply.other;
-                if (text.includes('inscr') || text.includes('connect') || text.includes('compte') || text.includes('login') || text.includes('sign') || text.includes('antre')) answer = reply.account;
+                if (text.includes('litige') || text.includes('rembours') || text.includes('problème') || text.includes('probleme') || text.includes('réclamation') || text.includes('reclamation') || text.includes('retard') || text.includes('support') || text.includes('service client') || text.includes('ney') || text.includes('dispute') || text.includes('refund') || text.includes('reklamasyon') || text.includes('ranbousman') || text.includes('pwoblèm') || text.includes('reclamo') || text.includes('reembolso') || text.includes('退款') || text.includes('投诉') || text.includes('客服')) answer = reply.support;
+                else if (text.includes('inscr') || text.includes('connect') || text.includes('compte') || text.includes('login') || text.includes('sign') || text.includes('antre')) answer = reply.account;
                 else if (text.includes('produit') || text.includes('ajouter') || text.includes('import') || text.includes('product') || text.includes('pwodwi')) answer = reply.product;
                 else if (text.includes('vitrine') || text.includes('boutique') || text.includes('store')) answer = reply.storefront;
                 else if (text.includes('plan') || text.includes('abonnement') || text.includes('tarif') || text.includes('pri')) answer = reply.plans;
@@ -887,6 +1017,10 @@
                     e.preventDefault();
                     const prompt = input.value.trim();
                     if (!prompt) return;
+
+                    if (/\b(parle|voix|écoute|ecoute|audio|pale|vwa|speak|voice|talk|habla|voz)\b/i.test(prompt)) {
+                        enableVoiceAutomatically();
+                    }
 
                     const curLang = document.getElementById('jeoah-language')?.value || 'fr';
                     const youLabels = { fr: 'Vous', ht: 'Ou', en: 'You', es: 'Tú', zh: '您' };
