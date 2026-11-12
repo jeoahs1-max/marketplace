@@ -29,12 +29,12 @@
         <section class="mt-8">
             <h1 id="contact-title" class="text-4xl font-extrabold text-slate-900">Contact</h1>
             <p id="contact-subtitle" class="mt-3 text-slate-600">
-                Pour toute question sur votre compte, votre vitrine ou la plateforme, écrivez à notre équipe.
+                Pour toute question sur votre compte, vos commandes, votre vitrine ou la plateforme, écrivez à notre équipe.
             </p>
         </section>
 
         <div class="mt-8 grid gap-5 sm:grid-cols-2">
-            <!-- Support -->
+            <!-- Support Client -->
             <article class="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition">
                 <div class="flex items-center gap-3 text-indigo-700">
                     <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 text-lg">
@@ -75,81 +75,224 @@
             </article>
         </div>
 
-        <!-- Assistant JEOAH -->
-        <div class="mt-8 rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-6 shadow-sm">
+        <!-- Encart NEY - Service Client -->
+        <div class="mt-8 rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 p-6 shadow-sm">
             <div class="flex items-center gap-3">
-                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-bold text-sm">
-                    ✦
+                <span class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-bold text-base shadow-sm">
+                    <i class="fas fa-headset"></i>
                 </span>
-                <h3 id="assistant-heading" class="font-bold text-slate-900">Assistant JEOAH 24/7</h3>
+                <div>
+                    <h3 id="ney-banner-heading" class="font-bold text-slate-900 text-lg">Ney — Responsable Service Client & Support</h3>
+                    <p class="text-xs font-semibold text-indigo-700 flex items-center gap-1.5 mt-0.5">
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="ney-banner-status">En direct pour vous assister</span>
+                    </p>
+                </div>
             </div>
-            <p id="assistant-desc" class="mt-2 text-sm text-slate-600">
-                Vous pouvez également ouvrir l'assistant interactif JEOAH en cliquant sur le bouton violet ✦ en bas à droite pour poser votre question par texte ou commande vocale.
+            <p id="ney-banner-desc" class="mt-3 text-sm text-slate-600 leading-relaxed">
+                Une question sur une commande, une livraison, un paiement ou votre compte ? Discutez directement avec Ney en cliquant sur le bouton violet ✦ en bas à droite.
             </p>
         </div>
     </main>
+
+    <!-- WIDGET DÉDIÉ NEY (SERVICE CLIENT & SUPPORT) -->
+    <div id="ney-widget-container" style="position:fixed;right:20px;bottom:20px;z-index:99999;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+        <div id="ney-chat-panel" hidden
+            style="width:min(400px,calc(100vw - 32px));height:520px;max-height:calc(100vh - 100px);background:#fff;border-radius:18px;box-shadow:0 18px 45px rgba(15,23,42,0.25);border:1px solid #e2e8f0;display:none;flex-direction:column;overflow:hidden">
+            <!-- En-tête Ney -->
+            <div style="padding:14px 16px;background:linear-gradient(135deg,#1e1b4b,#4338ca);color:#fff;display:flex;align-items:center;justify-content:space-between">
+                <div style="display:flex;align-items:center;gap:10px">
+                    <div style="width:36px;height:36px;border-radius:50%;background:#ffffff22;display:flex;align-items:center;justify-content:center;font-size:16px">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <div>
+                        <strong style="font-size:15px;display:block;line-height:1.2">Ney</strong>
+                        <span style="font-size:11px;color:#c7d2fe;opacity:0.95" id="ney-header-subtitle">Relation Client & Support</span>
+                    </div>
+                </div>
+                <button id="ney-chat-close" type="button" aria-label="Fermer"
+                    style="border:0;background:transparent;color:#fff;font-size:22px;cursor:pointer;padding:4px 8px;line-height:1">&times;</button>
+            </div>
+
+            <!-- Sous-barre Statut -->
+            <div style="display:flex;align-items:center;justify-content:flex-start;gap:8px;padding:8px 14px;background:#f8fafc;border-bottom:1px solid #f1f5f9;font-size:12px">
+                <div style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:#059669">
+                    <span style="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block"></span>
+                    <span id="ney-online-indicator">En ligne</span>
+                </div>
+                <span id="ney-role-tag"
+                    style="display:none;margin-left:auto;padding:2px 8px;background:#e0e7ff;color:#4338ca;border-radius:999px;font-weight:700;font-size:11px"></span>
+            </div>
+
+            <!-- Messages -->
+            <div id="ney-chat-messages"
+                style="flex:1;padding:14px;overflow-y:auto;background:#faf8ff;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.5">
+                <div id="ney-chat-welcome"
+                    style="align-self:flex-start;max-width:88%;padding:11px 14px;border-radius:14px 14px 14px 2px;background:#fff;border:1px solid #e2e8f0;color:#1e293b;box-shadow:0 2px 5px rgba(0,0,0,0.03)">
+                </div>
+            </div>
+
+            <!-- Formulaire d'envoi -->
+            <form id="ney-chat-form" style="display:flex;gap:8px;padding:12px;background:#fff;border-top:1px solid #e2e8f0">
+                <input id="ney-chat-input" required placeholder="Posez votre question à Ney..."
+                    style="min-width:0;flex:1;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;outline:none;font-size:13px">
+                <button id="ney-chat-mic" type="button" aria-label="Parler à Ney" title="Parler à Ney"
+                    style="border:1px solid #cbd5e1;border-radius:10px;padding:10px 12px;background:#fff;color:#4338ca;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button type="submit"
+                    style="border:0;border-radius:10px;padding:10px 16px;background:linear-gradient(135deg,#4338ca,#6366f1);color:#fff;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+
+        <!-- Bouton Flottant Lanceur -->
+        <button id="ney-chat-open" aria-label="Ouvrir le support client Ney"
+            style="width:58px;height:58px;border:0;border-radius:50%;background:linear-gradient(135deg,#4338ca,#8b5cf6);color:#fff;font-size:22px;box-shadow:0 10px 25px rgba(67,56,202,0.45);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.2s">
+            ✦
+        </button>
+    </div>
 
     <script>
         const i18n = {
             fr: {
                 title: "Contact - JEOAH'S",
                 heading: "Contact",
-                subtitle: "Pour toute question sur votre compte, votre vitrine ou la plateforme, écrivez à notre équipe.",
+                subtitle: "Pour toute question sur votre compte, vos commandes, votre vitrine ou la plateforme, écrivez à notre équipe.",
                 supportTitle: "Support client",
                 supportDesc: "Pour toute assistance technique, aide sur votre compte ou vos transactions.",
                 infoTitle: "Informations générales",
                 infoDesc: "Pour les partenariats, questions générales et renseignements marketplace.",
-                assistantTitle: "Assistant JEOAH 24/7",
-                assistantDesc: "Vous pouvez également ouvrir l'assistant interactif JEOAH en cliquant sur le bouton violet ✦ en bas à droite pour poser votre question par texte ou commande vocale."
+                neyBannerTitle: "Ney — Responsable Service Client & Support",
+                neyBannerStatus: "En direct pour vous assister",
+                neyBannerDesc: "Une question sur une commande, une livraison, un paiement ou votre compte ? Discutez directement avec Ney en cliquant sur le bouton violet ✦ en bas à droite.",
+                neySubtitle: "Relation Client & Support",
+                neyOnline: "En ligne",
+                neyPlaceholder: "Posez votre question à Ney...",
+                registeredGreeting: (name) => `Bonjour ${name ? name + ' ' : ''}! Je suis Ney, votre responsable relation client. Je suis là pour vous aider avec vos commandes, livraisons, paiements ou questions sur la plateforme. Comment puis-je vous être utile ?`,
+                visitorGreeting: "Bonjour et bienvenue ! Je suis <strong>Ney</strong>, responsable du service client et du support de JEOAH'S.<br><br>Pour bénéficier du suivi de vos commandes, échanger avec un vendeur ou faire une réclamation, un compte client est nécessaire.<br><br>Souhaitez-vous que je vous oriente vers <strong>JEOAH</strong> pour créer votre compte facilement sans quitter le site ?",
+                btnRegister: "✨ Créer mon compte avec JEOAH",
+                btnQuestion: "💬 Poser une question générale"
             },
             ht: {
                 title: "Kontak - JEOAH'S",
                 heading: "Kontak",
-                subtitle: "Pou nenpòt kesyon sou kont ou, vitrin ou oswa platfòm nan, ekri ekip nou an.",
+                subtitle: "Pou nenpòt kesyon sou kont ou, kòmand ou, vitrin ou oswa platfòm nan, ekri ekip nou an.",
                 supportTitle: "Sipò kliyan",
                 supportDesc: "Pou asistans teknik, èd sou kont ou ak tranzaksyon ou yo.",
                 infoTitle: "Enfòmasyon jeneral",
                 infoDesc: "Pou patenarya, kesyon jeneral ak enfòmasyon sou marketplace la.",
-                assistantTitle: "Asistan JEOAH 24/7",
-                assistantDesc: "Ou ka louvri asistan entèaktif JEOAH tou lè ou klike sou bouton vyolèt ✦ anba a dwat pou poze kesyon ou an tèks oswa ak vwa."
+                neyBannerTitle: "Ney — Responsab Sèvis Kliyan & Sipò",
+                neyBannerStatus: "An liy pou ede w kounye a",
+                neyBannerDesc: "Ou gen yon kesyon sou yon kòmand, yon livrezon, yon peman oswa kont ou? Pale dirèkteman ak Ney lè w klike sou bouton vyolèt ✦ anba a dwat.",
+                neySubtitle: "Relasyon Kliyan & Sipò",
+                neyOnline: "An liy",
+                neyPlaceholder: "Poze Ney kesyon ou...",
+                registeredGreeting: (name) => `Bonjou ${name ? name + ' ' : ''}! Mwen se Ney, responsab sèvis kliyan ou. Mwen la pou ede w ak kòmand ou, livrezon, peman oswa kesyon sou platfòm nan. Kijan mwen ka ede w?`,
+                visitorGreeting: "Bonjou e byenvini! Mwen se <strong>Ney</strong>, responsab sèvis kliyan ak sipò JEOAH'S.<br><br>Pou swiv kòmand ou, kominike ak yon vandè oswa fè yon reklamasyon, ou bezwen gen yon kont kliyan.<br><br>Èske ou vle mwen gide w vè <strong>JEOAH</strong> pou w ka kreye kont ou byen fasil san w pa kite sit la?",
+                btnRegister: "✨ Kreye kont mwen ak JEOAH",
+                btnQuestion: "💬 Poze yon kesyon jeneral"
             },
             en: {
                 title: "Contact - JEOAH'S",
                 heading: "Contact",
-                subtitle: "For any questions regarding your account, storefront, or the platform, feel free to reach out.",
+                subtitle: "For any questions regarding your account, orders, storefront, or the platform, feel free to reach out.",
                 supportTitle: "Customer Support",
                 supportDesc: "For technical assistance, account help, and transactions.",
                 infoTitle: "General Inquiries",
                 infoDesc: "For partnerships, business queries, and marketplace information.",
-                assistantTitle: "JEOAH AI Assistant 24/7",
-                assistantDesc: "You can also launch the interactive JEOAH assistant by clicking the purple ✦ button at bottom right to ask questions by text or voice."
+                neyBannerTitle: "Ney — Customer Service & Support Lead",
+                neyBannerStatus: "Live and ready to assist you",
+                neyBannerDesc: "Questions about an order, delivery, payment, or your account? Chat directly with Ney by clicking the purple ✦ button at the bottom right.",
+                neySubtitle: "Customer Relations & Support",
+                neyOnline: "Online",
+                neyPlaceholder: "Ask Ney your question...",
+                registeredGreeting: (name) => `Hello ${name ? name + ' ' : ''}! I am Ney, your Customer Service Lead. I am here to help you with orders, deliveries, payments, or any platform inquiries. How can I help you today?`,
+                visitorGreeting: "Hello and welcome! I am <strong>Ney</strong>, JEOAH'S Customer Service & Support Lead.<br><br>To track orders, chat with sellers, or submit inquiries, a customer account is required.<br><br>Would you like me to guide you to <strong>JEOAH</strong> to register easily without leaving the website?",
+                btnRegister: "✨ Create my account with JEOAH",
+                btnQuestion: "💬 Ask a general question"
             },
             es: {
                 title: "Contacto - JEOAH'S",
                 heading: "Contacto",
-                subtitle: "Para cualquier pregunta sobre su cuenta, su vitrina o la plataforma, escriba a nuestro equipo.",
+                subtitle: "Para cualquier pregunta sobre su cuenta, pedidos, vitrina o la plataforma, escriba a nuestro equipo.",
                 supportTitle: "Soporte al cliente",
                 supportDesc: "Para asistencia técnica, ayuda con su cuenta o transacciones.",
                 infoTitle: "Información general",
                 infoDesc: "Para alianzas comerciales, consultas generales e información sobre el marketplace.",
-                assistantTitle: "Asistente JEOAH 24/7",
-                assistantDesc: "También puede abrir el asistente JEOAH haciendo clic en el botón morado ✦ abajo a la derecha para consultar por texto o por voz."
+                neyBannerTitle: "Ney — Responsable de Servicio al Cliente y Soporte",
+                neyBannerStatus: "En directo para asistirte",
+                neyBannerDesc: "¿Tiene dudas sobre un pedido, envío, pago o su cuenta? Chatee directamente con Ney haciendo clic en el botón morado ✦ en la esquina inferior derecha.",
+                neySubtitle: "Atención al Cliente y Soporte",
+                neyOnline: "En línea",
+                neyPlaceholder: "Haga su pregunta a Ney...",
+                registeredGreeting: (name) => `¡Hola ${name ? name + ' ' : ''}! Soy Ney, responsable de atención al cliente. Estoy aquí para ayudarle con sus pedidos, entregas, pagos o dudas. ¿Cómo puedo asistirle hoy?`,
+                visitorGreeting: "¡Hola y bienvenido! Soy <strong>Ney</strong>, responsable de soporte y atención al cliente de JEOAH'S.<br><br>Para dar seguimiento a pedidos o comunicarse con vendedores, se requiere una cuenta.<br><br>¿Desea que le oriente hacia <strong>JEOAH</strong> para registrarse fácilmente sin salir de la plataforma?",
+                btnRegister: "✨ Crear mi cuenta con JEOAH",
+                btnQuestion: "💬 Hacer una pregunta general"
             },
             zh: {
                 title: "联系我们 - JEOAH'S",
                 heading: "联系我们",
-                subtitle: "若对您的账户、店铺橱窗或平台有任何问题，欢迎随时联系我们。",
+                subtitle: "若对您的账户、订单、店铺橱窗或平台有任何问题，欢迎随时联系我们。",
                 supportTitle: "客户服务",
                 supportDesc: "提供技术支持、账户协助及交易咨询服务。",
                 infoTitle: "综合资讯",
                 infoDesc: "提供商务合作、通用咨询及商城信息服务。",
-                assistantTitle: "JEOAH 智能助手 24/7",
-                assistantDesc: "您也可以点击右下角的紫色 ✦ 按钮，通过文字或语音指令向 JEOAH 助手提问。"
+                neyBannerTitle: "Ney — 客户服务与支持主管",
+                neyBannerStatus: "在线为您提供实时协助",
+                neyBannerDesc: "对订单、物流配送、支付或账户有任何疑问？点击右下角紫色 ✦ 按钮直接与 Ney 对话。",
+                neySubtitle: "客户关系与支持",
+                neyOnline: "在线",
+                neyPlaceholder: "向 Ney 提出您的问题...",
+                registeredGreeting: (name) => `您好 ${name ? name + ' ' : ''}！我是您的客户服务主管 Ney。很高兴为您提供订单、物流及平台支持。今天有什么可以帮您？`,
+                visitorGreeting: "您好，欢迎光临！我是 JEOAH'S 客户服务主管 <strong>Ney</strong>。<br><br>为了跟踪订单、与卖家联系或获得专属支持，您需要先拥有一个客户账户。<br><br>需要我引导您前往 <strong>JEOAH</strong> 并在不离开页面的情况下快速完成注册吗？",
+                btnRegister: "✨ 与 JEOAH 一起创建账户",
+                btnQuestion: "💬 咨询常见通用问题"
             }
+        };
+
+        let currentLang = localStorage.getItem('jeoahs-lang') || 'fr';
+
+        function updateNeyWelcome(lang) {
+            const authUser = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+            const welcomeDiv = document.getElementById('ney-chat-welcome');
+            const roleTag = document.getElementById('ney-role-tag');
+            const t = i18n[lang] || i18n.fr;
+
+            if (authUser && authUser.role) {
+                if (roleTag) {
+                    roleTag.textContent = authUser.role.toUpperCase();
+                    roleTag.style.display = 'inline-block';
+                }
+                const name = authUser.displayName || authUser.name || (authUser.email ? authUser.email.split('@')[0] : '');
+                welcomeDiv.innerHTML = `<strong>Ney :</strong> ${t.registeredGreeting(name)}`;
+            } else {
+                if (roleTag) roleTag.style.display = 'none';
+                welcomeDiv.innerHTML = `
+                    <div style="margin-bottom:8px"><strong>Ney :</strong> ${t.visitorGreeting}</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
+                        <a href="/public/auth.html" style="display:inline-block;padding:7px 12px;background:#4338ca;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none">
+                            ${t.btnRegister}
+                        </a>
+                        <button type="button" onclick="window.askNeyGeneral()" style="display:inline-block;padding:7px 12px;background:#e2e8f0;color:#1e293b;border-radius:8px;font-size:12px;font-weight:700;border:0;cursor:pointer">
+                            ${t.btnQuestion}
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        window.askNeyGeneral = function() {
+            const input = document.getElementById('ney-chat-input');
+            input.value = "Comment fonctionne la marketplace JEOAH'S ?";
+            input.focus();
         };
 
         function changeLanguage(lang) {
             if (!lang || !i18n[lang]) lang = 'fr';
+            currentLang = lang;
             localStorage.setItem('jeoahs-lang', lang);
 
             const select = document.getElementById('site-lang-select');
@@ -164,20 +307,136 @@
             document.getElementById('support-desc').textContent = t.supportDesc;
             document.getElementById('info-heading').textContent = t.infoTitle;
             document.getElementById('info-desc').textContent = t.infoDesc;
-            document.getElementById('assistant-heading').textContent = t.assistantTitle;
-            document.getElementById('assistant-desc').textContent = t.assistantDesc;
+            document.getElementById('ney-banner-heading').textContent = t.neyBannerTitle;
+            document.getElementById('ney-banner-status').textContent = t.neyBannerStatus;
+            document.getElementById('ney-banner-desc').textContent = t.neyBannerDesc;
+            document.getElementById('ney-header-subtitle').textContent = t.neySubtitle;
+            document.getElementById('ney-online-indicator').textContent = t.neyOnline;
+            document.getElementById('ney-chat-input').placeholder = t.neyPlaceholder;
 
-            if (typeof window.applyJeoahLanguage === 'function') {
-                window.applyJeoahLanguage(lang);
-            }
+            updateNeyWelcome(lang);
             window.dispatchEvent(new CustomEvent('jeoahs-lang-changed', { detail: { lang } }));
         }
 
         window.setSiteLanguage = changeLanguage;
         window.setLang = changeLanguage;
 
-        const savedLang = localStorage.getItem('jeoahs-lang') || 'fr';
-        changeLanguage(savedLang);
+        // Logique du Widget Chat NEY
+        (function () {
+            const panel = document.getElementById('ney-chat-panel');
+            const openBtn = document.getElementById('ney-chat-open');
+            const closeBtn = document.getElementById('ney-chat-close');
+            const form = document.getElementById('ney-chat-form');
+            const input = document.getElementById('ney-chat-input');
+            const messages = document.getElementById('ney-chat-messages');
+            const micBtn = document.getElementById('ney-chat-mic');
+
+            function toggleNey(show) {
+                if (show) {
+                    panel.removeAttribute('hidden');
+                    panel.style.display = 'flex';
+                    openBtn.style.display = 'none';
+                    input.focus();
+                } else {
+                    panel.setAttribute('hidden', '');
+                    panel.style.display = 'none';
+                    openBtn.style.display = 'flex';
+                }
+            }
+
+            openBtn.addEventListener('click', () => toggleNey(true));
+            closeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleNey(false);
+            });
+
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRec && micBtn) {
+                const rec = new SpeechRec();
+                rec.continuous = false;
+                rec.interimResults = true;
+                rec.onstart = () => { micBtn.style.background = '#e0e7ff'; micBtn.style.color = '#4338ca'; };
+                rec.onresult = (e) => { input.value = Array.from(e.results).map(r => r[0].transcript).join(''); };
+                rec.onend = () => { micBtn.style.background = '#fff'; micBtn.style.color = '#4338ca'; };
+                micBtn.addEventListener('click', () => {
+                    rec.lang = currentLang === 'en' ? 'en-US' : (currentLang === 'es' ? 'es-ES' : (currentLang === 'zh' ? 'zh-CN' : 'fr-FR'));
+                    try { rec.start(); } catch (_) {}
+                });
+            } else if (micBtn) {
+                micBtn.style.display = 'none';
+            }
+
+            function appendNeyMessage(sender, text, isUser) {
+                const div = document.createElement('div');
+                div.style.maxWidth = '88%';
+                div.style.padding = '10px 14px';
+                div.style.borderRadius = isUser ? '14px 14px 2px 14px' : '14px 14px 14px 2px';
+                div.style.background = isUser ? 'linear-gradient(135deg,#4338ca,#6366f1)' : '#fff';
+                div.style.color = isUser ? '#fff' : '#1e293b';
+                div.style.border = isUser ? 'none' : '1px solid #e2e8f0';
+                div.style.alignSelf = isUser ? 'flex-end' : 'flex-start';
+                div.style.boxShadow = '0 2px 6px rgba(0,0,0,0.03)';
+                div.innerHTML = `<strong>${sender} :</strong> ${text}`;
+                messages.appendChild(div);
+                messages.scrollTop = messages.scrollHeight;
+            }
+
+            function getNeySmartReply(q, lang) {
+                const query = q.toLowerCase();
+                const replies = {
+                    fr: {
+                        inscrire: "JEOAH est spécialement conçu pour vous accompagner dans votre inscription étape par étape ! <br><a href='/public/auth.html' style='color:#4338ca;font-weight:700;text-decoration:underline'>Cliquez ici pour créer votre compte avec JEOAH</a> sans quitter le site.",
+                        commande: "Les commandes sont sécurisées par JEOAH'S. Dès que vous passez commande, la somme est conservée en séquestre jusqu'à confirmation de votre livraison.",
+                        livraison: "Les délais et modalités de livraison sont fixés par chaque vendeur. En cas de retard supérieur à 7 jours, vous pouvez ouvrir un litige directement avec moi.",
+                        paiement: "Nous prenons en charge les paiements sécurisés via MonCash, Natcash et carte bancaire selon votre région. Des frais de service de 3% s'appliquent pour garantir votre protection.",
+                        vendeur: "Pour devenir vendeur ou affilié, créez votre compte puis choisissez le plan adapté dans la section Plans. JEOAH vous aidera à mettre vos premiers produits en ligne !",
+                        default: "Je note votre demande pour le service client. Je peux vous assister pour le suivi de vos commandes, vos paiements, vos livraisons ou vous orienter vers JEOAH pour votre inscription."
+                    },
+                    ht: {
+                        inscrire: "JEOAH la espesyalman pou ede w kreye kont ou etap pa etap! <br><a href='/public/auth.html' style='color:#4338ca;font-weight:700;text-decoration:underline'>Klike la a pou kreye kont ou ak JEOAH</a> san w pa kite sit la.",
+                        commande: "Kòmand ou yo an sekirite ak JEOAH'S. Lajan an rete bloke jiskaske ou konfime ou resevwa pwodwi a.",
+                        livraison: "Delè livrezon yo depann de chak vandè. Si gen yon reta ki depase 7 jou, ou ka louvri yon reklamasyon dirèkteman avè m.",
+                        paiement: "Nou sipòte peman sekirize pa MonCash, Natcash ak kat labank. Frè sèvis 3% aplike pou asire pwoteksyon tranzaksyon an.",
+                        vendeur: "Pou vin vandè oswa afilye, kreye kont ou epi chwazi yon plan nan paj Plan yo. JEOAH ap ede w mete pwodwi w yo sou vitrin nan!",
+                        default: "Mwen note kesyon ou an pou sèvis kliyan an. Mwen ka ede w ak kòmand ou, livrezon, peman oswa oryante w vè JEOAH pou enskripsyon ou."
+                    },
+                    en: {
+                        inscrire: "JEOAH is specifically trained to guide your registration step by step! <br><a href='/public/auth.html' style='color:#4338ca;font-weight:700;text-decoration:underline'>Click here to create your account with JEOAH</a>.",
+                        commande: "Orders are secured by JEOAH'S. Funds remain in escrow until you confirm delivery.",
+                        livraison: "Delivery times depend on each seller. In case of delays over 7 days, you can open a support ticket with me.",
+                        paiement: "We support secure payments via MonCash, Natcash, and credit cards. A 3% service fee applies to ensure transaction protection.",
+                        vendeur: "To become a seller or affiliate, register your account and select a tier on the Plans page. JEOAH will help you list your products!",
+                        default: "I have recorded your customer support question. I can assist with orders, deliveries, payments, or connect you with JEOAH for registration."
+                    }
+                };
+
+                const langReplies = replies[lang] || replies.fr;
+                if (query.includes('inscr') || query.includes('créer') || query.includes('compte') || query.includes('sign') || query.includes('antre')) return langReplies.inscrire;
+                if (query.includes('command') || query.includes('order') || query.includes('acht') || query.includes('achète')) return langReplies.commande;
+                if (query.includes('livr') || query.includes('delai') || query.includes('délai') || query.includes('ship')) return langReplies.livraison;
+                if (query.includes('pai') || query.includes('pay') || query.includes('moncash') || query.includes('natcash') || query.includes('argent') || query.includes('pri')) return langReplies.paiement;
+                if (query.includes('vend') || query.includes('sell') || query.includes('afily') || query.includes('affili')) return langReplies.vendeur;
+                return langReplies.default;
+            }
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const q = input.value.trim();
+                if (!q) return;
+
+                const youLabel = currentLang === 'ht' ? 'Ou' : (currentLang === 'en' ? 'You' : (currentLang === 'es' ? 'Tú' : (currentLang === 'zh' ? '您' : 'Vous')));
+                appendNeyMessage(youLabel, q, true);
+                input.value = '';
+
+                setTimeout(() => {
+                    const reply = getNeySmartReply(q, currentLang);
+                    appendNeyMessage('Ney', reply, false);
+                }, 400);
+            });
+        })();
+
+        // Initialisation langue
+        changeLanguage(currentLang);
 
         window.addEventListener('jeoahs-lang-changed', (e) => {
             if (e && e.detail && e.detail.lang) {
@@ -187,7 +446,6 @@
             }
         });
     </script>
-    <script src="/public/jeoah-loader.js" defer></script>
 </body>
 
 </html>
