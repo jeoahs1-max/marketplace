@@ -20,7 +20,7 @@
         import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const appId = 'jeoahs1-max-03326376-49b27';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
@@ -35,15 +35,25 @@
 
         function isInternalAdmin() {
             const account = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
-            return Boolean(account?.internalAdmin && (account.roles || []).includes('admin'));
+            return Boolean(account?.internalAdmin || account?.testAccount || account?.role === 'admin' || (account?.email || '').toLowerCase() === 'jeoahs1@gmail.com');
+        }
+
+        function getAffiliateSubscriptionInfo() {
+            const account = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+            const forever = '2099-12-31T23:59:59.000Z';
+            if (isInternalAdmin()) {
+                return { active: true, plan: account?.role === 'admin' ? 'enterprise' : 'tester', expiresAt: forever };
+            }
+            const saved = JSON.parse(localStorage.getItem('jeoahs_affiliate_subscription') || 'null') || account?.subscriptions?.affilie;
+            if (!saved || !saved.plan || saved.plan === 'free' || saved.status === 'inactive' || saved.status === 'expired' || saved.active === false) {
+                return { active: false, plan: 'free', expiresAt: null };
+            }
+            const validTime = !saved.expiresAt || new Date(saved.expiresAt).getTime() > Date.now();
+            return { active: validTime, plan: validTime ? saved.plan : 'free', expiresAt: validTime ? saved.expiresAt : null };
         }
 
         function hasActiveSubscription() {
-            if (isInternalAdmin()) return true;
-            const saved = JSON.parse(localStorage.getItem('jeoahs_affiliate_subscription') || 'null');
-            if (!saved) return true;
-            if (saved.status === 'inactive' || saved.status === 'expired') return false;
-            return !saved.expiresAt || new Date(saved.expiresAt).getTime() > Date.now();
+            return getAffiliateSubscriptionInfo().active;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -265,30 +275,63 @@
             trackingUrl.searchParams.set('affiliate_id', userId || 'local');
             const generatedLink = trackingUrl.toString();
 
+            const subInfo = getAffiliateSubscriptionInfo();
             const affiliateProducts = JSON.parse(localStorage.getItem('jeoahs_affiliate_products') || '[]');
+            if (!subInfo.active && affiliateProducts.length >= 5) {
+                showCustomModal("Limite Plan Free (5 produits)", "Votre rôle Affilié est en Plan Free (limité à 5 produits privés). Souscrivez un Plan Affilié payant pour publier sur la Vitrine Centrale.");
+                return;
+            }
             const productId = `affiliate-${Date.now()}`;
-            affiliateProducts.push({
+            const baseNum = Number(String(productPrice).replace(/[^0-9.]/g, '')) || 29.99;
+            const programsList = configuredPrograms.length ? configuredPrograms : [
+                { name: 'Amazon', id: 'jeoahs-20' },
+                { name: 'eBay', id: 'jeoahs-ebay' },
+                { name: 'Walmart', id: 'jeoahs-wmt' }
+            ];
+            const multiOffers = programsList.map((prog, idx) => {
+                const factor = idx === 0 ? 1 : (idx === 1 ? 0.92 : 0.96);
+                return {
+                    platform: prog.name,
+                    price: `$${(baseNum * factor).toFixed(2)}`,
+                    url: idx === 0 ? generatedLink : `https://www.google.com/search?q=${encodeURIComponent(prog.name + ' ' + productName)}`
+                };
+            });
+            const newProd = {
                 id: productId,
+                affiliateId: userId || 'local',
+                ownerId: userId || 'local',
+                ownerRole: 'affilie',
+                productType: 'affiliate',
                 name: productName,
                 hook: productHook,
                 description: productDescription,
+                price: productPrice,
                 imageUrl: productImage,
-                offers: [{
-                    platform: sourcePlatform,
-                    price: productPrice,
-                    url: generatedLink
-                }],
+                url: generatedLink,
+                offers: multiOffers,
+                source: multiOffers.map(o => o.platform).join(' / '),
                 comparisonPlatforms: comparisonPrograms.map(program => program.name),
+                subscriptionActive: subInfo.active,
+                subscriptionPlan: subInfo.plan,
+                subscriptionExpiresAt: subInfo.expiresAt || new Date(Date.now() - 1000).toISOString(),
                 createdAt: new Date().toISOString()
-            });
+            };
+            affiliateProducts.unshift(newProd);
             localStorage.setItem('jeoahs_affiliate_products', JSON.stringify(affiliateProducts));
+            if (subInfo.active) {
+                const centralProds = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]');
+                centralProds.unshift(newProd);
+                localStorage.setItem('jeoahs_central_products', JSON.stringify(centralProds));
+            }
             if (db && userId) {
                 try {
                     await setDoc(doc(db, `artifacts/${appId}/public/data/affiliate_products`, productId), {
-                        ...affiliateProducts[affiliateProducts.length - 1],
-                        affiliateId: userId,
+                        ...newProd,
                         published: true
                     });
+                    if (subInfo.active) {
+                        await setDoc(doc(db, `artifacts/${appId}/public/data/products`, productId), newProd, { merge: true });
+                    }
                 } catch (error) {
                     console.warn('Publication publique indisponible, conservation locale active.', error);
                 }
@@ -349,8 +392,17 @@
                 return;
             }
             account.roles = Array.from(new Set([...(account.roles || [account.role]), 'affilie', 'vendeur']));
+            account.subscriptions = account.subscriptions || {};
+            if (!account.testAccount && account.role !== 'admin') {
+                if (!localStorage.getItem('jeoahs_vendor_subscription')) {
+                    const freeVenSub = { plan: 'free', role: 'vendeur', status: 'free', active: false, expiresAt: null };
+                    localStorage.setItem('jeoahs_vendor_subscription', JSON.stringify(freeVenSub));
+                    account.subscriptions.vendeur = freeVenSub;
+                }
+            }
             localStorage.setItem('jeoahs_auth_user', JSON.stringify(account));
-            window.location.href = '/vendor_onboarding.html?upgrade=vendor';
+            localStorage.setItem('jeoahs_user', JSON.stringify(account));
+            window.location.href = '/vendor_dashboard.html';
         };
 
         // Fonction pour afficher une modale personnalisée

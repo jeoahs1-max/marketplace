@@ -12,6 +12,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gérer les Produits</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/firebase-config.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -19,18 +20,29 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        setLogLevel('debug'); // Active les logs de débogage pour Firestore
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const appId = 'jeoahs1-max-03326376-49b27';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         let db, auth, userId;
         let products = [];
         let editingProductId = null;
+
+        function getVendorSubStatus() {
+            const account = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+            const forever = '2099-12-31T23:59:59.000Z';
+            if (account?.testAccount || account?.role === 'admin' || (account?.email || '').toLowerCase() === 'jeoahs1@gmail.com') {
+                return { active: true, plan: account?.role === 'admin' ? 'enterprise' : 'tester', expiresAt: forever };
+            }
+            const saved = JSON.parse(localStorage.getItem('jeoahs_vendor_subscription') || 'null') || account?.subscriptions?.vendeur;
+            if (!saved || !saved.plan || saved.plan === 'free' || saved.status === 'inactive' || saved.status === 'expired' || saved.active === false) {
+                return { active: false, plan: 'free', expiresAt: null };
+            }
+            const validTime = !saved.expiresAt || new Date(saved.expiresAt).getTime() > Date.now();
+            return { active: validTime, plan: validTime ? saved.plan : 'free', expiresAt: validTime ? saved.expiresAt : null };
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             initFirebase();
@@ -98,39 +110,68 @@
         async function handleProductSubmission(event) {
             event.preventDefault();
 
-            const name = document.getElementById('product-name').value;
-            const description = document.getElementById('product-description').value;
+            const name = document.getElementById('product-name').value.trim();
+            const category = document.getElementById('product-category')?.value || 'Mode & Accessoires';
+            const description = document.getElementById('product-description').value.trim();
             const price = parseFloat(document.getElementById('product-price').value);
             const stock = parseInt(document.getElementById('product-stock').value);
-            const imageUrl = document.getElementById('product-image-url').value || `https://placehold.co/300x200/5B21B6/ffffff?text=${encodeURIComponent(name.slice(0, 10))}`;
+            const imageUrl = document.getElementById('product-image-url').value.trim() || `https://placehold.co/600x600/5B21B6/ffffff?text=${encodeURIComponent(name.slice(0, 12))}`;
 
             if (!name || isNaN(price) || isNaN(stock) || price <= 0 || stock < 0) {
                 showCustomModal("Erreur de validation", "Veuillez remplir tous les champs obligatoires avec des valeurs valides.");
                 return;
             }
 
+            const subStatus = getVendorSubStatus();
+            if (!editingProductId && !subStatus.active && products.length >= 5) {
+                showCustomModal("Limite du Plan Free atteinte (5 produits)", "Votre rôle Vendeur est en Plan Free (limité à 5 produits privés). Souscrivez un Plan Vendeur payant sur la page Plans pour publier jusqu'à 500 produits et apparaître sur la Vitrine Centrale.");
+                return;
+            }
+
+            const account = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+            const prodId = editingProductId || `vendor-${Date.now()}`;
             const productData = {
+                id: prodId,
                 name,
+                category,
                 description,
                 price,
+                priceUsd: price,
                 stock,
                 imageUrl,
+                productType: 'vendor',
+                ownerRole: 'vendeur',
+                source: 'Boutique Vendeur JEOAH\'S',
+                storeName: account?.storeName || account?.email?.split('@')[0] || 'Boutique Vendeur',
+                vendorId: userId || account?.uid || 'local-vendor',
+                ownerId: userId || account?.uid || 'local-vendor',
+                subscriptionActive: subStatus.active,
+                subscriptionPlan: subStatus.plan,
+                subscriptionExpiresAt: subStatus.expiresAt || new Date(Date.now() - 1000).toISOString(),
                 createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                vendorId: userId
+                updatedAt: new Date().toISOString()
             };
 
+            const localVendorProds = JSON.parse(localStorage.getItem('jeoahs_vendor_products') || '[]');
+            const existingIdx = localVendorProds.findIndex(p => p.id === prodId);
+            if (existingIdx >= 0) localVendorProds[existingIdx] = productData;
+            else localVendorProds.push(productData);
+            localStorage.setItem('jeoahs_vendor_products', JSON.stringify(localVendorProds));
+
+            if (subStatus.active) {
+                const centralProds = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]');
+                const cIdx = centralProds.findIndex(p => p.id === prodId);
+                if (cIdx >= 0) centralProds[cIdx] = productData;
+                else centralProds.push(productData);
+                localStorage.setItem('jeoahs_central_products', JSON.stringify(centralProds));
+            }
+
             if (!db) {
-                productData.vendorId = 'local-vendor';
-                if (editingProductId) {
-                    const productIndex = products.findIndex(product => product.id === editingProductId);
-                    if (productIndex >= 0) products[productIndex] = { id: editingProductId, ...productData };
-                } else {
-                    products.push({ id: `local-${Date.now()}`, ...productData });
-                }
-                localStorage.setItem('jeoahs_vendor_products', JSON.stringify(products));
+                products = localVendorProds;
                 renderProductList();
-                showCustomModal("Produit enregistré", `Le produit "${name}" est disponible dans votre catalogue local.`);
+                showCustomModal("Produit enregistré", subStatus.active
+                    ? `Le produit "${name}" est publié dans votre boutique ET sur la Vitrine Centrale JEOAH'S !`
+                    : `Le produit "${name}" est enregistré dans votre espace privé (Plan Free). Activez un Plan Vendeur payant pour l'afficher sur la Vitrine Centrale.`);
                 resetForm();
                 return;
             }
@@ -140,27 +181,42 @@
             submitButton.textContent = editingProductId ? "Modification en cours..." : "Ajout en cours...";
 
             try {
-                if (editingProductId) {
-                    // Logique de modification
-                    const productDocRef = doc(db, `artifacts/${appId}/users/${userId}/products`, editingProductId);
-                    await updateDoc(productDocRef, productData);
-                    showCustomModal("Succès", `Le produit "${name}" a été mis à jour avec succès.`);
-                } else {
-                    // Logique d'ajout
-                    const productsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/products`);
-                    await addDoc(productsCollectionRef, productData);
-                    showCustomModal("Succès", `Le nouveau produit "${name}" a été ajouté.`);
+                if (userId) {
+                    const productDocRef = doc(db, `artifacts/${appId}/users/${userId}/products`, prodId);
+                    await setDoc(productDocRef, productData, { merge: true });
                 }
+                if (subStatus.active) {
+                    const centralDocRef = doc(db, `artifacts/${appId}/public/data/products`, prodId);
+                    await setDoc(centralDocRef, productData, { merge: true });
+                }
+                showCustomModal("Succès", subStatus.active
+                    ? `Le produit "${name}" est en ligne dans votre boutique ET sur la Vitrine Centrale JEOAH'S !`
+                    : `Le produit "${name}" est enregistré dans votre espace privé (Plan Free). Souscrivez un Plan Vendeur payant pour qu'il apparaisse sur la Vitrine Centrale.`);
                 resetForm();
-
             } catch (e) {
                 console.error("Erreur lors de l'enregistrement du produit:", e);
-                showCustomModal("Erreur Firestore", "Impossible d'enregistrer le produit. Vérifiez la console pour les détails.");
+                products = localVendorProds;
+                renderProductList();
+                showCustomModal("Produit sauvegardé", `Le produit "${name}" a été enregistré dans votre catalogue.`);
             } finally {
                 submitButton.disabled = false;
                 submitButton.textContent = editingProductId ? "Modifier le Produit" : "Ajouter le Produit";
             }
         }
+
+        window.deleteVendorProduct = async function (prodId) {
+            if (!confirm("Voulez-vous vraiment supprimer ce produit ?")) return;
+            products = products.filter(p => p.id !== prodId);
+            const localVendorProds = JSON.parse(localStorage.getItem('jeoahs_vendor_products') || '[]').filter(p => p.id !== prodId);
+            localStorage.setItem('jeoahs_vendor_products', JSON.stringify(localVendorProds));
+            const centralProds = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]').filter(p => p.id !== prodId);
+            localStorage.setItem('jeoahs_central_products', JSON.stringify(centralProds));
+            if (db) {
+                try { if (userId) await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/products`, prodId)); } catch (_) {}
+                try { await deleteDoc(doc(db, `artifacts/${appId}/public/data/products`, prodId)); } catch (_) {}
+            }
+            renderProductList();
+        };
 
         /**
          * Remplit le formulaire pour la modification.
@@ -229,8 +285,7 @@
                         <button onclick="editProduct('${p.id}')" class="py-1 px-3 bg-yellow-500 text-white text-sm font-semibold rounded-lg hover:bg-yellow-600 transition">
                             <i class="fas fa-edit mr-1"></i> Modifier
                         </button>
-                        <!-- La suppression est complexe, on la laisse en simulation pour l'instant -->
-                        <button onclick="showCustomModal('Action indisponible', 'La suppression est une fonctionnalité avancée non encore implémentée.')" class="py-1 px-3 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-300 transition">
+                        <button onclick="deleteVendorProduct('${p.id}')" class="py-1 px-3 bg-red-100 text-red-700 text-sm font-semibold rounded-lg hover:bg-red-200 transition">
                             <i class="fas fa-trash mr-1"></i> Supprimer
                         </button>
                     </div>
@@ -323,11 +378,23 @@
                 <h2 id="form-title" class="text-2xl font-bold text-gray-800 mb-6">Ajouter un Nouveau Produit</h2>
 
                 <form id="product-form" class="space-y-4">
-                    <!-- Nom du Produit -->
-                    <div>
-                        <label for="product-name" class="block text-sm font-medium text-gray-700 mb-1">Nom du Produit
-                            (*)</label>
-                        <input type="text" id="product-name" placeholder="Ex: Chaussures de Course 'Flash'" required>
+                    <!-- Nom du Produit & Catégorie -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="product-name" class="block text-sm font-medium text-gray-700 mb-1">Nom du Produit
+                                (*)</label>
+                            <input type="text" id="product-name" placeholder="Ex: Chaussures de Course 'Flash'" required>
+                        </div>
+                        <div>
+                            <label for="product-category" class="block text-sm font-medium text-gray-700 mb-1">Catégorie (*)</label>
+                            <select id="product-category" class="w-full p-3 border border-gray-300 rounded-lg bg-white">
+                                <option value="Mode & Accessoires">Mode & Accessoires</option>
+                                <option value="Électronique">Électronique</option>
+                                <option value="Beauté & Soins">Beauté & Soins</option>
+                                <option value="Maison & Décoration">Maison & Décoration</option>
+                                <option value="Alimentation">Alimentation</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Description -->

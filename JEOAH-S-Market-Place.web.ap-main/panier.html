@@ -54,19 +54,62 @@
                 <p class="text-sm text-red-500 mt-4">Les frais JEOAH'S (3%) sont ajoutés à l'acheteur.</p>
 
                 <button id="checkoutButton"
-                    class="w-full mt-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition"
-                    disabled>
-                    Passer la Commande (Paiement Simulé)
+                    onclick="window.location.href='/payment.html?mode=cart'"
+                    class="w-full mt-6 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition">
+                    Passer la Commande (Paiement Sécurisé)
                 </button>
             </div>
         </div>
     </main>
 
-    <script src="firebase-config.js"></script>
-    <script type="module" src="app.js"></script>
+    <script src="/firebase-config.js"></script>
     <script>
-        // La fonction displayCartItems() est déclenchée au DOMContentLoaded dans app.js
+        function renderCart() {
+            const cart = JSON.parse(localStorage.getItem('jeoahs_cart') || '[]');
+            const container = document.getElementById('cartItemsContainer');
+            const btn = document.getElementById('checkoutButton');
+            if (!cart.length) {
+                container.innerHTML = `<div class="bg-white rounded-xl p-8 text-center shadow-sm border border-slate-200"><p class="text-slate-600 font-semibold">Votre panier est vide pour le moment.</p><a href="/showcase.html" class="mt-4 inline-block rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-700">Explorer la Vitrine Centrale</a></div>`;
+                document.getElementById('summarySubtotal').textContent = '$0.00';
+                document.getElementById('summaryFees').textContent = '$0.00';
+                document.getElementById('summaryTotal').textContent = '$0.00';
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                return;
+            }
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            let subtotal = 0;
+            container.innerHTML = cart.map((item, idx) => {
+                const priceNum = Number(String(item.price || '0').replace(/[^0-9.]/g, '')) || 0;
+                const qty = Number(item.quantity || 1);
+                subtotal += priceNum * qty;
+                return `<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <img src="${item.imageUrl || 'https://placehold.co/100x100/e2e8f0/334155?text=Produit'}" class="w-16 h-16 rounded-lg object-cover">
+                        <div>
+                            <h3 class="font-bold text-slate-900">${item.name || 'Produit JEOAH\'S'}</h3>
+                            <p class="text-xs text-slate-500">Vendeur : ${item.storeName || 'Boutique JEOAH\'S'}</p>
+                            <p class="text-sm font-extrabold text-indigo-700 mt-1">$${priceNum.toFixed(2)} × ${qty}</p>
+                        </div>
+                    </div>
+                    <button onclick="removeCartItem(${idx})" class="text-red-600 hover:bg-red-50 p-2 rounded-lg text-sm font-bold">Retirer</button>
+                </div>`;
+            }).join('');
+            const fees = subtotal * 0.03;
+            document.getElementById('summarySubtotal').textContent = `$${subtotal.toFixed(2)}`;
+            document.getElementById('summaryFees').textContent = `$${fees.toFixed(2)}`;
+            document.getElementById('summaryTotal').textContent = `$${(subtotal + fees).toFixed(2)}`;
+        }
+        window.removeCartItem = function (idx) {
+            const cart = JSON.parse(localStorage.getItem('jeoahs_cart') || '[]');
+            cart.splice(idx, 1);
+            localStorage.setItem('jeoahs_cart', JSON.stringify(cart));
+            renderCart();
+        };
+        document.addEventListener('DOMContentLoaded', renderCart);
     </script>
+    <script src="/public/jeoah-loader.js" defer></script>
 </body>
 
 </html>

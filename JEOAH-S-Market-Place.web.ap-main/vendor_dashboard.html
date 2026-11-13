@@ -22,7 +22,7 @@
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'jeoahs1-max-03326376-49b27';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
 
         let db, auth, userId;
@@ -33,11 +33,21 @@
         };
         let vendorData = { ...DEFAULT_PROFILE };
 
+        function getVendorSubscriptionInfo() {
+            const account = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+            if (account?.testAccount || account?.role === 'admin' || (account?.email || '').toLowerCase() === 'jeoahs1@gmail.com') {
+                return { active: true, plan: account?.role === 'admin' ? 'enterprise' : 'tester' };
+            }
+            const saved = JSON.parse(localStorage.getItem('jeoahs_vendor_subscription') || 'null') || account?.subscriptions?.vendeur;
+            if (!saved || !saved.plan || saved.plan === 'free' || saved.status === 'inactive' || saved.status === 'expired' || saved.active === false) {
+                return { active: false, plan: 'free' };
+            }
+            const validTime = !saved.expiresAt || new Date(saved.expiresAt).getTime() > Date.now();
+            return { active: validTime, plan: validTime ? saved.plan : 'free' };
+        }
+
         function hasActiveSubscription() {
-            const saved = JSON.parse(localStorage.getItem('jeoahs_vendor_subscription') || 'null');
-            if (!saved) return true;
-            if (saved.status === 'inactive' || saved.status === 'expired') return false;
-            return !saved.expiresAt || new Date(saved.expiresAt).getTime() > Date.now();
+            return getVendorSubscriptionInfo().active;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -97,9 +107,12 @@
             document.getElementById('profile-picture').src = profile.profilePictureUrl || DEFAULT_PROFILE.profilePictureUrl;
             document.getElementById('profile-bio').textContent = profile.bio || DEFAULT_PROFILE.bio;
 
-            const subscriptionActive = hasActiveSubscription();
-            document.getElementById('subscription-status').textContent = subscriptionActive ? 'Abonnement actif' : 'Abonnement expiré · Produits masqués';
-            document.getElementById('subscription-status').className = subscriptionActive ? 'text-sm font-semibold text-green-700' : 'text-sm font-semibold text-red-700';
+            const subInfo = getVendorSubscriptionInfo();
+            const subscriptionActive = subInfo.active;
+            document.getElementById('subscription-status').textContent = subscriptionActive
+                ? `Plan Vendeur : ${subInfo.plan.toUpperCase()} (Actif · Vitrine Centrale)`
+                : 'Plan Vendeur : FREE (Espace privé · Non publié sur Vitrine Centrale)';
+            document.getElementById('subscription-status').className = subscriptionActive ? 'text-sm font-semibold text-green-700 mt-2' : 'text-sm font-semibold text-amber-700 mt-2';
 
             const localOrders = JSON.parse(localStorage.getItem('jeoahs_vendor_orders') || '[]');
             const localProducts = JSON.parse(localStorage.getItem('jeoahs_vendor_products') || '[]');
@@ -167,8 +180,22 @@
                 return;
             }
             account.roles = Array.from(new Set([...(account.roles || [account.role]), 'vendeur', 'affilie']));
+            account.subscriptions = account.subscriptions || {};
+            if (!account.testAccount && account.role !== 'admin') {
+                if (!localStorage.getItem('jeoahs_affiliate_subscription')) {
+                    const freeAffSub = { plan: 'free', role: 'affilie', status: 'free', active: false, expiresAt: null };
+                    localStorage.setItem('jeoahs_affiliate_subscription', JSON.stringify(freeAffSub));
+                    account.subscriptions.affilie = freeAffSub;
+                }
+            }
             localStorage.setItem('jeoahs_auth_user', JSON.stringify(account));
-            window.location.href = '/affiliate_onboarding_step1.html?upgrade=affiliate';
+            localStorage.setItem('jeoahs_user', JSON.stringify(account));
+            const existingLinks = JSON.parse(localStorage.getItem('jeoahs_affiliate_links') || '[]').filter(l => l.name && l.base_link);
+            if (existingLinks.length > 0) {
+                window.location.href = '/affiliate-storefront.html';
+            } else {
+                window.location.href = '/affiliate_onboarding_step1.html?upgrade=affiliate';
+            }
         };
 
         window.showVendorReport = function () {
@@ -333,9 +360,13 @@
                         </a>
                         <p id="subscription-status" class="text-sm font-semibold text-green-700 mt-2">Abonnement actif
                         </p>
+                        <a href="/plans.html?role=vendeur"
+                            class="text-indigo-600 hover:text-indigo-800 text-xs font-bold transition mt-1 block">
+                            <i class="fas fa-crown mr-1"></i> Gérer mon Plan Vendeur
+                        </a>
                         <button type="button" onclick="activateAffiliateRole()"
-                            class="text-purple-600 hover:text-purple-800 font-semibold transition mt-2 block">
-                            <i class="fas fa-link mr-1"></i> Devenir affilié
+                            class="text-purple-600 hover:text-purple-800 font-semibold transition mt-2 block ml-auto">
+                            <i class="fas fa-link mr-1"></i> Basculer / Devenir affilié (sans réinscription)
                         </button>
                     </div>
                 </header>

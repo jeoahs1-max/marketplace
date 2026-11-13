@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paiement Sécurisé - JEOAH'S Market Place</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/firebase-config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+
+<body class="min-h-screen bg-slate-50 text-slate-900">
+    <header class="border-b border-slate-200 bg-white">
+        <div class="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
+            <a href="/index.html" class="flex items-center gap-3 font-extrabold text-slate-900">
+                <img src="/public/assets/logo.png" alt="JEOAH'S" class="h-10 w-10 rounded-xl object-cover">
+                <span>JEOAH'S <span class="block text-[10px] font-bold tracking-widest text-indigo-600">PAIEMENT SÉCURISÉ</span></span>
+            </a>
+            <div class="flex items-center gap-3 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
+                <i class="fas fa-shield-halved"></i> Protection Séquestre & SSL 256-bit
+            </div>
+        </div>
+    </header>
+
+    <main class="mx-auto max-w-5xl px-5 py-10">
+        <div class="mb-6">
+            <a href="/plans.html" id="back-link" class="text-sm font-bold text-indigo-700 hover:underline">
+                <i class="fas fa-arrow-left mr-1"></i> Retour aux plans
+            </a>
+            <h1 class="mt-2 text-3xl font-extrabold text-slate-900" id="page-heading">Finaliser votre abonnement</h1>
+            <p class="mt-1 text-sm text-slate-600" id="page-subheading">Activez immédiatement la visibilité de vos produits sur la Vitrine Centrale et les outils IA de JEOAH.</p>
+        </div>
+
+        <div class="grid gap-8 lg:grid-cols-12">
+            <!-- Colonne Gauche : Mode de paiement et Formulaire -->
+            <div class="lg:col-span-7 space-y-6">
+                <!-- Sélecteur du rôle (uniquement en mode abonnement) -->
+                <div id="role-selection-card" class="rounded-2xl border border-indigo-200 bg-white p-6 shadow-sm">
+                    <h2 class="text-base font-extrabold text-slate-900">1. Rôle couvert par cet abonnement</h2>
+                    <p class="mt-1 text-xs text-slate-600">Rappel : Un plan mensuel s'applique à un seul rôle (Vendeur ou Affilié). Si vous exercez les deux activités sur votre compte, chaque rôle possède son propre abonnement.</p>
+                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button type="button" id="pay-role-affilie" onclick="setPaymentRole('affilie')" class="rounded-xl border-2 border-indigo-600 bg-indigo-50 p-3.5 text-left transition">
+                            <div class="flex items-center justify-between">
+                                <span class="font-extrabold text-sm text-indigo-950"><i class="fas fa-link mr-1.5 text-indigo-600"></i> Rôle Affilié</span>
+                                <span id="badge-role-affilie" class="rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-bold text-white">Sélectionné</span>
+                            </div>
+                            <p class="mt-1 text-[11px] text-slate-600">Comparateur 1-10 liens (Amazon, eBay, Walmart), kit pub IA & Vitrine Centrale.</p>
+                        </button>
+                        <button type="button" id="pay-role-vendeur" onclick="setPaymentRole('vendeur')" class="rounded-xl border-2 border-slate-200 bg-white p-3.5 text-left transition">
+                            <div class="flex items-center justify-between">
+                                <span class="font-extrabold text-sm text-slate-900"><i class="fas fa-store mr-1.5 text-slate-600"></i> Rôle Vendeur</span>
+                                <span id="badge-role-vendeur" class="hidden rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-bold text-white">Sélectionné</span>
+                            </div>
+                            <p class="mt-1 text-[11px] text-slate-600">Boutique directe, gestion de stocks, commandes sécurisées & Vitrine Centrale.</p>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Choix du moyen de paiement -->
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h2 class="text-base font-extrabold text-slate-900">2. Choisissez votre moyen de paiement</h2>
+                    <div class="mt-4 grid grid-cols-3 gap-3">
+                        <button type="button" id="method-card" onclick="selectMethod('card')" class="rounded-xl border-2 border-indigo-600 bg-indigo-50/70 p-3 text-center font-bold text-xs text-indigo-950 transition">
+                            <i class="fas fa-credit-card block text-xl mb-1 text-indigo-600"></i>
+                            Carte / Stripe
+                        </button>
+                        <button type="button" id="method-moncash" onclick="selectMethod('moncash')" class="rounded-xl border-2 border-slate-200 bg-white p-3 text-center font-bold text-xs text-slate-700 hover:border-red-400 transition">
+                            <i class="fas fa-mobile-screen-button block text-xl mb-1 text-red-600"></i>
+                            MonCash
+                        </button>
+                        <button type="button" id="method-natcash" onclick="selectMethod('natcash')" class="rounded-xl border-2 border-slate-200 bg-white p-3 text-center font-bold text-xs text-slate-700 hover:border-blue-400 transition">
+                            <i class="fas fa-wallet block text-xl mb-1 text-blue-600"></i>
+                            Natcash
+                        </button>
+                    </div>
+
+                    <form id="payment-form" class="mt-6 space-y-4">
+                        <!-- Champs Carte Bancaire -->
+                        <div id="fields-card" class="space-y-4">
+                            <label class="block text-xs font-bold text-slate-700">Nom sur la carte
+                                <input id="card-holder" type="text" required placeholder="Ex. Jean Louis" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-indigo-600 focus:outline-none">
+                            </label>
+                            <label class="block text-xs font-bold text-slate-700">Numéro de carte
+                                <input id="card-number" type="text" maxlength="19" placeholder="4242 •••• •••• 4242" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-indigo-600 focus:outline-none">
+                            </label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <label class="block text-xs font-bold text-slate-700">Expiration (MM/AA)
+                                    <input id="card-exp" type="text" maxlength="5" placeholder="12/28" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-indigo-600 focus:outline-none">
+                                </label>
+                                <label class="block text-xs font-bold text-slate-700">CVC
+                                    <input id="card-cvc" type="text" maxlength="4" placeholder="123" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-indigo-600 focus:outline-none">
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Champs Mobile Money (MonCash / Natcash) -->
+                        <div id="fields-mobile" class="hidden space-y-4">
+                            <div class="rounded-xl bg-amber-50 border border-amber-200 p-3.5 text-xs text-amber-900">
+                                <strong id="mobile-provider-title">Paiement Mobile MonCash :</strong> Saisissez votre numéro de téléphone associé à votre compte mobile et le code de confirmation reçu.
+                            </div>
+                            <label class="block text-xs font-bold text-slate-700">Numéro de téléphone (Haïti / International)
+                                <input id="mobile-phone" type="tel" placeholder="+509 3700-0000" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-indigo-600 focus:outline-none">
+                            </label>
+                            <label class="block text-xs font-bold text-slate-700">Code PIN / Référence de transaction
+                                <input id="mobile-pin" type="password" maxlength="8" placeholder="••••" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-indigo-600 focus:outline-none">
+                            </label>
+                        </div>
+
+                        <div id="payment-feedback" class="hidden rounded-xl p-4 text-sm font-semibold"></div>
+
+                        <button type="submit" id="pay-submit-btn" class="w-full rounded-xl bg-indigo-600 px-6 py-4 text-base font-extrabold text-white shadow-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2">
+                            <i class="fas fa-lock"></i> <span id="pay-btn-text">Payer et Activer maintenant</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Colonne Droite : Récapitulatif -->
+            <div class="lg:col-span-5">
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5 sticky top-6">
+                    <h2 class="text-lg font-extrabold text-slate-900 border-b border-slate-100 pb-3">Récapitulatif de commande</h2>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Type :</span>
+                            <strong id="summary-type" class="text-slate-900">Abonnement Mensuel</strong>
+                        </div>
+                        <div class="flex justify-between" id="summary-role-row">
+                            <span class="text-slate-500">Rôle couvert :</span>
+                            <strong id="summary-role" class="text-indigo-700">Affilié</strong>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Formule / Détail :</span>
+                            <strong id="summary-plan" class="text-slate-900">Pro</strong>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Sous-total :</span>
+                            <span id="summary-subtotal" class="font-semibold">$19.99 USD</span>
+                        </div>
+                        <div class="flex justify-between" id="summary-fee-row">
+                            <span class="text-slate-500">Frais de service JEOAH'S :</span>
+                            <span id="summary-fee" class="font-semibold">Inclus</span>
+                        </div>
+                        <div class="border-t border-slate-200 pt-3 flex justify-between items-baseline">
+                            <span class="text-base font-extrabold text-slate-900">Total à payer :</span>
+                            <div class="text-right">
+                                <strong id="summary-total-usd" class="text-2xl font-extrabold text-indigo-700 block">$19.99 USD</strong>
+                                <span id="summary-total-htg" class="text-xs text-slate-500">≈ 2 619 HTG</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl bg-slate-50 p-4 border border-slate-200 text-xs text-slate-600 space-y-2">
+                        <p class="font-bold text-slate-800"><i class="fas fa-check-circle text-emerald-600 mr-1"></i> Ce qui est activé immédiatement :</p>
+                        <ul id="summary-perks" class="list-disc list-inside space-y-1">
+                            <li>Publication directe de vos produits sur la <strong>Vitrine Centrale</strong></li>
+                            <li>Générateur IA JEOAH (titres, slogans, textes pub & scripts vidéo)</li>
+                            <li>Comparateur automatique multi-marchands (Amazon, eBay, Walmart...)</li>
+                            <li>Durée : 30 jours renouvelables</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { getApps, initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { doc, getFirestore, setDoc, updateDoc, collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        const params = new URLSearchParams(location.search);
+        const mode = params.get('mode') === 'cart' ? 'cart' : 'plan';
+        const planCode = (params.get('plan') || localStorage.getItem('jeoahs_selected_plan') || 'pro').toLowerCase();
+        let targetRole = (params.get('role') || localStorage.getItem('jeoahs_selected_plan_role') || 'affilie').toLowerCase();
+        let selectedMethod = 'card';
+
+        const PLANS = {
+            starter: { name: 'Starter', price: 9.99, quota: 25 },
+            pro: { name: 'Pro', price: 19.99, quota: 100 },
+            premium: { name: 'Premium', price: 39.99, quota: 500 },
+            enterprise: { name: 'Entreprise', price: 99.00, quota: 2000 }
+        };
+
+        const config = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : null;
+        const app = config?.apiKey ? (getApps()[0] || initializeApp(config)) : null;
+        const db = app ? getFirestore(app) : null;
+        const appId = 'jeoahs1-max-03326376-49b27';
+
+        window.setPaymentRole = function (role) {
+            targetRole = role === 'vendeur' ? 'vendeur' : 'affilie';
+            const btnAff = document.getElementById('pay-role-affilie');
+            const btnVen = document.getElementById('pay-role-vendeur');
+            const badgeAff = document.getElementById('badge-role-affilie');
+            const badgeVen = document.getElementById('badge-role-vendeur');
+            if (targetRole === 'affilie') {
+                btnAff.className = 'rounded-xl border-2 border-indigo-600 bg-indigo-50 p-3.5 text-left transition';
+                btnVen.className = 'rounded-xl border-2 border-slate-200 bg-white p-3.5 text-left transition';
+                badgeAff.classList.remove('hidden');
+                badgeVen.classList.add('hidden');
+                document.getElementById('summary-role').textContent = 'Affilié (Vitrine & Comparateur)';
+            } else {
+                btnVen.className = 'rounded-xl border-2 border-indigo-600 bg-indigo-50 p-3.5 text-left transition';
+                btnAff.className = 'rounded-xl border-2 border-slate-200 bg-white p-3.5 text-left transition';
+                badgeVen.classList.remove('hidden');
+                badgeAff.classList.add('hidden');
+                document.getElementById('summary-role').textContent = 'Vendeur (Boutique & Stock)';
+            }
+        };
+
+        window.selectMethod = function (method) {
+            selectedMethod = method;
+            ['card', 'moncash', 'natcash'].forEach(m => {
+                const btn = document.getElementById(`method-${m}`);
+                if (m === method) {
+                    btn.className = 'rounded-xl border-2 border-indigo-600 bg-indigo-50/70 p-3 text-center font-bold text-xs text-indigo-950 transition';
+                } else {
+                    btn.className = 'rounded-xl border-2 border-slate-200 bg-white p-3 text-center font-bold text-xs text-slate-700 transition';
+                }
+            });
+            const isCard = method === 'card';
+            document.getElementById('fields-card').classList.toggle('hidden', !isCard);
+            document.getElementById('fields-mobile').classList.toggle('hidden', isCard);
+            document.getElementById('card-holder').required = isCard;
+            document.getElementById('mobile-phone').required = !isCard;
+            if (!isCard) {
+                document.getElementById('mobile-provider-title').textContent = method === 'moncash' ? 'Paiement Mobile MonCash (Digicel) :' : 'Paiement Mobile Natcash (Natcom) :';
+            }
+        };
+
+        function initSummary() {
+            if (mode === 'cart') {
+                document.getElementById('role-selection-card').classList.add('hidden');
+                document.getElementById('summary-role-row').classList.add('hidden');
+                document.getElementById('back-link').href = '/panier.html';
+                document.getElementById('back-link').innerHTML = '<i class="fas fa-arrow-left mr-1"></i> Retour au panier';
+                document.getElementById('page-heading').textContent = 'Paiement de votre commande';
+                document.getElementById('page-subheading').textContent = 'Vos fonds sont protégés en séquestre par JEOAH\'S jusqu\'à confirmation de la livraison.';
+
+                const cart = JSON.parse(localStorage.getItem('jeoahs_cart') || '[]');
+                const subtotal = cart.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 1)), 0) || Number(params.get('amount') || 25);
+                const fee = subtotal * 0.03;
+                const total = subtotal + fee;
+                document.getElementById('summary-type').textContent = 'Commande Produits';
+                document.getElementById('summary-plan').textContent = `${cart.length || 1} article(s)`;
+                document.getElementById('summary-subtotal').textContent = `$${subtotal.toFixed(2)} USD`;
+                document.getElementById('summary-fee').textContent = `$${fee.toFixed(2)} USD (3%)`;
+                document.getElementById('summary-total-usd').textContent = `$${total.toFixed(2)} USD`;
+                document.getElementById('summary-total-htg').textContent = `≈ ${Math.round(total * 131)} HTG`;
+                document.getElementById('pay-btn-text').textContent = `Payer $${total.toFixed(2)} USD en toute sécurité`;
+            } else {
+                const chosen = PLANS[planCode] || PLANS.pro;
+                window.setPaymentRole(targetRole);
+                document.getElementById('summary-type').textContent = 'Abonnement Mensuel (30 jours)';
+                document.getElementById('summary-plan').textContent = `Plan ${chosen.name}`;
+                document.getElementById('summary-subtotal').textContent = `$${chosen.price.toFixed(2)} USD`;
+                document.getElementById('summary-fee').textContent = '0.00 USD';
+                document.getElementById('summary-total-usd').textContent = `$${chosen.price.toFixed(2)} USD`;
+                document.getElementById('summary-total-htg').textContent = `≈ ${Math.round(chosen.price * 131)} HTG`;
+                document.getElementById('pay-btn-text').textContent = `Payer $${chosen.price.toFixed(2)} USD et Activer mon Plan ${chosen.name}`;
+            }
+        }
+        initSummary();
+
+        async function promoteExistingRoleProductsToCentral(account, role, subData) {
+            const localKey = role === 'vendeur' ? 'jeoahs_vendor_products' : 'jeoahs_affiliate_products';
+            const roleProds = JSON.parse(localStorage.getItem(localKey) || '[]');
+            const centralProds = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]');
+
+            for (const prod of roleProds) {
+                prod.subscriptionActive = true;
+                prod.subscriptionPlan = subData.plan;
+                prod.subscriptionExpiresAt = subData.expiresAt;
+                prod.ownerRole = role;
+                const existingIdx = centralProds.findIndex(c => c.id === prod.id);
+                if (existingIdx >= 0) centralProds[existingIdx] = prod;
+                else centralProds.push(prod);
+
+                if (db) {
+                    try {
+                        await setDoc(doc(db, `artifacts/${appId}/public/data/products`, String(prod.id)), {
+                            ...prod,
+                            subscriptionActive: true,
+                            subscriptionPlan: subData.plan,
+                            subscriptionExpiresAt: subData.expiresAt
+                        }, { merge: true });
+                    } catch (_) {}
+                }
+            }
+            localStorage.setItem(localKey, JSON.stringify(roleProds));
+            localStorage.setItem('jeoahs_central_products', JSON.stringify(centralProds));
+        }
+
+        document.getElementById('payment-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('pay-submit-btn');
+            const feedback = document.getElementById('payment-feedback');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Traitement sécurisé en cours...';
+
+            const account = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+
+            if (mode === 'cart') {
+                const cart = JSON.parse(localStorage.getItem('jeoahs_cart') || '[]');
+                const subtotal = cart.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 1)), 0) || 25;
+                const orderObj = {
+                    id: `CMD-${Date.now().toString().slice(-6)}`,
+                    customerName: account?.email || document.getElementById('card-holder').value || 'Acheteur JEOAH\'S',
+                    buyerId: account?.uid || 'guest',
+                    items: cart,
+                    total: +(subtotal * 1.03).toFixed(2),
+                    paymentMethod: selectedMethod,
+                    status: 'pending',
+                    escrowProtected: true,
+                    createdAt: new Date().toISOString()
+                };
+                const vendorOrders = JSON.parse(localStorage.getItem('jeoahs_vendor_orders') || '[]');
+                vendorOrders.push(orderObj);
+                localStorage.setItem('jeoahs_vendor_orders', JSON.stringify(vendorOrders));
+                localStorage.setItem('jeoahs_cart', '[]');
+
+                feedback.className = 'rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-sm font-semibold text-emerald-800';
+                feedback.innerHTML = `✅ <strong>Paiement confirmé (${orderObj.id}) !</strong> Vos fonds sont placés en séquestre sécurisé JEOAH'S. Redirection vers la vitrine...`;
+                feedback.classList.remove('hidden');
+                setTimeout(() => { window.location.href = '/showcase.html'; }, 1500);
+                return;
+            }
+
+            const chosen = PLANS[planCode] || PLANS.pro;
+            const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+            const subData = {
+                plan: planCode,
+                planName: chosen.name,
+                role: targetRole,
+                status: 'active',
+                active: true,
+                isPremium: true,
+                paymentMethod: selectedMethod,
+                paidAt: new Date().toISOString(),
+                expiresAt
+            };
+
+            if (targetRole === 'vendeur') {
+                localStorage.setItem('jeoahs_vendor_subscription', JSON.stringify(subData));
+            } else {
+                localStorage.setItem('jeoahs_affiliate_subscription', JSON.stringify(subData));
+            }
+
+            if (account) {
+                account.roles = Array.from(new Set([...(account.roles || [account.role || targetRole]), targetRole]));
+                account.subscriptions = account.subscriptions || {};
+                account.subscriptions[targetRole] = subData;
+                if (account.role === targetRole) account.selectedPlan = planCode;
+                localStorage.setItem('jeoahs_auth_user', JSON.stringify(account));
+                localStorage.setItem('jeoahs_user', JSON.stringify(account));
+
+                if (db && account.uid) {
+                    try {
+                        await setDoc(doc(db, 'profiles', account.uid), {
+                            roles: account.roles,
+                            subscriptions: account.subscriptions,
+                            updatedAt: new Date().toISOString()
+                        }, { merge: true });
+                        await setDoc(doc(db, `artifacts/${appId}/users/${account.uid}/subscription_data/status`), {
+                            isPremium: true,
+                            [targetRole]: subData
+                        }, { merge: true });
+                    } catch (_) {}
+                }
+                await promoteExistingRoleProductsToCentral(account, targetRole, subData);
+            }
+
+            feedback.className = 'rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-sm font-semibold text-emerald-800';
+            feedback.innerHTML = `✅ <strong>Abonnement ${chosen.name} activé pour votre rôle ${targetRole === 'vendeur' ? 'Vendeur' : 'Affilié'} !</strong> Vos produits de ce rôle sont désormais publiés sur la Vitrine Centrale.`;
+            feedback.classList.remove('hidden');
+
+            setTimeout(() => {
+                window.location.href = targetRole === 'vendeur' ? '/vendor_dashboard.html' : '/affiliate-storefront.html';
+            }, 1400);
+        });
+    </script>
+    <script src="/public/jeoah-loader.js" defer></script>
+</body>
+
+</html>

@@ -72,6 +72,7 @@
         const passwordConfirmField = document.getElementById('password-confirm-field');
         const status = document.getElementById('auth-status');
         const selectedPlan = new URLSearchParams(location.search).get('plan');
+        const selectedPlanRole = new URLSearchParams(location.search).get('planRole');
         const referralCode = new URLSearchParams(location.search).get('ref');
         const testerEmails = new Set([
             'ff1986fredlin11@gmail.com', 'fleuricotamy@gmail.com',
@@ -103,7 +104,27 @@
             status.classList.add('hidden');
         }
 
+        function syncRoleSubscriptionsToLocal(profile, isPrivileged) {
+            const forever = '2099-12-31T23:59:59.000Z';
+            if (isPrivileged) {
+                const privSub = { plan: 'tester', status: 'active', active: true, expiresAt: forever };
+                localStorage.setItem('jeoahs_vendor_subscription', JSON.stringify({ ...privSub, role: 'vendeur' }));
+                localStorage.setItem('jeoahs_affiliate_subscription', JSON.stringify({ ...privSub, role: 'affilie' }));
+                return { vendeur: { ...privSub, role: 'vendeur' }, affilie: { ...privSub, role: 'affilie' } };
+            }
+            const subs = profile?.subscriptions || {};
+            const vSub = subs.vendeur || { plan: 'free', status: 'free', active: false, role: 'vendeur', expiresAt: null };
+            const aSub = subs.affilie || { plan: 'free', status: 'free', active: false, role: 'affilie', expiresAt: null };
+            localStorage.setItem('jeoahs_vendor_subscription', JSON.stringify(vSub));
+            localStorage.setItem('jeoahs_affiliate_subscription', JSON.stringify(aSub));
+            return { vendeur: vSub, affilie: aSub };
+        }
+
         function destination(profile) {
+            if (selectedPlan && selectedPlan !== 'free' && !profile.testAccount) {
+                const targetRole = selectedPlanRole || (profile.role === 'vendeur' ? 'vendeur' : 'affilie');
+                return `/payment.html?plan=${encodeURIComponent(selectedPlan)}&role=${encodeURIComponent(targetRole)}`;
+            }
             if (profile.role === 'affilie') return profile.onboardingComplete ? '/affiliate-storefront.html' : '/affiliate_onboarding_step1.html';
             if (profile.role === 'vendeur') return '/vendor_dashboard.html';
             return '/index.html';
@@ -119,7 +140,18 @@
         async function continueToSpace(user) {
             let profile = await loadProfile(user);
             if (user.email && user.email.toLowerCase() === 'jeoahs1@gmail.com') {
-                localStorage.setItem('jeoahs_auth_user', JSON.stringify({ uid: user.uid, email: user.email, role: 'admin', roles: ['admin'], onboardingComplete: true }));
+                const subs = syncRoleSubscriptionsToLocal({}, true);
+                localStorage.setItem('jeoahs_auth_user', JSON.stringify({
+                    uid: user.uid,
+                    email: user.email,
+                    role: 'admin',
+                    roles: ['admin', 'vendeur', 'affilie'],
+                    internalAdmin: true,
+                    testAccount: true,
+                    selectedPlan: 'enterprise',
+                    subscriptions: subs,
+                    onboardingComplete: true
+                }));
                 location.href = '/admin.html';
                 return;
             }
@@ -129,21 +161,28 @@
             }
             const normalizedRole = { seller: 'vendeur', vendor: 'vendeur', affiliate: 'affilie', buyer: 'acheteur' }[profile.role] || profile.role || 'acheteur';
             if (profile.role !== normalizedRole) profile = { ...profile, role: normalizedRole };
-            if (testerEmails.has((user.email || '').toLowerCase()) && !profile.testAccount) {
+            const isTester = testerEmails.has((user.email || '').toLowerCase()) || Boolean(profile.testAccount);
+            if (isTester && !profile.testAccount) {
                 profile = { ...profile, selectedPlan: 'tester', testAccount: true };
                 await setDoc(doc(db, 'profiles', user.uid), { selectedPlan: 'tester', testAccount: true, updatedAt: serverTimestamp() }, { merge: true });
             }
+            const subs = syncRoleSubscriptionsToLocal(profile, isTester);
             const identity = await saveAccountIdentity(user, profile);
-            localStorage.setItem('jeoahs_auth_user', JSON.stringify({
+            const rolesList = Array.isArray(profile.roles) && profile.roles.length ? profile.roles : [profile.role];
+            const authUserObj = {
                 uid: user.uid,
                 email: user.email || '',
                 role: profile.role,
-                roles: [profile.role],
+                roles: rolesList,
                 onboardingComplete: Boolean(profile.onboardingComplete),
                 accountCode: identity.code,
                 referralLink: identity.link,
-                testAccount: Boolean(profile.testAccount)
-            }));
+                testAccount: isTester,
+                selectedPlan: isTester ? 'tester' : (subs[profile.role]?.plan || 'free'),
+                subscriptions: subs
+            };
+            localStorage.setItem('jeoahs_auth_user', JSON.stringify(authUserObj));
+            localStorage.setItem('jeoahs_user', JSON.stringify(authUserObj));
             location.href = destination(profile);
         }
 
@@ -155,11 +194,21 @@
         function profileFor(user, role = 'acheteur') {
             const identity = createAccountIdentity(user);
             const email = (user.email || '').toLowerCase();
+            const isTester = testerEmails.has(email) || email === 'jeoahs1@gmail.com';
+            const forever = '2099-12-31T23:59:59.000Z';
+            const defaultSub = isTester
+                ? { plan: 'tester', status: 'active', active: true, expiresAt: forever }
+                : { plan: 'free', status: 'free', active: false, expiresAt: null };
             return {
                 role,
+                roles: [role],
                 onboardingComplete: role !== 'affilie',
-                selectedPlan: testerEmails.has(email) ? 'tester' : (selectedPlan || 'free'),
-                testAccount: testerEmails.has(email),
+                selectedPlan: isTester ? 'tester' : 'free',
+                testAccount: isTester,
+                subscriptions: {
+                    vendeur: { ...defaultSub, role: 'vendeur' },
+                    affilie: { ...defaultSub, role: 'affilie' }
+                },
                 accountCode: identity.code,
                 referralLink: identity.link,
                 referredByCode: referralCode || null,
@@ -244,7 +293,10 @@
                     const profile = profileFor(user, role);
                     const identity = createAccountIdentity(user);
                     await setDoc(doc(db, 'profiles', user.uid), profile);
-                    localStorage.setItem('jeoahs_auth_user', JSON.stringify({ uid: user.uid, email, role, roles: [role], onboardingComplete: profile.onboardingComplete, accountCode: identity.code, referralLink: identity.link }));
+                    const subs = syncRoleSubscriptionsToLocal(profile, Boolean(profile.testAccount));
+                    const authUserObj = { uid: user.uid, email, role, roles: [role], onboardingComplete: profile.onboardingComplete, accountCode: identity.code, referralLink: identity.link, testAccount: Boolean(profile.testAccount), selectedPlan: profile.selectedPlan, subscriptions: subs };
+                    localStorage.setItem('jeoahs_auth_user', JSON.stringify(authUserObj));
+                    localStorage.setItem('jeoahs_user', JSON.stringify(authUserObj));
                     setStatus(`Inscription réussie. Votre code unique est ${identity.code}.`, 'success');
                     location.href = destination(profile);
                     return;

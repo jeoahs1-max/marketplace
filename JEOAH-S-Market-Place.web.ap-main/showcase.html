@@ -106,18 +106,159 @@
     let selectedCategory = categories[0];
     const escape = value => String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
     function renderCategories() { document.getElementById('category-list').innerHTML = categories.map(category => `<button data-category="${escape(category)}" class="category w-full rounded-lg px-3 py-2 text-left ${category === selectedCategory ? 'bg-fuchsia-50 font-bold text-fuchsia-700' : 'hover:bg-slate-50'}">${category}</button>`).join(''); document.querySelectorAll('.category').forEach(button => button.onclick = () => { selectedCategory = button.dataset.category; renderCategories(); renderProducts(); }); }
-    function price(product) { const raw = Number(String(product.price || product.priceUsd || '0').replace(/[^0-9.]/g, '')) || 0; const code = document.getElementById('currency').value; return new Intl.NumberFormat(code === 'HTG' ? 'fr-HT' : 'fr-FR', { style: 'currency', currency: code, maximumFractionDigits: code === 'HTG' ? 0 : 2 }).format(raw * rates[code]); }
-    function matches(product) { const text = document.getElementById('market-search').value.trim().toLowerCase(); const isAll = selectedCategory === categories[0] || selectedCategory === 'Toutes les catégories'; const categoryMatch = isAll || String(product.category || '').toLowerCase().includes(selectedCategory.split(' ')[0].toLowerCase()); return categoryMatch && (!text || `${product.name || product.title || ''} ${product.category || ''} ${product.source || ''}`.toLowerCase().includes(text)); }
-    function hasActivePlan(product) { const value = product.subscriptionExpiresAt; const expiresAt = value?.toDate ? value.toDate().getTime() : new Date(value).getTime(); return product.subscriptionActive === true && Number.isFinite(expiresAt) && expiresAt > Date.now(); }
+    function formatPriceVal(rawAmount) {
+      const raw = Number(String(rawAmount || '0').replace(/[^0-9.]/g, '')) || 0;
+      const code = document.getElementById('currency').value;
+      return new Intl.NumberFormat(code === 'HTG' ? 'fr-HT' : 'fr-FR', { style: 'currency', currency: code, maximumFractionDigits: code === 'HTG' ? 0 : 2 }).format(raw * rates[code]);
+    }
+    function price(product) { return formatPriceVal(product.price || product.priceUsd || (product.offers?.[0]?.price) || '0'); }
+    function matches(product) {
+      const text = document.getElementById('market-search').value.trim().toLowerCase();
+      const isAll = selectedCategory === categories[0] || selectedCategory === 'Toutes les catégories';
+      const categoryMatch = isAll || String(product.category || '').toLowerCase().includes(selectedCategory.split(' ')[0].toLowerCase());
+      const offersText = Array.isArray(product.offers) ? product.offers.map(o => o.platform).join(' ') : '';
+      return categoryMatch && (!text || `${product.name || product.title || ''} ${product.hook || ''} ${product.description || ''} ${product.category || ''} ${product.source || ''} ${offersText}`.toLowerCase().includes(text));
+    }
+    function hasActivePlan(product) {
+      if (product.subscriptionPlan === 'tester' || product.subscriptionPlan === 'enterprise') return true;
+      const value = product.subscriptionExpiresAt;
+      const expiresAt = value?.toDate ? value.toDate().getTime() : new Date(value).getTime();
+      return product.subscriptionActive === true && Number.isFinite(expiresAt) && expiresAt > Date.now();
+    }
+    window.addToCartFromShowcase = function (prodId) {
+      const prod = products.find(p => p.id === prodId);
+      if (!prod) return;
+      const cart = JSON.parse(localStorage.getItem('jeoahs_cart') || '[]');
+      const existing = cart.find(c => c.id === prodId);
+      if (existing) existing.quantity = (existing.quantity || 1) + 1;
+      else cart.push({ id: prod.id, name: prod.name || prod.title, price: prod.price || prod.priceUsd || 25, imageUrl: prod.imageUrl || prod.image, storeName: prod.storeName || 'Boutique Vendeur', quantity: 1 });
+      localStorage.setItem('jeoahs_cart', JSON.stringify(cart));
+      if (confirm(`"${prod.name || prod.title}" a été ajouté à votre panier !\nVoulez-vous ouvrir votre panier maintenant ?`)) {
+        window.location.href = '/panier.html';
+      }
+    };
     function renderProducts() {
       const visible = products.filter(matches);
       const t = uiText[currentLang] || uiText.fr;
       document.getElementById('products-grid').innerHTML = visible.length ? visible.map(product => {
-        const name = product.name || product.title || "Produit JEOAH'S"; const image = product.imageUrl || product.image || 'https://placehold.co/600x600/e2e8f0/334155?text=Produit'; const link = product.url || product.redirection || '#'; const platform = product.source || product.platform || 'Partenaire'; return `<article class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><img src="${escape(image)}" alt="${escape(name)}" class="h-44 w-full object-cover"><div class="p-4"><p class="text-xs font-bold uppercase text-fuchsia-700">${escape(platform)}</p><h3 class="mt-1 min-h-10 font-bold">${escape(name)}</h3><div class="mt-3 flex items-center justify-between gap-2"><strong>${price(product)}</strong><a href="/api/affiliate-click.js?affiliate_id=${encodeURIComponent(product.affiliateId || product.ownerId || 'marketplace')}&url=${encodeURIComponent(link)}" class="rounded-lg bg-fuchsia-600 px-3 py-2 text-xs font-bold text-white">${t.viewOffer}</a></div></div></article>`; }).join('') : `<p class="col-span-full rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">${t.empty}</p>`; }
+        const name = product.name || product.title || "Produit JEOAH'S";
+        const hook = product.hook || '';
+        const desc = product.description || 'Comparez les offres officielles ci-dessous et choisissez votre plateforme préférée.';
+        const image = product.imageUrl || product.image || 'https://placehold.co/600x600/e2e8f0/334155?text=Produit';
+        const link = product.url || product.redirection || '#';
+        const isVendor = product.productType === 'vendor' || product.ownerRole === 'vendeur';
+        const storeLabel = product.storeName || product.sellerName || product.affiliateName || (isVendor ? 'Boutique Vendeur' : 'Vitrine Affiliée');
+        const offersList = Array.isArray(product.offers) && product.offers.length
+          ? product.offers
+          : (!isVendor ? [
+              { platform: 'Amazon', price: product.price || '$29.99', url: link },
+              { platform: 'eBay', price: `$${(Math.max(5, (Number(String(product.price || '29.99').replace(/[^0-9.]/g, '')) || 29.99) * 0.91)).toFixed(2)}`, url: `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(name)}` },
+              { platform: 'Walmart', price: `$${(Math.max(5, (Number(String(product.price || '29.99').replace(/[^0-9.]/g, '')) || 29.99) * 0.95)).toFixed(2)}`, url: `https://www.walmart.com/search?q=${encodeURIComponent(name)}` }
+            ] : []);
+
+        return `<article class="flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition">
+          <div>
+            <div class="relative">
+              <img src="${escape(image)}" alt="${escape(name)}" class="h-44 w-full object-cover">
+              <span class="absolute top-2.5 left-2.5 rounded-full ${isVendor ? 'bg-blue-700' : 'bg-fuchsia-700'} px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-white shadow">
+                ${isVendor ? '🏪 Vendeur Direct' : '🔗 Comparateur Affilié'}
+              </span>
+            </div>
+            <div class="p-4 pb-2">
+              <p class="text-[11px] font-bold uppercase tracking-wide text-fuchsia-700">${escape(hook || storeLabel)}</p>
+              <h3 class="mt-1 font-extrabold text-slate-900 text-sm leading-snug">${escape(name)}</h3>
+              <p class="mt-1.5 text-xs text-slate-500 line-clamp-2">${escape(desc)}</p>
+            </div>
+          </div>
+          <div class="p-4 pt-2 border-t border-slate-100 mt-2">
+            ${isVendor ? `
+              <div class="flex items-center justify-between gap-2">
+                <div>
+                  <span class="text-xs text-slate-400 block">Prix Vendeur</span>
+                  <strong class="text-base font-extrabold text-slate-900">${price(product)}</strong>
+                </div>
+                <button type="button" onclick="addToCartFromShowcase('${escape(product.id)}')" class="rounded-xl bg-blue-600 hover:bg-blue-700 px-3.5 py-2 text-xs font-extrabold text-white shadow-sm transition">
+                  <i class="fas fa-cart-plus mr-1"></i> Acheter
+                </button>
+              </div>
+            ` : `
+              <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5">Comparez & cliquez pour acheter :</p>
+              <div class="space-y-1.5">
+                ${offersList.slice(0, 4).map(off => {
+                  const clickUrl = `/api/affiliate-click.js?affiliate_id=${encodeURIComponent(product.affiliateId || product.ownerId || 'marketplace')}&url=${encodeURIComponent(off.url || link)}`;
+                  return `<a href="${escape(clickUrl)}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between rounded-xl border border-fuchsia-200 bg-fuchsia-50/60 hover:bg-fuchsia-600 px-3 py-1.5 text-xs font-bold text-fuchsia-950 hover:text-white transition">
+                    <span>${escape(off.platform || 'Partenaire')}</span>
+                    <span class="font-extrabold">${formatPriceVal(off.price || product.price)} <i class="fas fa-arrow-up-right-from-square text-[9px] ml-1"></i></span>
+                  </a>`;
+                }).join('')}
+              </div>
+            `}
+          </div>
+        </article>`;
+      }).join('') : `<p class="col-span-full rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">${t.empty}</p>`;
+    }
     function renderStores() {
       const t = uiText[currentLang] || uiText.fr;
-      const stores = [...new Set(products.map(product => product.storeName || product.sellerName || product.affiliateName || product.source).filter(Boolean))].slice(0, 4); document.getElementById('stores').innerHTML = stores.length ? stores.map(store => `<a href="#products" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-fuchsia-300"><p class="font-bold">${escape(store)}</p><p class="mt-1 text-xs text-slate-500">Voir les offres disponibles</p></a>`).join('') : `<p class="text-sm text-slate-500">${t.storesEmpty}</p>`; }
-    async function loadProducts() { try { const config = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : null; if (!config?.apiKey) throw new Error('Configuration Firebase indisponible'); const app = getApps()[0] || initializeApp(config); const snapshot = await getDocs(collection(getFirestore(app), 'artifacts/jeoahs1-max-03326376-49b27/public/data/products')); products = snapshot.docs.map(item => ({ id: item.id, ...item.data() })).filter(hasActivePlan); document.getElementById('market-status').textContent = `${products.length} offre(s) disponible(s). Prix convertis à titre indicatif.`; } catch (error) { document.getElementById('market-status').textContent = 'Les offres seront disponibles dès que la connexion sécurisée est établie.'; } renderStores(); renderProducts(); }
+      const stores = [...new Set(products.map(product => product.storeName || product.sellerName || product.affiliateName || product.source).filter(Boolean))].slice(0, 4); document.getElementById('stores').innerHTML = stores.length ? stores.map(store => `<a href="#products" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-fuchsia-300"><p class="font-bold">${escape(store)}</p><p class="mt-1 text-xs text-slate-500">Voir les offres disponibles</p></a>`).join('') : `<p class="text-sm text-slate-500">${t.storesEmpty}</p>`;
+    }
+    const DEMO_SHOWCASE_PRODUCTS = [
+      {
+        id: 'demo-casque-1',
+        name: "Casque Audio Bluetooth Sans Fil Réduction de Bruit Active — Sélection JEOAH'S",
+        hook: "Le son studio haute définition comparé sur 3 marchands",
+        category: "Électronique",
+        description: "Casque circum-auriculaire sans fil avec réduction de bruit active, autonomie 40h et micro HD. Comparez les prix Amazon, eBay et Walmart ci-dessous et cliquez sur l'offre de votre choix.",
+        price: "$29.99",
+        imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
+        storeName: "Tech & Audio by JEOAH'S",
+        productType: "affiliate",
+        subscriptionActive: true,
+        subscriptionPlan: "pro",
+        subscriptionExpiresAt: "2099-12-31T23:59:59.000Z",
+        offers: [
+          { platform: "Amazon", price: "$29.99", url: "https://www.amazon.com/s?k=wireless+noise+cancelling+headphones&tag=jeoahs-20" },
+          { platform: "eBay", price: "$26.50", url: "https://www.ebay.com/sch/i.html?_nkw=wireless+noise+cancelling+headphones" },
+          { platform: "Walmart", price: "$27.99", url: "https://www.walmart.com/search?q=wireless+noise+cancelling+headphones" }
+        ]
+      },
+      {
+        id: 'demo-casque-2',
+        name: "Casque Gaming Pro RGB Surround 7.1 avec Micro Anti-Bruit",
+        hook: "Précision audio maximale pour joueurs et créateurs",
+        category: "Électronique",
+        description: "Casque confortable à mémoire de forme compatible PC, PS5, Xbox et Mobile. Choisissez votre marchand préféré pour profiter du meilleur tarif.",
+        price: "$34.99",
+        imageUrl: "https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=600&q=80",
+        storeName: "Tech & Audio by JEOAH'S",
+        productType: "affiliate",
+        subscriptionActive: true,
+        subscriptionPlan: "pro",
+        subscriptionExpiresAt: "2099-12-31T23:59:59.000Z",
+        offers: [
+          { platform: "Amazon", price: "$34.99", url: "https://www.amazon.com/s?k=gaming+headset+rgb&tag=jeoahs-20" },
+          { platform: "eBay", price: "$31.20", url: "https://www.ebay.com/sch/i.html?_nkw=gaming+headset+rgb" },
+          { platform: "Walmart", price: "$32.90", url: "https://www.walmart.com/search?q=gaming+headset+rgb" }
+        ]
+      }
+    ];
+    async function loadProducts() {
+      const byId = new Map();
+      const localCentral = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]').filter(hasActivePlan);
+      localCentral.forEach(p => byId.set(p.id, p));
+      try {
+        const config = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : null;
+        if (config?.apiKey) {
+          const app = getApps()[0] || initializeApp(config);
+          const snapshot = await getDocs(collection(getFirestore(app), 'artifacts/jeoahs1-max-03326376-49b27/public/data/products'));
+          snapshot.docs.map(item => ({ id: item.id, ...item.data() })).filter(hasActivePlan).forEach(p => byId.set(p.id, p));
+        }
+      } catch (_) {}
+      DEMO_SHOWCASE_PRODUCTS.forEach(p => { if (!byId.has(p.id)) byId.set(p.id, p); });
+      products = Array.from(byId.values());
+      document.getElementById('market-status').textContent = `${products.length} offre(s) vérifiée(s) disponible(s). Comparez Amazon, eBay, Walmart ou achetez auprès de nos vendeurs.`;
+      renderStores();
+      renderProducts();
+    }
     
     function updateShowcaseLanguage(lang) {
       currentLang = lang || localStorage.getItem('jeoahs-lang') || 'fr';

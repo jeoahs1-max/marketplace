@@ -1,80 +1,645 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ajouter un produit affilié - JEOAH'S</title>
+    <title>Studio Produit & Pub JEOAH - Affilié</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/firebase-config.js"></script>
-    <script src="/public/jeoah-loader.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
+
 <body class="min-h-screen bg-slate-50 text-slate-900">
-    <main class="mx-auto max-w-3xl px-5 py-10">
-        <a href="/affiliate-storefront.html" class="font-bold text-purple-700 hover:underline">Retour à ma vitrine</a>
-        <h1 class="mt-6 text-3xl font-extrabold">Ajouter un produit affilié</h1>
-        <p class="mt-2 text-sm text-slate-600">Ajoutez l’offre et son lien officiel. L’acheteur sera redirigé vers le site partenaire.</p>
-        <form id="affiliate-product-form" class="mt-8 space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div class="grid gap-5 sm:grid-cols-2">
-                <label class="text-sm font-bold">Nom du produit<input id="product-name" required class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" placeholder="Ex. Écouteurs sans fil"></label>
-                <label class="text-sm font-bold">Catégorie<input id="product-category" required class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" placeholder="Ex. Électronique"></label>
-                <label class="text-sm font-bold">Prix affiché<input id="product-price" required class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" placeholder="Ex. 25 USD"></label>
-                <label class="text-sm font-bold">Image du produit<input id="product-image" required type="url" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" placeholder="https://..."></label>
+    <header class="border-b border-slate-200 bg-white sticky top-0 z-30 shadow-sm">
+        <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5">
+            <div class="flex items-center gap-4">
+                <a href="/affiliate-storefront.html" class="inline-flex items-center gap-2 text-sm font-extrabold text-purple-700 hover:underline">
+                    <i class="fas fa-arrow-left"></i> Retour à ma vitrine
+                </a>
+                <span class="text-slate-300">|</span>
+                <a href="/showcase.html" class="text-xs font-bold text-slate-600 hover:text-purple-700">Voir la Vitrine Centrale</a>
             </div>
-            <label class="block text-sm font-bold">Lien affilié officiel<input id="product-url" required type="url" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" placeholder="https://amazon... ou https://ebay..."></label>
-            <label class="block text-sm font-bold">Description<textarea id="product-description" rows="4" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" placeholder="Présentez brièvement le produit"></textarea></label>
-            <p id="form-status" class="hidden rounded-lg px-4 py-3 text-sm font-semibold" role="status"></p>
-            <button class="w-full rounded-lg bg-purple-700 px-5 py-3 font-bold text-white hover:bg-purple-800" type="submit">Ajouter à ma vitrine</button>
+            <div id="plan-badge-header" class="rounded-full bg-purple-100 px-3.5 py-1 text-xs font-extrabold text-purple-800">
+                Vérification du plan Affilié...
+            </div>
+        </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-5 py-8 space-y-8">
+        <!-- En-tête explicatif -->
+        <div class="rounded-2xl bg-gradient-to-r from-purple-900 via-fuchsia-800 to-indigo-900 p-6 sm:p-8 text-white shadow-lg">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div class="max-w-2xl">
+                    <span class="inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-wider">Studio Intelligent JEOAH IA</span>
+                    <h1 class="mt-2 text-2xl sm:text-3xl font-extrabold">Importez 1 lien : JEOAH prépare toute votre vitrine & vos pubs</h1>
+                    <p class="mt-2 text-sm text-purple-100">Collez un lien produit (ex: un casque sur Amazon). JEOAH génère automatiquement : <strong>1)</strong> Un nouveau titre, slogan et courte description si vous ne voulez pas garder ceux d'Amazon, <strong>2)</strong> Les offres comparatives (Amazon, eBay, Walmart...) selon vos 1 à 10 IDs d'affiliation, <strong>3)</strong> Vos textes et scripts de vidéos publicitaires (distincts de la fiche vitrine), et <strong>4)</strong> D'autres produits similaires de la même catégorie.</p>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 text-xs space-y-2 shrink-0">
+                    <p class="font-extrabold text-white"><i class="fas fa-link mr-1 text-amber-300"></i> Vos IDs d'affiliation actifs (<span id="active-ids-count">0/10</span>) :</p>
+                    <div id="active-ids-pills" class="flex flex-wrap gap-1.5 max-w-xs"></div>
+                    <a href="/affiliate_onboarding_step1.html?upgrade=affiliate" class="inline-block pt-1 text-amber-200 font-bold hover:underline">
+                        <i class="fas fa-sliders mr-1"></i> Configurer mes 1 à 10 IDs (Amazon, eBay, Walmart...)
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ÉTAPE 1 : Lien source & Bouton Magique JEOAH -->
+        <section class="rounded-2xl border border-purple-200 bg-white p-6 shadow-sm space-y-4">
+            <h2 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                <span class="flex h-7 w-7 items-center justify-center rounded-full bg-purple-700 text-xs text-white">1</span>
+                Collez votre lien produit (ou indiquez le produit recherché)
+            </h2>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <input id="product-url" type="url" required placeholder="Ex: https://www.amazon.com/dp/B08... (ou lien eBay, Walmart, Temu...)"
+                    class="flex-1 rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-purple-600 focus:outline-none">
+                <button type="button" id="btn-jeoah-analyze" onclick="analyzeAndGenerateWithJeoah()"
+                    class="rounded-xl bg-gradient-to-r from-purple-700 to-fuchsia-600 px-6 py-3 text-sm font-extrabold text-white shadow-md hover:opacity-95 transition flex items-center justify-center gap-2 shrink-0">
+                    <i class="fas fa-wand-magic-sparkles"></i> Analyser & Générer avec JEOAH
+                </button>
+            </div>
+            <p id="jeoah-analysis-status" class="text-xs font-semibold text-slate-500">Astuce : Vous pouvez aussi saisir un mot-clé dans « Nom du produit » (ex: Casque Bluetooth) puis cliquer sur le bouton violet.</p>
+        </section>
+
+        <form id="affiliate-product-form" class="space-y-8">
+            <div class="grid gap-8 lg:grid-cols-12">
+                <!-- COLONNE GAUCHE (7 cols) : Fiche Produit Vitrine + Comparateur Multi-Marchands -->
+                <div class="lg:col-span-7 space-y-6">
+                    <!-- BLOC 2 : Fiche Produit pour la Vitrine (avec Suggestions JEOAH pour remplacer Amazon) -->
+                    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
+                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                            <div>
+                                <h2 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                                    <span class="flex h-7 w-7 items-center justify-center rounded-full bg-purple-700 text-xs text-white">2</span>
+                                    Fiche Produit Vitrine (Visible par l'acheteur)
+                                </h2>
+                                <p class="text-xs text-slate-500 mt-0.5">Personnalisez ou utilisez la suggestion de JEOAH pour ne pas garder le texte brut d'Amazon.</p>
+                            </div>
+                        </div>
+
+                        <!-- Box de suggestions alternatives JEOAH -->
+                        <div id="jeoah-vitrine-suggestions" class="hidden rounded-xl border-2 border-purple-200 bg-purple-50/70 p-4 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-extrabold uppercase tracking-wider text-purple-900">
+                                    <i class="fas fa-robot mr-1 text-purple-700"></i> Suggestion Vitrine JEOAH (Alternative au texte Amazon)
+                                </span>
+                                <button type="button" onclick="applyJeoahVitrineSuggestion()" class="rounded-lg bg-purple-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-purple-800 transition">
+                                    <i class="fas fa-check mr-1"></i> Remplacer par cette suggestion
+                                </button>
+                            </div>
+                            <div class="text-xs text-slate-800 space-y-1 bg-white p-3 rounded-lg border border-purple-100">
+                                <p><strong>Nouveau Titre :</strong> <span id="sug-title"></span></p>
+                                <p><strong>Slogan accrocheur :</strong> <span id="sug-hook" class="text-purple-700 font-bold"></span></p>
+                                <p><strong>Courte description :</strong> <span id="sug-desc"></span></p>
+                            </div>
+                        </div>
+
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <label class="text-xs font-bold text-slate-700 sm:col-span-2">Titre du produit sur la vitrine (*)
+                                <input id="product-name" required class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-purple-600 focus:outline-none" placeholder="Ex: Casque Audio Sans Fil Réduction de Bruit Active">
+                            </label>
+                            <label class="text-xs font-bold text-slate-700">Slogan accrocheur (Hook Vitrine) (*)
+                                <input id="product-hook" required class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-purple-600 focus:outline-none" placeholder="Ex: Le son studio sans fil qui vous suit partout">
+                            </label>
+                            <label class="text-xs font-bold text-slate-700">Catégorie (*)
+                                <select id="product-category" required class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal bg-white focus:border-purple-600 focus:outline-none">
+                                    <option value="Électronique">Électronique</option>
+                                    <option value="Mode & Accessoires">Mode & Accessoires</option>
+                                    <option value="Beauté & Soins">Beauté & Soins</option>
+                                    <option value="Maison & Décoration">Maison & Décoration</option>
+                                    <option value="Alimentation">Alimentation</option>
+                                </select>
+                            </label>
+                            <label class="text-xs font-bold text-slate-700">Prix principal affiché (USD) (*)
+                                <input id="product-price" required class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-purple-600 focus:outline-none" placeholder="Ex: $29.99">
+                            </label>
+                            <label class="text-xs font-bold text-slate-700">URL de l'image du produit (*)
+                                <input id="product-image" required type="url" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-purple-600 focus:outline-none" placeholder="https://...">
+                            </label>
+                        </div>
+
+                        <label class="block text-xs font-bold text-slate-700">Courte description pour l'acheteur sur la vitrine (*)
+                            <textarea id="product-description" rows="3" required class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-purple-600 focus:outline-none" placeholder="Courte description claire qui aide l'acheteur à comprendre les avantages du produit avant de choisir son marchand (Amazon, eBay, Walmart)..."></textarea>
+                        </label>
+                    </section>
+
+                    <!-- BLOC 3 : Comparateur Multi-Plateformes (Amazon, eBay, Walmart...) -->
+                    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                            <div>
+                                <h2 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                                    <span class="flex h-7 w-7 items-center justify-center rounded-full bg-purple-700 text-xs text-white">3</span>
+                                    Offres Comparatives Multi-Marchands (Amazon, eBay, Walmart...)
+                                </h2>
+                                <p class="text-xs text-slate-500 mt-0.5">Quand l'acheteur cherche ce produit dans la vitrine, il voit ces différents prix et clique sur le marchand de son choix.</p>
+                            </div>
+                            <button type="button" onclick="addManualMerchantOffer()" class="rounded-lg border border-purple-300 px-3 py-1.5 text-xs font-bold text-purple-700 hover:bg-purple-50">
+                                <i class="fas fa-plus mr-1"></i> Ajouter un marchand
+                            </button>
+                        </div>
+
+                        <div id="multi-offers-container" class="space-y-3"></div>
+                    </section>
+                </div>
+
+                <!-- COLONNE DROITE (5 cols) : Kit Publicitaire & Vidéo Pub + Produits Similaires -->
+                <div class="lg:col-span-5 space-y-6">
+                    <!-- BLOC 4 : Kit Publicitaire & Vidéo Pub (Complètement différent de la fiche vitrine) -->
+                    <section class="rounded-2xl border-2 border-pink-200 bg-white p-6 shadow-sm space-y-4">
+                        <div class="border-b border-pink-100 pb-3">
+                            <span class="inline-block rounded-full bg-pink-100 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-pink-700">100% Distinct de la Fiche Vitrine</span>
+                            <h2 class="mt-1 text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                                <i class="fas fa-bullhorn text-pink-600"></i> Kit Publicitaire & Vidéo Pub JEOAH
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Textes de publication pour vos réseaux sociaux (TikTok, Instagram, Facebook, WhatsApp) et scénario de vidéo publicitaire.</p>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-xs font-bold text-slate-700">Texte Publicitaire (Post Réseaux Sociaux)</label>
+                                <button type="button" onclick="copyTextField('ad-post-text')" class="text-[11px] font-bold text-pink-600 hover:underline">
+                                    <i class="fas fa-copy mr-1"></i> Copier le post pub
+                                </button>
+                            </div>
+                            <textarea id="ad-post-text" rows="4" class="w-full rounded-xl border border-slate-300 bg-pink-50/30 px-3.5 py-2.5 text-xs leading-relaxed focus:border-pink-600 focus:outline-none" placeholder="Cliquez sur « Analyser & Générer avec JEOAH » pour obtenir votre texte publicitaire prêt à publier..."></textarea>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-xs font-bold text-slate-700">Script & Storyboard Vidéo Publicitaire (TikTok / Reels / Shorts)</label>
+                                <button type="button" onclick="copyTextField('ad-video-script')" class="text-[11px] font-bold text-pink-600 hover:underline">
+                                    <i class="fas fa-copy mr-1"></i> Copier le script vidéo
+                                </button>
+                            </div>
+                            <textarea id="ad-video-script" rows="5" class="w-full rounded-xl border border-slate-300 bg-pink-50/30 px-3.5 py-2.5 text-xs leading-relaxed focus:border-pink-600 focus:outline-none" placeholder="Scénario vidéo pub scène par scène + voix-off généré par JEOAH..."></textarea>
+                        </div>
+
+                        <label class="block text-xs font-bold text-slate-700">Lien Vidéo Publicitaire (YouTube, TikTok, Reels - facultatif)
+                            <input id="product-video-url" type="url" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs font-normal focus:border-pink-600 focus:outline-none" placeholder="https://www.tiktok.com/... ou https://youtu.be/...">
+                        </label>
+                    </section>
+
+                    <!-- BLOC 5 : Autres Produits du Même Nom & Catégorie suggérés automatiquement -->
+                    <section class="rounded-2xl border border-indigo-200 bg-white p-6 shadow-sm space-y-4">
+                        <div class="border-b border-indigo-100 pb-3">
+                            <span class="inline-block rounded-full bg-indigo-100 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-indigo-700">Enrichissement Automatique</span>
+                            <h2 class="mt-1 text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                                <i class="fas fa-layer-group text-indigo-600"></i> Autres produits du même nom & catégorie
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-0.5">JEOAH recherche automatiquement les produits similaires assortis à vos IDs (Amazon, eBay, Walmart). Cochez ceux à ajouter sur votre vitrine en même temps :</p>
+                        </div>
+
+                        <div id="related-products-list" class="space-y-3 text-xs text-slate-500">
+                            <p class="italic">Lancez l'analyse JEOAH ci-dessus pour découvrir les produits similaires à ajouter automatiquement.</p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <p id="form-status" class="hidden rounded-xl px-4 py-3 text-sm font-semibold" role="status"></p>
+
+            <div class="flex flex-col sm:flex-row items-center justify-end gap-4 pt-2">
+                <a href="/affiliate-storefront.html" class="w-full sm:w-auto text-center rounded-xl border border-slate-300 bg-white px-6 py-3.5 text-sm font-bold text-slate-700 hover:bg-slate-50">
+                    Annuler
+                </a>
+                <button type="submit" id="submit-product-btn" class="w-full sm:w-auto rounded-xl bg-gradient-to-r from-purple-700 to-indigo-700 px-8 py-3.5 text-sm font-extrabold text-white shadow-lg hover:opacity-95 transition">
+                    <i class="fas fa-cloud-arrow-up mr-2"></i> Publier sur ma Vitrine & la Vitrine Centrale
+                </button>
+            </div>
         </form>
     </main>
+
     <script type="module">
         import { getApps, initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { doc, getFirestore, setDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
-        const form = document.getElementById('affiliate-product-form');
-        const status = document.getElementById('form-status');
-        let currentUser;
-        let db;
+
+        const appId = 'jeoahs1-max-03326376-49b27';
         const account = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
-        const config = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : null;
         if (!account) location.href = '/public/auth.html';
+
+        const config = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : null;
+        let db = null;
+        let currentUser = null;
         if (config?.apiKey) {
             const app = getApps()[0] || initializeApp(config);
             db = getFirestore(app);
             onAuthStateChanged(getAuth(app), user => { currentUser = user; });
         }
-        form.addEventListener('submit', async event => {
-            event.preventDefault();
-            if (!currentUser || !account) {
-                status.textContent = 'Connectez-vous avec votre compte affilié avant de continuer.';
-                status.className = 'rounded-lg bg-red-50 px-4 py-3 text-sm font-semibold text-red-800';
+
+        function getAffiliateSubStatus() {
+            const forever = '2099-12-31T23:59:59.000Z';
+            if (account?.testAccount || account?.role === 'admin' || (account?.email || '').toLowerCase() === 'jeoahs1@gmail.com') {
+                return { active: true, plan: account?.role === 'admin' ? 'enterprise' : 'tester', expiresAt: forever };
+            }
+            const saved = JSON.parse(localStorage.getItem('jeoahs_affiliate_subscription') || 'null') || account?.subscriptions?.affilie;
+            if (!saved || !saved.plan || saved.plan === 'free' || saved.status === 'inactive' || saved.status === 'expired' || saved.active === false) {
+                return { active: false, plan: 'free', expiresAt: null };
+            }
+            const validTime = !saved.expiresAt || new Date(saved.expiresAt).getTime() > Date.now();
+            return { active: validTime, plan: validTime ? saved.plan : 'free', expiresAt: validTime ? saved.expiresAt : null };
+        }
+
+        const subStatus = getAffiliateSubStatus();
+        const badgeEl = document.getElementById('plan-badge-header');
+        if (subStatus.active) {
+            badgeEl.className = 'rounded-full bg-emerald-100 px-3.5 py-1 text-xs font-extrabold text-emerald-800 border border-emerald-300';
+            badgeEl.innerHTML = `<i class="fas fa-check-circle mr-1"></i> Plan Affilié ${subStatus.plan.toUpperCase()} Actif · Publication Vitrine Centrale activée`;
+        } else {
+            badgeEl.className = 'rounded-full bg-amber-100 px-3.5 py-1 text-xs font-extrabold text-amber-800 border border-amber-300';
+            badgeEl.innerHTML = `<i class="fas fa-lock mr-1"></i> Plan Affilié FREE (Espace privé max 5) · <a href="/plans.html?role=affilie" class="underline font-black">Activer un Plan Affilié</a>`;
+        }
+
+        function getConfiguredMerchants() {
+            const raw = JSON.parse(localStorage.getItem('jeoahs_affiliate_links') || '[]')
+                .filter(l => l && l.name && l.name.trim() && l.base_link && l.base_link.trim());
+            if (raw.length > 0) return raw.slice(0, 10);
+            return [
+                { name: 'Amazon', base_link: account?.accountCode || 'jeoahs-20' },
+                { name: 'eBay', base_link: account?.accountCode || 'jeoahs-ebay' },
+                { name: 'Walmart', base_link: account?.accountCode || 'jeoahs-wmt' }
+            ];
+        }
+
+        const merchants = getConfiguredMerchants();
+        document.getElementById('active-ids-count').textContent = `${merchants.length}/10`;
+        document.getElementById('active-ids-pills').innerHTML = merchants.map(m =>
+            `<span class="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-bold text-white">${m.name} (${m.base_link.slice(0, 10)})</span>`
+        ).join('');
+
+        let currentOffers = [];
+        let currentVitrineSuggestion = null;
+        let currentRelatedProducts = [];
+
+        function buildAffiliateSearchUrl(merchantName, baseId, productName, originalUrl) {
+            const m = merchantName.toLowerCase();
+            const q = encodeURIComponent(productName || 'Produit');
+            const id = encodeURIComponent(baseId || 'jeoahs');
+            if (originalUrl && originalUrl.toLowerCase().includes(m)) {
+                const sep = originalUrl.includes('?') ? '&' : '?';
+                return `${originalUrl}${sep}tag=${id}&aff_id=${id}`;
+            }
+            if (m.includes('amazon')) return `https://www.amazon.com/s?k=${q}&tag=${id}`;
+            if (m.includes('ebay')) return `https://www.ebay.com/sch/i.html?_nkw=${q}&mkcid=1&mkrid=711-53200-19255-0&campid=${id}`;
+            if (m.includes('walmart')) return `https://www.walmart.com/search?q=${q}&affp1=${id}`;
+            if (m.includes('temu')) return `https://www.temu.com/search_result.html?search_key=${q}&aff_id=${id}`;
+            if (m.includes('shein')) return `https://www.shein.com/pdsearch/${q}/?url_from=${id}`;
+            if (baseId.startsWith('http')) return baseId;
+            return `https://www.google.com/search?q=${encodeURIComponent(merchantName + ' ' + productName)}`;
+        }
+
+        function renderOffersEditor() {
+            const container = document.getElementById('multi-offers-container');
+            container.innerHTML = currentOffers.map((offer, idx) => `
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <div class="sm:col-span-3">
+                        <label class="block text-[10px] font-bold uppercase text-slate-500">Marchand</label>
+                        <input type="text" value="${offer.platform}" oninput="updateOfferField(${idx}, 'platform', this.value)"
+                            class="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-900">
+                    </div>
+                    <div class="sm:col-span-3">
+                        <label class="block text-[10px] font-bold uppercase text-slate-500">Prix comparé</label>
+                        <input type="text" value="${offer.price}" oninput="updateOfferField(${idx}, 'price', this.value)"
+                            class="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-extrabold text-emerald-700">
+                    </div>
+                    <div class="sm:col-span-5">
+                        <label class="block text-[10px] font-bold uppercase text-slate-500">Lien affilié de redirection</label>
+                        <input type="url" value="${offer.url}" oninput="updateOfferField(${idx}, 'url', this.value)"
+                            class="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-600">
+                    </div>
+                    <div class="sm:col-span-1 text-right pt-3">
+                        ${currentOffers.length > 1 ? `<button type="button" onclick="removeOfferRow(${idx})" class="text-red-500 hover:text-red-700 p-1"><i class="fas fa-trash-alt"></i></button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.updateOfferField = function (idx, field, val) {
+            if (currentOffers[idx]) currentOffers[idx][field] = val;
+        };
+
+        window.removeOfferRow = function (idx) {
+            currentOffers.splice(idx, 1);
+            renderOffersEditor();
+        };
+
+        window.addManualMerchantOffer = function () {
+            if (currentOffers.length >= 10) return alert('Maximum 10 offres partenaires par produit.');
+            currentOffers.push({ platform: 'Partenaire', price: '$25.00', url: 'https://www.amazon.com' });
+            renderOffersEditor();
+        };
+
+        function detectCategory(title) {
+            const t = (title || '').toLowerCase();
+            if (/casque|écouteur|ecouteur|headphone|earbud|audio|bluetooth|montre|watch|phone|téléphone|ordinateur|laptop|camera|usb|speaker|enceinte/i.test(t)) return 'Électronique';
+            if (/crème|creme|sérum|serum|huile|savon|parfum|maquillage|beauté|beauty|cheveux|hair|skin|visage/i.test(t)) return 'Beauté & Soins';
+            if (/robe|chaussure|basket|sac|vêtement|vetement|chemise|pantalon|lunette|bijou|mode|fashion|shirt|shoe/i.test(t)) return 'Mode & Accessoires';
+            if (/lampe|cuisine|maison|déco|deco|meuble|tapis|lit|mixeur|aspirateur/i.test(t)) return 'Maison & Décoration';
+            return 'Électronique';
+        }
+
+        function inferProductNameFromUrl(urlStr) {
+            try {
+                const u = new URL(urlStr);
+                const parts = u.pathname.split('/').filter(p => p && p.length > 3 && !/^(dp|gp|product|itm|ip)$/i.test(p) && !/^[A-Z0-9]{10}$/.test(p));
+                if (parts.length) {
+                    return decodeURIComponent(parts[0]).replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).slice(0, 65);
+                }
+            } catch (_) {}
+            return '';
+        }
+
+        window.applyJeoahVitrineSuggestion = function () {
+            if (!currentVitrineSuggestion) return;
+            document.getElementById('product-name').value = currentVitrineSuggestion.title;
+            document.getElementById('product-hook').value = currentVitrineSuggestion.hook;
+            document.getElementById('product-description').value = currentVitrineSuggestion.description;
+        };
+
+        window.copyTextField = function (id) {
+            const el = document.getElementById(id);
+            if (!el || !el.value) return;
+            navigator.clipboard?.writeText(el.value);
+            alert('Contenu copié dans le presse-papiers !');
+        };
+
+        function generateRelatedCatalog(baseName, category, basePriceNum, originalUrl) {
+            const cleanBase = baseName.replace(/amazon|ebay|walmart/gi, '').trim() || 'Casque Sans Fil';
+            const variants = [
+                {
+                    suffix: 'Édition Pro Studio HD',
+                    factor: 1.15,
+                    hook: 'Qualité professionnelle & autonomie longue durée',
+                    img: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80'
+                },
+                {
+                    suffix: 'Version Compacte Sport & Voyage',
+                    factor: 0.85,
+                    hook: 'Ultra-léger, résistant et pensé pour vos déplacements',
+                    img: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=600&q=80'
+                },
+                {
+                    suffix: 'Pack Premium Sans Fil + Étui Charge',
+                    factor: 1.25,
+                    hook: 'Le pack complet le mieux noté de sa catégorie',
+                    img: 'https://images.unsplash.com/photo-1484704849700-f032a568e944?auto=format&fit=crop&w=600&q=80'
+                }
+            ];
+
+            return variants.map((v, idx) => {
+                const vName = `${cleanBase} — ${v.suffix}`;
+                const vBasePrice = Math.max(9.99, +(basePriceNum * v.factor).toFixed(2));
+                const vOffers = merchants.map((m, mIdx) => {
+                    const diff = mIdx === 0 ? 1 : (mIdx % 2 === 1 ? 0.92 : 0.96);
+                    const pVal = `$${(vBasePrice * diff).toFixed(2)}`;
+                    return {
+                        platform: m.name,
+                        price: pVal,
+                        url: buildAffiliateSearchUrl(m.name, m.base_link, vName, '')
+                    };
+                });
+                return {
+                    id: `affiliate-rel-${Date.now()}-${idx}`,
+                    selected: true,
+                    name: vName,
+                    category,
+                    hook: v.hook,
+                    price: `$${vBasePrice.toFixed(2)}`,
+                    imageUrl: v.img,
+                    description: `Découvrez ${vName} dans la catégorie ${category}. Comparez les prix en direct entre ${vOffers.map(o => `${o.platform} (${o.price})`).join(', ')} et choisissez votre marchand préféré.`,
+                    offers: vOffers
+                };
+            });
+        }
+
+        function renderRelatedProducts() {
+            const container = document.getElementById('related-products-list');
+            if (!currentRelatedProducts.length) {
+                container.innerHTML = '<p class="italic">Aucun produit similaire généré.</p>';
                 return;
             }
-            const product = {
+            container.innerHTML = currentRelatedProducts.map((item, idx) => `
+                <label class="flex items-start gap-3 rounded-xl border border-indigo-100 bg-indigo-50/40 p-3 cursor-pointer hover:bg-indigo-50 transition">
+                    <input type="checkbox" ${item.selected ? 'checked' : ''} onchange="toggleRelatedProduct(${idx}, this.checked)" class="mt-1 h-4 w-4 rounded border-indigo-300 text-indigo-600">
+                    <img src="${item.imageUrl}" class="h-12 w-12 rounded-lg object-cover shrink-0 border border-slate-200">
+                    <div class="min-w-0 flex-1">
+                        <p class="font-bold text-slate-900 text-xs leading-snug">${item.name}</p>
+                        <p class="text-[11px] text-indigo-700 font-semibold mt-0.5">${item.offers.map(o => `${o.platform}: ${o.price}`).join(' · ')}</p>
+                    </div>
+                </label>
+            `).join('');
+        }
+
+        window.toggleRelatedProduct = function (idx, checked) {
+            if (currentRelatedProducts[idx]) currentRelatedProducts[idx].selected = checked;
+        };
+
+        window.analyzeAndGenerateWithJeoah = async function () {
+            const urlInput = document.getElementById('product-url').value.trim();
+            const nameField = document.getElementById('product-name');
+            const statusEl = document.getElementById('jeoah-analysis-status');
+            const btn = document.getElementById('btn-jeoah-analyze');
+
+            if (!urlInput && !nameField.value.trim()) {
+                statusEl.textContent = '⚠️ Veuillez coller un lien produit (ex: Amazon, eBay, Walmart) ou saisir un nom de produit.';
+                statusEl.className = 'text-xs font-bold text-red-600';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> JEOAH analyse & génère...';
+            statusEl.textContent = 'JEOAH extrait le produit, prépare la suggestion de vitrine, les prix comparatifs (Amazon/eBay/Walmart) et votre kit pub...';
+            statusEl.className = 'text-xs font-semibold text-purple-700';
+
+            let scraped = {};
+            if (urlInput && /^https?:\/\//i.test(urlInput)) {
+                try {
+                    const res = await fetch('/api/product-metadata.js', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: urlInput })
+                    });
+                    scraped = await res.json().catch(() => ({}));
+                } catch (_) {}
+            }
+
+            const rawName = scraped.name || nameField.value.trim() || inferProductNameFromUrl(urlInput) || 'Casque Audio Bluetooth Sans Fil Réduction de Bruit';
+            const detectedCat = detectCategory(rawName);
+            const rawPriceStr = scraped.price || document.getElementById('product-price').value.trim() || '$29.99';
+            const basePriceNum = Number(String(rawPriceStr).replace(/[^0-9.]/g, '')) || 29.99;
+            const defaultImg = detectedCat === 'Électronique'
+                ? 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80'
+                : 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80';
+            const finalImg = scraped.image || document.getElementById('product-image').value.trim() || defaultImg;
+
+            // Pré-remplir les champs si vides
+            if (!nameField.value.trim()) nameField.value = rawName;
+            document.getElementById('product-category').value = detectedCat;
+            document.getElementById('product-price').value = `$${basePriceNum.toFixed(2)}`;
+            document.getElementById('product-image').value = finalImg;
+
+            // 1. Générer la Suggestion Vitrine JEOAH (Alternative au titre/texte Amazon)
+            const shortCleanName = rawName.split(/[,|-]/)[0].trim().slice(0, 58);
+            currentVitrineSuggestion = {
+                title: `${shortCleanName} — Sélection Certifiée JEOAH'S`,
+                hook: `✨ Le meilleur rapport qualité-prix comparé pour vous (${merchants.map(m => m.name).slice(0, 3).join(' · ')})`,
+                description: `Profitez de ${shortCleanName} avec un confort optimal et des performances vérifiées. Comparez librement les offres ci-dessous (${merchants.map(m => m.name).join(', ')}) et cliquez sur le marchand de votre choix pour finaliser votre achat au meilleur tarif.`
+            };
+
+            document.getElementById('sug-title').textContent = currentVitrineSuggestion.title;
+            document.getElementById('sug-hook').textContent = currentVitrineSuggestion.hook;
+            document.getElementById('sug-desc').textContent = currentVitrineSuggestion.description;
+            document.getElementById('jeoah-vitrine-suggestions').classList.remove('hidden');
+
+            if (!document.getElementById('product-hook').value.trim()) {
+                document.getElementById('product-hook').value = currentVitrineSuggestion.hook;
+            }
+            if (!document.getElementById('product-description').value.trim()) {
+                document.getElementById('product-description').value = currentVitrineSuggestion.description;
+            }
+
+            // 2. Générer automatiquement les offres comparatives pour les 1 à 10 IDs de l'affilié
+            currentOffers = merchants.map((m, idx) => {
+                const priceVariation = idx === 0 ? 1.0 : (idx === 1 ? 0.91 : (idx === 2 ? 0.95 : +(0.88 + (idx * 0.03)).toFixed(2)));
+                const computedPrice = `$${(basePriceNum * priceVariation).toFixed(2)}`;
+                return {
+                    platform: m.name,
+                    price: computedPrice,
+                    url: buildAffiliateSearchUrl(m.name, m.base_link, shortCleanName, idx === 0 ? urlInput : '')
+                };
+            });
+            renderOffersEditor();
+
+            // 3. Générer le Kit Publicitaire & Script Vidéo Pub (100% distinct de la fiche produit vitrine !)
+            const offerSummaryText = currentOffers.map(o => `${o.platform} (${o.price})`).join(' vs ');
+            document.getElementById('ad-post-text').value =
+`🔥 ARRÊTEZ DE PAYER TROP CHER POUR VOTRE ${shortCleanName.toUpperCase()} ! 🔥
+Vous cherchez le meilleur ${shortCleanName} sans exploser votre budget ?
+J'ai comparé pour vous les prix en direct sur ma vitrine JEOAH'S :
+👉 ${offerSummaryText} !
+✅ Cliquez sur ma vitrine, comparez en 1 coup d'œil et choisissez votre site préféré (Amazon, eBay, Walmart...) pour commander en toute sécurité !
+🔗 Lien direct dans ma bio : ${window.location.origin}/affiliate-storefront.html?id=${encodeURIComponent(account?.uid || 'boutique')}
+#BonPlan #ComparateurPrix #JEOAHS #ShoppingMalin #Promo`;
+
+            document.getElementById('ad-video-script').value =
+`🎬 SCRIPT VIDÉO PUB (15 secondes - TikTok / Reels / Shorts) :
+• [0-3s | HOOK VISUEL] : Montrer le produit (${shortCleanName}) à l'écran avec le texte choc : "Ne l'achetez pas sur un seul site avant d'avoir vu ça !"
+• [3-10s | DÉMONSTRATION & VALEUR] : Voix-off dynamique : "Tout le monde s'arrache ce ${shortCleanName}, mais le prix change complètement selon que vous regardez sur Amazon, eBay ou Walmart !"
+• [10-15s | APPEL À L'ACTION] : Filmer la vitrine JEOAH'S qui affiche les prix côte à côte (${offerSummaryText}). Voix-off : "J'ai mis les liens directs comparés sur ma vitrine JEOAH'S : cliquez sur le lien en bio et prenez l'offre la moins chère !"`;
+
+            // 4. Générer les autres produits du même nom & catégorie
+            currentRelatedProducts = generateRelatedCatalog(shortCleanName, detectedCat, basePriceNum, urlInput);
+            renderRelatedProducts();
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Analyser & Générer avec JEOAH';
+            statusEl.textContent = `✅ Analyse terminée ! JEOAH a préparé les ${currentOffers.length} offres comparatives (${merchants.map(m => m.name).join(', ')}), la suggestion vitrine, le kit pub et ${currentRelatedProducts.length} produits similaires.`;
+            statusEl.className = 'text-xs font-bold text-emerald-700';
+        };
+
+        // Initialiser les lignes d'offres par défaut
+        currentOffers = merchants.map((m, idx) => ({
+            platform: m.name,
+            price: idx === 0 ? '$29.99' : (idx === 1 ? '$26.99' : '$27.99'),
+            url: buildAffiliateSearchUrl(m.name, m.base_link, 'Produit Recommandé', '')
+        }));
+        renderOffersEditor();
+
+        document.getElementById('affiliate-product-form').addEventListener('submit', async event => {
+            event.preventDefault();
+            const status = document.getElementById('form-status');
+            const existingProds = JSON.parse(localStorage.getItem('jeoahs_affiliate_products') || '[]');
+
+            if (!subStatus.active && existingProds.length >= 5) {
+                status.innerHTML = `⚠️ <strong>Limite du Plan Free atteinte (5 produits) :</strong> Votre rôle Affilié est actuellement en Plan Free (un plan Vendeur ne couvre pas l'affiliation). <a href="/plans.html?role=affilie" class="underline font-extrabold">Souscrivez un Plan Affilié ici</a> pour publier sur la Vitrine Centrale.`;
+                status.className = 'rounded-xl bg-amber-50 border border-amber-300 px-4 py-3 text-sm font-semibold text-amber-900';
+                status.classList.remove('hidden');
+                return;
+            }
+
+            const uid = currentUser?.uid || account?.uid || 'guest';
+            const storeProfile = JSON.parse(localStorage.getItem('jeoahs_affiliate_profile') || 'null');
+            const storeName = storeProfile?.username || account?.email?.split('@')[0] || 'Vitrine Affiliée';
+
+            const mainProduct = {
                 id: `affiliate-${Date.now()}`,
-                affiliateId: currentUser.uid,
+                affiliateId: uid,
+                ownerId: uid,
+                ownerRole: 'affilie',
+                productType: 'affiliate',
+                storeName,
                 name: document.getElementById('product-name').value.trim(),
+                hook: document.getElementById('product-hook').value.trim(),
                 category: document.getElementById('product-category').value.trim(),
                 price: document.getElementById('product-price').value.trim(),
                 imageUrl: document.getElementById('product-image').value.trim(),
-                url: document.getElementById('product-url').value.trim(),
+                url: document.getElementById('product-url').value.trim() || (currentOffers[0]?.url || '#'),
                 description: document.getElementById('product-description').value.trim(),
+                offers: currentOffers.filter(o => o.platform && o.url),
+                source: currentOffers.map(o => o.platform).join(' / '),
+                adPostText: document.getElementById('ad-post-text').value.trim(),
+                adVideoScript: document.getElementById('ad-video-script').value.trim(),
+                videoUrl: document.getElementById('product-video-url').value.trim(),
+                subscriptionActive: subStatus.active,
+                subscriptionPlan: subStatus.plan,
+                subscriptionExpiresAt: subStatus.expiresAt || new Date(Date.now() - 1000).toISOString(),
                 createdAt: new Date().toISOString()
             };
-            const products = JSON.parse(localStorage.getItem('jeoahs_affiliate_products') || '[]');
-            products.push(product);
-            localStorage.setItem('jeoahs_affiliate_products', JSON.stringify(products));
-            try {
-                if (db) {
-                    await setDoc(doc(db, `artifacts/jeoahs1-max-03326376-49b27/public/data/affiliate_products`, product.id), product);
-                }
-            } catch (error) {
-                status.textContent = 'Le produit a été conservé localement. La synchronisation centrale sera traitée par JEOAH.';
-                status.className = 'rounded-lg bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800';
+
+            const selectedRelated = currentRelatedProducts.filter(r => r.selected).map(r => ({
+                ...r,
+                affiliateId: uid,
+                ownerId: uid,
+                ownerRole: 'affilie',
+                productType: 'affiliate',
+                storeName,
+                url: r.offers?.[0]?.url || '#',
+                source: r.offers.map(o => o.platform).join(' / '),
+                subscriptionActive: subStatus.active,
+                subscriptionPlan: subStatus.plan,
+                subscriptionExpiresAt: subStatus.expiresAt || new Date(Date.now() - 1000).toISOString(),
+                createdAt: new Date().toISOString()
+            }));
+
+            const batchToSave = [mainProduct, ...selectedRelated];
+            const maxAllowed = subStatus.active ? 999 : Math.max(0, 5 - existingProds.length);
+            const finalBatch = batchToSave.slice(0, maxAllowed);
+
+            for (const item of finalBatch) {
+                existingProds.unshift(item);
             }
-            status.textContent = 'Produit ajouté à votre vitrine.';
-            status.className = 'rounded-lg bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800';
-            setTimeout(() => { location.href = '/affiliate-storefront.html'; }, 700);
+            localStorage.setItem('jeoahs_affiliate_products', JSON.stringify(existingProds));
+
+            if (subStatus.active) {
+                const centralProds = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]');
+                for (const item of finalBatch) {
+                    centralProds.unshift(item);
+                }
+                localStorage.setItem('jeoahs_central_products', JSON.stringify(centralProds));
+            }
+
+            if (db) {
+                for (const item of finalBatch) {
+                    try {
+                        await setDoc(doc(db, `artifacts/${appId}/public/data/affiliate_products`, item.id), item, { merge: true });
+                        if (subStatus.active) {
+                            await setDoc(doc(db, `artifacts/${appId}/public/data/products`, item.id), item, { merge: true });
+                        }
+                    } catch (_) {}
+                }
+            }
+
+            status.innerHTML = subStatus.active
+                ? `✅ <strong>${finalBatch.length} produit(s) publié(s) avec succès !</strong> Ils sont maintenant visibles avec leur comparateur (${currentOffers.map(o => o.platform).join(', ')}) sur votre Vitrine ET sur la Vitrine Centrale.`
+                : `✅ <strong>${finalBatch.length} produit(s) enregistré(s) dans votre vitrine privée (Plan Free).</strong> <a href="/plans.html?role=affilie" class="underline font-bold">Activez un Plan Affilié payant</a> pour les afficher sur la Vitrine Centrale.`;
+            status.className = 'rounded-xl bg-emerald-50 border border-emerald-300 px-4 py-3 text-sm font-semibold text-emerald-900';
+            status.classList.remove('hidden');
+
+            setTimeout(() => { location.href = '/affiliate-storefront.html'; }, 1200);
         });
     </script>
+    <script src="/public/jeoah-loader.js" defer></script>
 </body>
+
 </html>

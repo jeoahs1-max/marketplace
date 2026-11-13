@@ -69,6 +69,26 @@
                     class="mt-1 block text-3xl text-indigo-950">Calcul en cours...</strong></div>
             <p id="currency-rate-status" class="mt-4 text-xs text-slate-500">Chargement du taux du jour...</p>
         </section>
+
+        <section class="mb-6 rounded-xl border-2 border-indigo-200 bg-white p-6 shadow-sm">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                    <span class="inline-block rounded-full bg-indigo-100 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-indigo-800">Règle des Abonnements par Rôle</span>
+                    <h2 class="mt-2 text-xl font-extrabold text-slate-900">Pour quelle activité choisissez-vous ce plan ?</h2>
+                    <p class="mt-1 text-sm text-slate-600 max-w-2xl">Un plan mensuel couvre <strong>un rôle spécifique</strong> (Vendeur ou Affilié) et publie les produits de ce rôle sur la <strong>Vitrine Centrale</strong>. Vous pouvez avoir les deux rôles sur le même compte sans vous réinscrire, chaque activité ayant son propre plan.</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <button type="button" id="role-btn-affilie" onclick="selectPlanRole('affilie')" class="rounded-xl border-2 border-indigo-600 bg-indigo-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition">
+                        🔗 Rôle Affilié (Vitrine & Comparateur)
+                    </button>
+                    <button type="button" id="role-btn-vendeur" onclick="selectPlanRole('vendeur')" class="rounded-xl border-2 border-slate-300 bg-white px-5 py-3 text-sm font-extrabold text-slate-700 hover:border-indigo-400 transition">
+                        🏪 Rôle Vendeur (Boutique & Stock)
+                    </button>
+                </div>
+            </div>
+            <div id="user-current-plans-banner" class="mt-4 hidden rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-900"></div>
+        </section>
+
         <section class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             <article class="flex flex-col rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <h2 class="text-xl font-bold">Free</h2>
@@ -174,11 +194,61 @@
                 renderCurrencyTable();
             }
         }).catch(() => { currencyRateStatus.textContent = 'Taux indicatifs hors ligne. Le paiement Stripe reste traité en USD.'; });
+
+        let selectedRoleForPlan = new URLSearchParams(location.search).get('role') || 'affilie';
+        const authAccount = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+        if (!new URLSearchParams(location.search).get('role') && authAccount?.role === 'vendeur') {
+            selectedRoleForPlan = 'vendeur';
+        }
+
+        window.selectPlanRole = function (role) {
+            selectedRoleForPlan = role === 'vendeur' ? 'vendeur' : 'affilie';
+            const btnAff = document.getElementById('role-btn-affilie');
+            const btnVen = document.getElementById('role-btn-vendeur');
+            if (btnAff && btnVen) {
+                if (selectedRoleForPlan === 'affilie') {
+                    btnAff.className = 'rounded-xl border-2 border-indigo-600 bg-indigo-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition';
+                    btnVen.className = 'rounded-xl border-2 border-slate-300 bg-white px-5 py-3 text-sm font-extrabold text-slate-700 hover:border-indigo-400 transition';
+                } else {
+                    btnVen.className = 'rounded-xl border-2 border-indigo-600 bg-indigo-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition';
+                    btnAff.className = 'rounded-xl border-2 border-slate-300 bg-white px-5 py-3 text-sm font-extrabold text-slate-700 hover:border-indigo-400 transition';
+                }
+            }
+        };
+        window.selectPlanRole(selectedRoleForPlan);
+
+        (function renderCurrentUserPlans() {
+            const banner = document.getElementById('user-current-plans-banner');
+            if (!banner || !authAccount) return;
+            const vSub = JSON.parse(localStorage.getItem('jeoahs_vendor_subscription') || 'null');
+            const aSub = JSON.parse(localStorage.getItem('jeoahs_affiliate_subscription') || 'null');
+            if (authAccount.testAccount || authAccount.role === 'admin') {
+                banner.classList.remove('hidden');
+                banner.innerHTML = `✅ <strong>Compte Privilégié (${authAccount.role === 'admin' ? 'Administrateur' : 'Testeur Officiel'}) :</strong> Vos deux rôles (<strong>Vendeur</strong> et <strong>Affilié</strong>) bénéficient automatiquement de tous les privilèges payants et de la visibilité sur la Vitrine Centrale.`;
+                return;
+            }
+            const vLabel = (vSub && vSub.active && vSub.plan !== 'free') ? `${vSub.plan.toUpperCase()} (Actif)` : 'FREE (Espace privé)';
+            const aLabel = (aSub && aSub.active && aSub.plan !== 'free') ? `${aSub.plan.toUpperCase()} (Actif)` : 'FREE (Espace privé)';
+            banner.classList.remove('hidden');
+            banner.innerHTML = `📌 <strong>Vos plans actuels sur ce compte :</strong> Rôle Vendeur : <strong>${vLabel}</strong> &nbsp;|&nbsp; Rôle Affilié : <strong>${aLabel}</strong>`;
+        })();
+
         document.querySelectorAll('.plan-button').forEach(button => button.addEventListener('click', () => {
             const plan = button.dataset.plan;
             localStorage.setItem('jeoahs_selected_plan', plan);
-            document.getElementById('plan-status').textContent = plan === 'free' ? 'Plan Free sélectionné. Créez votre compte pour commencer.' : 'Plan sélectionné. Connectez-vous pour poursuivre.';
-            window.location.href = `/public/auth.html?plan=${encodeURIComponent(plan)}`;
+            localStorage.setItem('jeoahs_selected_plan_role', selectedRoleForPlan);
+            if (plan === 'free') {
+                document.getElementById('plan-status').textContent = 'Plan Free sélectionné. Vos produits resteront dans votre vitrine privée (max 5).';
+                window.location.href = authAccount ? (selectedRoleForPlan === 'vendeur' ? '/vendor_dashboard.html' : '/affiliate-storefront.html') : `/public/auth.html?plan=free&planRole=${encodeURIComponent(selectedRoleForPlan)}`;
+                return;
+            }
+            if (authAccount) {
+                document.getElementById('plan-status').textContent = `Redirection vers la page de paiement pour le plan ${plan.toUpperCase()} (${selectedRoleForPlan})...`;
+                window.location.href = `/payment.html?plan=${encodeURIComponent(plan)}&role=${encodeURIComponent(selectedRoleForPlan)}`;
+            } else {
+                document.getElementById('plan-status').textContent = 'Plan sélectionné. Connectez-vous ou créez votre compte pour procéder au paiement.';
+                window.location.href = `/public/auth.html?plan=${encodeURIComponent(plan)}&planRole=${encodeURIComponent(selectedRoleForPlan)}`;
+            }
         }));
     </script>
     <script src="/public/jeoah-loader.js" defer></script>
