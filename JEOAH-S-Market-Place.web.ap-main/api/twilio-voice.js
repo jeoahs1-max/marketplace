@@ -13,8 +13,8 @@ module.exports = async (req, res) => {
   const host = req.headers['x-forwarded-host'] || req.headers.host;
   const gatherAction = `${proto}://${host}/api/twilio-voice-gather`;
 
-  const greeting = "Bonjour, vous etes en ligne avec Ney, l'assistante de JEOAH'S Market Place. Posez votre question apres le signal.";
+  const greeting = "Bonjour ! Vous êtes bien avec Ney de JEOAH'S Market Place. Comment puis-je vous aider aujourd'hui ?";
 
   res.setHeader('Content-Type', 'text/xml');
-  return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Gather input="speech" language="fr-FR" action="${xmlEscape(gatherAction)}" method="POST" speechTimeout="auto"><Say language="fr-FR" voice="Polly.Lea">${xmlEscape(greeting)}</Say></Gather><Say language="fr-FR" voice="Polly.Lea">Nous n'avons rien entendu. Au revoir.</Say></Response>`);
+  return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Gather input="speech" language="fr-FR" action="${xmlEscape(gatherAction)}" method="POST" speechTimeout="auto" timeout="6"><Say language="fr-FR" voice="Polly.Lea-Neural">${xmlEscape(greeting)}</Say></Gather><Say language="fr-FR" voice="Polly.Lea-Neural">Je n'ai rien entendu, n'hésitez pas à rappeler. À très bientôt !</Say></Response>`);
 };

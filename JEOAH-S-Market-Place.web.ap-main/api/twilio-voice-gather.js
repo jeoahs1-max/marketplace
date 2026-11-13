@@ -43,5 +43,5 @@ module.exports = async (req, res) => {
   }
 
   res.setHeader('Content-Type', 'text/xml');
-  return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Gather input="speech" language="fr-FR" action="${xmlEscape(gatherAction)}" method="POST" speechTimeout="auto"><Say language="fr-FR" voice="Polly.Lea">${xmlEscape(reply)}</Say></Gather><Say language="fr-FR" voice="Polly.Lea">Merci d'avoir appele JEOAH'S. Au revoir.</Say></Response>`);
+  return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Gather input="speech" language="fr-FR" action="${xmlEscape(gatherAction)}" method="POST" speechTimeout="auto" timeout="6"><Say language="fr-FR" voice="Polly.Lea-Neural">${xmlEscape(reply)}</Say></Gather><Say language="fr-FR" voice="Polly.Lea-Neural">Merci pour votre appel, je vous souhaite une excellente journée !</Say></Response>`);
 };

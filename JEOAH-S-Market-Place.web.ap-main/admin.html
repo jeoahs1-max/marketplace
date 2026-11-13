@@ -158,6 +158,48 @@
                     <span class="flex items-center gap-3"><i class="fas fa-cog"></i> Paramètres</span>
                 </a>
             </div>
+
+            <!-- Accès direct à toutes les pages du site -->
+            <div class="space-y-1 pt-2 border-t border-slate-800/80">
+                <p class="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 px-3 pb-1">PAGES DU SITE
+                </p>
+                <a href="/index.html"
+                    class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <i class="fas fa-home w-4 text-indigo-400"></i> Accueil
+                </a>
+                <a href="/showcase.html"
+                    class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <i class="fas fa-gem w-4 text-purple-400"></i> Vitrine Centrale
+                </a>
+                <a href="/vendor_dashboard.html"
+                    class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <i class="fas fa-store w-4 text-emerald-400"></i> Espace Vendeur
+                </a>
+                <a href="/affiliate-dashboard.html"
+                    class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <i class="fas fa-link w-4 text-sky-400"></i> Espace Affilié
+                </a>
+                <a href="/affiliate-storefront.html"
+                    class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <i class="fas fa-bag-shopping w-4 text-pink-400"></i> Vitrine Affilié
+                </a>
+                <a href="/plans.html"
+                    class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <i class="fas fa-tags w-4 text-amber-400"></i> Plans & Tarifs
+                </a>
+                <a href="/payment.html"
+                    class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <i class="fas fa-credit-card w-4 text-teal-400"></i> Page Paiement
+                </a>
+                <a href="/panier.html"
+                    class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <i class="fas fa-shopping-cart w-4 text-orange-400"></i> Panier
+                </a>
+                <a href="/contact.html"
+                    class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">
+                    <i class="fas fa-headset w-4 text-rose-400"></i> Contact & Support
+                </a>
+            </div>
         </div>
 
         <!-- Footer Sidebar -->
@@ -500,20 +542,12 @@
                         </div>
 
                         <div class="flex gap-2 pt-1">
-                            <select id="admin-ai-language" aria-label="Langue de Ney"
-                                class="w-24 rounded-xl border border-white/20 bg-white/15 px-2 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-pink-400">
-                                <option value="auto" class="text-slate-900">Auto</option>
-                                <option value="fr" class="text-slate-900">FR</option>
-                                <option value="ht" class="text-slate-900">HT</option>
-                                <option value="en" class="text-slate-900">EN</option>
-                                <option value="es" class="text-slate-900">ES</option>
-                            </select>
                             <input type="text" id="admin-ai-input" placeholder="Demandez à Ney..."
                                 class="flex-1 px-3 py-2 bg-white/15 border border-white/20 rounded-xl text-xs text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-pink-400">
                             <button type="button" id="admin-ai-mic" title="Parler à Ney" aria-label="Parler à Ney"
                                 class="px-3 py-2 bg-white/15 hover:bg-white/20 rounded-xl text-xs font-bold text-white"><i
                                     class="fas fa-microphone"></i></button>
-                            <button onclick="sendAdminAi()"
+                            <button type="button" id="admin-ai-send" onclick="sendAdminAi()" title="Envoyer à Ney" aria-label="Envoyer à Ney"
                                 class="px-3.5 py-2 bg-pink-600 hover:bg-pink-700 rounded-xl text-xs font-bold text-white shadow"><i
                                     class="fas fa-paper-plane"></i></button>
                         </div>
@@ -566,10 +600,15 @@
         }
 
         const neyAdminMemory = [];
-        const adminVoiceLocales = { auto: navigator.language || 'fr-FR', fr: 'fr-FR', ht: 'fr-FR', en: 'en-US', es: 'es-ES' };
-        const neyLanguageLabels = { auto: 'Auto', fr: 'FR', ht: 'HT', en: 'EN', es: 'ES' };
+        const adminVoiceLocales = { fr: 'fr-FR', ht: 'fr-FR', en: 'en-US', es: 'es-ES', zh: 'zh-CN' };
         let lastNeyReply = '';
         let neyAdminAudio = null;
+
+        function getSiteLanguage() {
+            const raw = localStorage.getItem('jeoah_lang') || localStorage.getItem('jeoahs_lang') || document.documentElement.lang || 'fr';
+            const code = String(raw).toLowerCase().slice(0, 2);
+            return adminVoiceLocales[code] ? code : 'fr';
+        }
 
         if ('speechSynthesis' in window) {
             window.speechSynthesis.getVoices();
@@ -612,14 +651,14 @@
                 neyAdminAudio = null;
             }
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-            const langVal = document.getElementById('admin-ai-language')?.value || 'fr';
+            const langVal = getSiteLanguage();
             const locale = adminVoiceLocales[langVal] || 'fr-FR';
 
             try {
                 const res = await fetch('/api/tts.js', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: cleanText, persona: 'ney', language: langVal === 'auto' ? 'fr' : langVal })
+                    body: JSON.stringify({ text: cleanText, persona: 'ney', language: langVal })
                 });
                 const ct = res.headers.get('content-type') || '';
                 if (res.ok && ct.includes('audio/')) {
@@ -652,24 +691,52 @@
             const mic = document.getElementById('admin-ai-mic');
             const speak = document.getElementById('admin-ai-speak');
             const input = document.getElementById('admin-ai-input');
+            const output = document.getElementById('admin-ai-response');
+
+            if (input) {
+                input.addEventListener('keydown', e => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        sendAdminAi();
+                    }
+                });
+            }
+
             const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            let isListening = false;
             if (Recognition) {
                 const recognition = new Recognition();
                 recognition.continuous = false;
                 recognition.interimResults = false;
                 recognition.onstart = () => {
+                    isListening = true;
                     mic.classList.add('bg-pink-600');
                     mic.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
                 };
                 recognition.onend = () => {
+                    isListening = false;
                     mic.classList.remove('bg-pink-600');
                     mic.innerHTML = '<i class="fas fa-microphone"></i>';
                 };
-                recognition.onerror = () => showAdminResult('Ney - microphone', 'Autorisez le microphone dans le navigateur puis réessayez.');
+                recognition.onerror = (ev) => {
+                    isListening = false;
+                    mic.classList.remove('bg-pink-600');
+                    mic.innerHTML = '<i class="fas fa-microphone"></i>';
+                    if (output) {
+                        output.classList.remove('hidden');
+                        output.textContent = ev?.error === 'not-allowed'
+                            ? 'Micro bloqué : autorisez le microphone dans le cadenas à gauche de l’URL.'
+                            : 'Je n’ai pas capté votre voix. Réessayez ou tapez votre message.';
+                    }
+                };
                 recognition.onresult = event => { input.value = event.results[0][0].transcript; sendAdminAi(); };
                 mic.addEventListener('click', () => {
-                    recognition.lang = adminVoiceLocales[document.getElementById('admin-ai-language').value] || 'fr-FR';
-                    try { recognition.start(); } catch (_) { }
+                    if (isListening) {
+                        try { recognition.stop(); } catch (_) {}
+                        return;
+                    }
+                    recognition.lang = adminVoiceLocales[getSiteLanguage()] || 'fr-FR';
+                    try { recognition.start(); } catch (_) {}
                 });
             } else {
                 mic.disabled = true;
@@ -684,23 +751,47 @@
 
         function localNeyReply(prompt) {
             const text = prompt.toLowerCase();
-            const language = document.getElementById('admin-ai-language').value;
+            const language = getSiteLanguage();
+            const products = JSON.parse(localStorage.getItem('jeoahs_vendor_products') || '[]');
+            const affProducts = JSON.parse(localStorage.getItem('jeoahs_affiliate_products') || '[]');
+            const orders = JSON.parse(localStorage.getItem('jeoahs_vendor_orders') || '[]');
+            const revenue = orders.reduce((total, order) => total + Number(order.total || 0), 0);
             const replies = {
-                fr: { report: 'Je peux préparer un rapport à partir des ventes, commandes, utilisateurs, vitrines et commissions.', store: 'Les vendeurs se gèrent depuis leur tableau de bord et leur vitrine.', payment: 'Les commandes sont suivies dans les espaces vendeurs. Les paiements réels restent désactivés en test.', other: 'Je peux vous aider avec les rapports, vitrines, vendeurs, commandes et réglages.' },
-                ht: { report: 'Mwen ka prepare yon rapò sou lavant, kòmand, itilizatè, vitrin ak komisyon yo.', store: 'Vandè yo jere kont yo ak vitrin yo nan tablo vandè a.', payment: 'Kòmand yo swiv nan espas vandè yo. Peman reyèl yo toujou dezaktive nan tès la.', other: 'Mwen ka ede ou ak rapò, vitrin, vandè, kòmand ak paramèt yo.' },
-                en: { report: 'I can prepare a report from sales, orders, users, storefronts, and commissions.', store: 'Sellers manage their account and storefront from the seller dashboard.', payment: 'Orders are tracked in seller spaces. Real payments remain disabled in testing.', other: 'I can help with reports, storefronts, sellers, orders, and settings.' },
-                es: { report: 'Puedo preparar un informe con ventas, pedidos, usuarios, vitrinas y comisiones.', store: 'Los vendedores gestionan su cuenta y vitrina desde el panel de vendedor.', payment: 'Los pedidos se siguen en los espacios de vendedores. Los pagos reales siguen desactivados en pruebas.', other: 'Puedo ayudarte con informes, vitrinas, vendedores, pedidos y configuracion.' }
+                fr: {
+                    report: `Voici le point du jour (${new Date().toLocaleDateString('fr-FR')}) : ${products.length} produit(s) vendeur, ${affProducts.length} produit(s) affilié, ${orders.length} commande(s) enregistrée(s) pour un total de $${revenue.toFixed(2)} USD.`,
+                    store: 'Les vendeurs et affiliés gèrent leurs produits depuis leurs tableaux de bord ; seuls les plans payants actifs et testeurs apparaissent sur la Vitrine Centrale.',
+                    payment: 'Les paiements par Carte, MonCash et Natcash s’activent via la page Paiement avec séparation stricte entre rôle Vendeur et rôle Affilié.',
+                    other: 'Je suis prête. Demandez-moi le rapport du jour, l’état des vitrines, des vendeurs ou des paiements.'
+                },
+                ht: {
+                    report: `Men rapò jodi a (${new Date().toLocaleDateString('fr-FR')}) : ${products.length} pwodui vandè, ${affProducts.length} pwodui afilye, ${orders.length} kòmand pou yon total $${revenue.toFixed(2)} USD.`,
+                    store: 'Vandè ak afilye yo jere pwodui yo nan tablo yo ; sèlman plan peye aktif ak testè yo parèt sou Vitrin Santral la.',
+                    payment: 'Peman pa Kat, MonCash ak Natcash pase sou paj Peman an ak separezon ant wòl Vandè ak wòl Afilye.',
+                    other: 'Mwen pare. Mande m rapò jodi a, eta vitrin yo, vandè yo oswa peman yo.'
+                },
+                en: {
+                    report: `Daily report (${new Date().toLocaleDateString('en-US')}): ${products.length} vendor product(s), ${affProducts.length} affiliate product(s), ${orders.length} order(s) totaling $${revenue.toFixed(2)} USD.`,
+                    store: 'Vendors and affiliates manage items from their dashboards; only active paid plans and testers publish to the Central Storefront.',
+                    payment: 'Card, MonCash, and Natcash payments run through the Payment page with strict separation between Seller and Affiliate plans.',
+                    other: 'I am ready. Ask me for today’s report, storefronts, sellers, or payment status.'
+                },
+                es: {
+                    report: `Informe de hoy (${new Date().toLocaleDateString('es-ES')}): ${products.length} producto(s) de vendedor, ${affProducts.length} de afiliado, ${orders.length} pedido(s) por un total de $${revenue.toFixed(2)} USD.`,
+                    store: 'Vendedores y afiliados gestionan su catálogo desde sus paneles; solo los planes activos y testers publican en la Vitrina Central.',
+                    payment: 'Los pagos con Tarjeta, MonCash y Natcash funcionan en la página de Pago con separación entre Vendedor y Afiliado.',
+                    other: 'Estoy lista. Pídeme el informe del día, vitrinas, vendedores o pagos.'
+                }
             }[language] || null;
-            if (!replies) return 'Choose a language and tell me what you need.';
-            if (text.includes('rapport') || text.includes('statistique') || text.includes('report')) return replies.report;
-            if (text.includes('vendeur') || text.includes('vitrine') || text.includes('seller') || text.includes('store')) return replies.store;
-            if (text.includes('commande') || text.includes('paiement') || text.includes('order') || text.includes('payment')) return replies.payment;
-            return replies.other;
+            const chosen = replies || { report: '', store: '', payment: '', other: 'I am ready to help.' };
+            if (text.includes('rapport') || text.includes('statistique') || text.includes('report') || text.includes('rapò') || text.includes('informe')) return chosen.report || replies?.fr.report;
+            if (text.includes('vendeur') || text.includes('vitrine') || text.includes('seller') || text.includes('store')) return chosen.store;
+            if (text.includes('commande') || text.includes('paiement') || text.includes('order') || text.includes('payment')) return chosen.payment;
+            return chosen.other;
         }
 
         async function sendAdminAi() {
             const input = document.getElementById('admin-ai-input');
-            const language = document.getElementById('admin-ai-language').value;
+            const language = getSiteLanguage();
             const prompt = input.value.trim();
             if (!prompt) return;
             const output = document.getElementById('admin-ai-response');
@@ -709,7 +800,17 @@
             input.value = '';
             neyAdminMemory.push({ role: 'user', content: prompt });
             try {
-                const token = await window.getNeyAdminToken();
+                let token = '';
+                try { token = await window.getNeyAdminToken(); } catch (_) {}
+                if (!token) {
+                    const reply = localNeyReply(prompt);
+                    output.textContent = reply;
+                    lastNeyReply = reply;
+                    document.getElementById('admin-ai-speak').classList.remove('hidden');
+                    speakNeyAdmin(reply);
+                    neyAdminMemory.push({ role: 'assistant', content: reply });
+                    return;
+                }
                 const response = await fetch('/api/ney-admin.js', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ prompt, language, task: 'administration', memory: neyAdminMemory.slice(0, -1).slice(-10) }) });
                 const data = await response.json();
                 const reply = data.reply || localNeyReply(prompt);
@@ -719,18 +820,13 @@
                 speakNeyAdmin(reply);
                 neyAdminMemory.push({ role: 'assistant', content: reply });
             } catch (error) {
-                const reply = error.message === 'ADMIN_SESSION_REQUIRED' ? 'Connectez-vous avec votre session administrateur pour utiliser Ney.' : localNeyReply(prompt);
+                const reply = localNeyReply(prompt);
                 output.textContent = reply;
                 lastNeyReply = reply;
                 document.getElementById('admin-ai-speak').classList.remove('hidden');
                 speakNeyAdmin(reply);
             }
         }
-
-        const savedNeyLanguage = localStorage.getItem('jeoahs-ney-language');
-        const neyLanguageSelect = document.getElementById('admin-ai-language');
-        if (savedNeyLanguage && neyLanguageLabels[savedNeyLanguage]) neyLanguageSelect.value = savedNeyLanguage;
-        neyLanguageSelect.addEventListener('change', () => localStorage.setItem('jeoahs-ney-language', neyLanguageSelect.value));
 
         async function openJack() {
             const prompt = window.prompt('Que voulez-vous faire analyser par Jack ?', 'Analyse la configuration actuelle du site et propose les tests a effectuer.');
