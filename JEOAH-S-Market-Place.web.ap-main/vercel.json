@@ -27,6 +27,10 @@
     }
   ],
   "routes": [
+        {
+      "src": "/api/([a-zA-Z0-9_-]+)",
+      "dest": "/api/$1.js"
+    },
     {
       "src": "/$",
       "dest": "/index.html"
