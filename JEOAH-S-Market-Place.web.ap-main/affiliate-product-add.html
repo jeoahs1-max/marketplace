@@ -150,14 +150,41 @@
                         <div class="border-b border-pink-100 pb-3">
                             <span class="inline-block rounded-full bg-pink-100 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-pink-700">100% Distinct de la Fiche Vitrine</span>
                             <h2 class="mt-1 text-lg font-extrabold text-slate-900 flex items-center gap-2">
-                                <i class="fas fa-bullhorn text-pink-600"></i> Kit Publicitaire & Vidéo Pub JEOAH
+                                <i class="fas fa-bullhorn text-pink-600"></i> Kit Publicitaire & Cadencement JEOAH
                             </h2>
-                            <p class="text-xs text-slate-500 mt-0.5">Textes de publication pour vos réseaux sociaux (TikTok, Instagram, Facebook, WhatsApp) et scénario de vidéo publicitaire.</p>
+                            <p class="text-xs text-slate-500 mt-0.5">Slogans, Textes pub et Vidéos séparés + planification intelligente selon votre durée d'abonnement (1 mois, 3 mois ou 1 an) sans surcharger vos réseaux.</p>
+                        </div>
+
+                        <!-- Planificateur de Quota & Cadencement Intelligent (1 mois / 3 mois / 1 an) -->
+                        <div class="rounded-xl border border-pink-200 bg-pink-50/60 p-3.5 space-y-2">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <label class="text-[11px] font-extrabold uppercase tracking-wide text-pink-800">
+                                    <i class="fas fa-calendar-check mr-1"></i> Cadencement du Quota Pub (Anti-Surcharge)
+                                </label>
+                                <select id="ad-duration-cycle" onchange="updateAdCadencePlan()" class="rounded-lg border border-pink-300 bg-white px-2.5 py-1 text-xs font-bold text-slate-800">
+                                    <option value="1m">Cycle 1 Mois (ex: 10 textes + 5 vidéos)</option>
+                                    <option value="3m">Cycle 3 Mois (Quota trimestriel étalé)</option>
+                                    <option value="1y">Cycle 1 An (Quota annuel progressif)</option>
+                                </select>
+                            </div>
+                            <p id="ad-cadence-summary" class="text-[11px] leading-relaxed text-slate-700">
+                                <strong>Cadence JEOAH (1 Mois) :</strong> 2 à 3 textes pub/semaine + 1 à 2 vidéos/semaine. JEOAH ne publie jamais tout d'un coup pour ne pas saturer l'audience et maximiser vos ventes.
+                            </p>
                         </div>
 
                         <div>
                             <div class="flex items-center justify-between mb-1">
-                                <label class="text-xs font-bold text-slate-700">Texte Publicitaire (Post Réseaux Sociaux)</label>
+                                <label class="text-xs font-bold text-slate-700">1. Slogans Accrocheurs (Différents du texte pub et de la vidéo)</label>
+                                <button type="button" onclick="copyTextField('ad-slogans-text')" class="text-[11px] font-bold text-pink-600 hover:underline">
+                                    <i class="fas fa-copy mr-1"></i> Copier les slogans
+                                </button>
+                            </div>
+                            <textarea id="ad-slogans-text" rows="2" class="w-full rounded-xl border border-slate-300 bg-pink-50/30 px-3.5 py-2 text-xs leading-relaxed focus:border-pink-600 focus:outline-none" placeholder="Slogans courts et percutants générés par JEOAH..."></textarea>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-xs font-bold text-slate-700">2. Texte Publicitaire (Post Réseaux Sociaux)</label>
                                 <button type="button" onclick="copyTextField('ad-post-text')" class="text-[11px] font-bold text-pink-600 hover:underline">
                                     <i class="fas fa-copy mr-1"></i> Copier le post pub
                                 </button>
@@ -167,7 +194,7 @@
 
                         <div>
                             <div class="flex items-center justify-between mb-1">
-                                <label class="text-xs font-bold text-slate-700">Script & Storyboard Vidéo Publicitaire (TikTok / Reels / Shorts)</label>
+                                <label class="text-xs font-bold text-slate-700">3. Script & Storyboard Vidéo Publicitaire (TikTok / Reels / Shorts)</label>
                                 <button type="button" onclick="copyTextField('ad-video-script')" class="text-[11px] font-bold text-pink-600 hover:underline">
                                     <i class="fas fa-copy mr-1"></i> Copier le script vidéo
                                 </button>
@@ -317,6 +344,18 @@
 
         window.updateOfferField = function (idx, field, val) {
             if (currentOffers[idx]) currentOffers[idx][field] = val;
+        };
+
+        window.updateAdCadencePlan = function () {
+            const sel = document.getElementById('ad-duration-cycle');
+            const summary = document.getElementById('ad-cadence-summary');
+            if (!sel || !summary) return;
+            const map = {
+                '1m': '<strong>Cadence JEOAH (1 Mois — ex: 10 textes + 5 vidéos) :</strong> 2 à 3 textes pub/semaine + 1 à 2 vidéos/semaine. JEOAH étale les publications pour ne jamais saturer vos réseaux d’un coup et maximiser les ventes.',
+                '3m': '<strong>Cadence JEOAH (3 Mois — Lot Trimestriel) :</strong> Rythme régulier sur 12 semaines (alternance slogans d’accroche, posts textes sur réseaux écrits et vidéos courtes sur TikTok/Reels/Shorts) pour maintenir la visibilité sans fatigue d’audience.',
+                '1y': '<strong>Cadence JEOAH (1 An — Lot Annuel) :</strong> Planification par temps forts et saisons sur 52 semaines, renouvellement des slogans, relances produits et guidage continu des acheteurs jusqu’à la finalisation de leurs achats.'
+            };
+            summary.innerHTML = map[sel.value] || map['1m'];
         };
 
         window.removeOfferRow = function (idx) {
@@ -511,8 +550,12 @@
             });
             renderOffersEditor();
 
-            // 3. Générer le Kit Publicitaire & Script Vidéo Pub (100% distinct de la fiche produit vitrine !)
+            // 3. Générer Slogans, Texte Publicitaire & Script Vidéo Pub (3 formats distincts + cadencement intelligent)
             const offerSummaryText = currentOffers.map(o => `${o.platform} (${o.price})`).join(' vs ');
+            const slogansEl = document.getElementById('ad-slogans-text');
+            if (slogansEl) {
+                slogansEl.value = `• « ${shortCleanName} : Comparez en 1 clic, achetez au meilleur prix ! »\n• « Pourquoi payer plus cher ailleurs quand ma vitrine JEOAH'S compare tout pour vous ? »`;
+            }
             document.getElementById('ad-post-text').value =
 `🔥 ARRÊTEZ DE PAYER TROP CHER POUR VOTRE ${shortCleanName.toUpperCase()} ! 🔥
 Vous cherchez le meilleur ${shortCleanName} sans exploser votre budget ?
@@ -578,6 +621,8 @@ J'ai comparé pour vous les prix en direct sur ma vitrine JEOAH'S :
                 description: document.getElementById('product-description').value.trim(),
                 offers: currentOffers.filter(o => o.platform && o.url),
                 source: currentOffers.map(o => o.platform).join(' / '),
+                adSlogansText: (document.getElementById('ad-slogans-text')?.value || '').trim(),
+                adDurationCycle: document.getElementById('ad-duration-cycle')?.value || '1m',
                 adPostText: document.getElementById('ad-post-text').value.trim(),
                 adVideoScript: document.getElementById('ad-video-script').value.trim(),
                 videoUrl: document.getElementById('product-video-url').value.trim(),
