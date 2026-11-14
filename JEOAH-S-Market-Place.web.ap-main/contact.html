@@ -16,14 +16,6 @@
                 <i class="fas fa-arrow-left text-sm"></i>
                 <span id="nav-brand">JEOAH'S Market Place</span>
             </a>
-            <select id="site-lang-select" onchange="changeLanguage(this.value)"
-                style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:12px;background:#fff;font-weight:700;color:#1e293b;cursor:pointer">
-                <option value="fr">🇫🇷 FR</option>
-                <option value="ht">🇭🇹 HT</option>
-                <option value="en">🇺🇸 EN</option>
-                <option value="es">🇪🇸 ES</option>
-                <option value="zh">🇨🇳 中文</option>
-            </select>
         </header>
 
         <section class="mt-8">
@@ -336,6 +328,26 @@
 
             let neyVoiceEnabled = true;
             let neyCurrentAudio = null;
+            let neyInputWasVoice = false;
+            let lastNeyContactReply = '';
+
+            if (input) {
+                input.addEventListener('keydown', () => { neyInputWasVoice = false; });
+                input.addEventListener('input', () => { neyInputWasVoice = false; });
+            }
+
+            function reportSupportToInternalBus(topic, msgText) {
+                try {
+                    const list = JSON.parse(localStorage.getItem('jeoahs_ai_internal_bus') || '[]');
+                    list.push({
+                        sender: 'SUPPORT CLIENT',
+                        topic: String(topic || 'message client'),
+                        message: String(msgText || '').slice(0, 400),
+                        ts: new Date().toISOString()
+                    });
+                    localStorage.setItem('jeoahs_ai_internal_bus', JSON.stringify(list.slice(-30)));
+                } catch (_) {}
+            }
 
             const neyVoiceLabels = {
                 fr: { on: '🔊 Voix: oui', off: '🔇 Voix: non', locale: 'fr-FR' },
@@ -504,19 +516,25 @@
                 rec.interimResults = true;
                 rec.onstart = () => {
                     stopNeySpeech();
+                    neyInputWasVoice = true;
                     enableNeyVoiceAutomatically();
                     micBtn.style.background = '#e0e7ff';
                     micBtn.style.color = '#4338ca';
                 };
-                rec.onresult = (e) => { input.value = Array.from(e.results).map(r => r[0].transcript).join(''); };
+                rec.onresult = (e) => {
+                    neyInputWasVoice = true;
+                    input.value = Array.from(e.results).map(r => r[0].transcript).join('');
+                };
                 rec.onend = () => {
                     micBtn.style.background = '#fff';
                     micBtn.style.color = '#4338ca';
                     if (input.value.trim() && form) {
+                        neyInputWasVoice = true;
                         form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true }));
                     }
                 };
                 micBtn.addEventListener('click', () => {
+                    neyInputWasVoice = true;
                     enableNeyVoiceAutomatically();
                     rec.lang = currentLang === 'en' ? 'en-US' : (currentLang === 'es' ? 'es-ES' : (currentLang === 'zh' ? 'zh-CN' : 'fr-FR'));
                     try { rec.start(); } catch (_) {}
@@ -601,7 +619,9 @@
                 const q = input.value.trim();
                 if (!q) return;
 
-                if (/\b(parle|voix|écoute|ecoute|audio|pale|vwa|speak|voice|talk|habla|voz)\b/i.test(q)) {
+                const shouldSpeak = Boolean(neyInputWasVoice || /\b(parle|voix|écoute|ecoute|audio|pale|vwa|speak|voice|talk|habla|voz)\b/i.test(q));
+                neyInputWasVoice = false;
+                if (shouldSpeak) {
                     enableNeyVoiceAutomatically();
                 }
 
@@ -632,7 +652,7 @@
                 messages.scrollTop = messages.scrollHeight;
 
                 try {
-                    const res = await fetch('/api/ney-proxy.js', {
+                    const res = await fetch('/api/ney-proxy', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -649,13 +669,17 @@
 
                     const reply = (res.ok && data.reply && !data.local) ? data.reply : getNeySmartReply(q, currentLang);
                     appendNeyMessage('Ney', reply, false);
-                    speakNey(reply, currentLang);
+                    lastNeyContactReply = reply;
+                    if (shouldSpeak) speakNey(reply, currentLang);
+                    reportSupportToInternalBus('Support Client', `Client (${authUser?.role || 'visiteur'}) : "${q}"`);
                     neyMemory.push({ role: 'assistant', content: reply });
                 } catch (_) {
                     loadingDiv.remove();
                     const reply = getNeySmartReply(q, currentLang);
                     appendNeyMessage('Ney', reply, false);
-                    speakNey(reply, currentLang);
+                    lastNeyContactReply = reply;
+                    if (shouldSpeak) speakNey(reply, currentLang);
+                    reportSupportToInternalBus('Support Client', `Client (${authUser?.role || 'visiteur'}) : "${q}"`);
                     neyMemory.push({ role: 'assistant', content: reply });
                 }
             });

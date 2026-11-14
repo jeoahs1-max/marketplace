@@ -272,6 +272,253 @@
     if (faqH1 && faqH1.textContent === 'Contact') faqH1.textContent = t.contactTitle;
     const suppBtn = document.querySelector('a[href="/contact.html"].border');
     if (suppBtn) suppBtn.textContent = t.contactSupport;
+
+    // 7. Traduction automatique DOM complète des pages internes (Vendeur, Affilié, Admin, Panier, etc.)
+    translatePageDom(lang);
+  }
+
+  const originalTextMap = new WeakMap();
+  const originalAttrMap = new WeakMap();
+
+  const DOM_PHRASES = {
+    en: {
+      "Tableau de bord": "Dashboard",
+      "Tableau de bord 👋": "Dashboard 👋",
+      "Produits": "Products",
+      "Commandes": "Orders",
+      "Statistiques": "Analytics",
+      "Paramètres": "Settings",
+      "Vitrines": "Storefronts",
+      "Affiliations": "Affiliates",
+      "Utilisateurs": "Users",
+      "Vendeurs": "Sellers",
+      "Finances": "Finances",
+      "Abonnements": "Subscriptions",
+      "Rapports": "Reports",
+      "Accueil": "Home",
+      "Vitrine Centrale": "Central Storefront",
+      "Espace Vendeur": "Seller Space",
+      "Espace Affilié": "Affiliate Space",
+      "Vitrine Affilié": "Affiliate Storefront",
+      "Plans & Tarifs": "Plans & Pricing",
+      "Page Paiement": "Payment Page",
+      "Panier": "Cart",
+      "Contact & Support": "Contact & Support",
+      "Aperçu des Ventes (Mois en cours)": "Sales Overview (Current Month)",
+      "Revenus Bruts": "Gross Revenue",
+      "Commandes Totales": "Total Orders",
+      "Stock Faible": "Low Stock",
+      "À Expédier": "To Ship",
+      "Clics produits": "Product Clicks",
+      "Solde vendeur": "Seller Balance",
+      "Livraison de retards": "Late Deliveries",
+      "Retraits": "Withdrawals",
+      "À configurer": "To configure",
+      "Gérer ma Boutique": "Manage my Store",
+      "Gérer mon Plan Vendeur": "Manage Seller Plan",
+      "Basculer / Devenir affilié (sans réinscription)": "Switch / Become Affiliate (no re-registration)",
+      "Basculer vers Espace Vendeur (sans réinscription)": "Switch to Seller Space (no re-registration)",
+      "Suivi de fiabilité": "Reliability Tracking",
+      "3 retard avant examen": "3 delays before review",
+      "Ventes totales": "Total Sales",
+      "Utilisateurs": "Users",
+      "Vitrines actives": "Active Storefronts",
+      "Commissions": "Commissions",
+      "Validation des retraits": "Withdrawal Approval",
+      "Activité récente": "Recent Activity",
+      "Sources de trafic": "Traffic Sources",
+      "Top vitrines": "Top Storefronts",
+      "Évolution des ventes": "Sales Trend",
+      "Ventes par catégorie": "Sales by Category",
+      "Ajouter un produit": "Add a product",
+      "Générer un rapport": "Generate a report",
+      "Télécharger le rapport": "Download report",
+      "Vitrine": "Storefront",
+      "Plans": "Plans",
+      "Acheter": "Buy",
+      "Voir l'offre": "View Offer",
+      "Rechercher un produit, une commande, un utilisateur...": "Search a product, order, or user...",
+      "Gérez vos produits et commandes ici !": "Manage your products and orders here!"
+    },
+    ht: {
+      "Tableau de bord": "Tablo bò",
+      "Tableau de bord 👋": "Tablo bò 👋",
+      "Produits": "Pwodui yo",
+      "Commandes": "Kòmand yo",
+      "Statistiques": "Estatistik",
+      "Paramètres": "Paramèt",
+      "Vitrines": "Vitrin yo",
+      "Affiliations": "Afilyasyon",
+      "Utilisateurs": "Itilizatè yo",
+      "Vendeurs": "Vandè yo",
+      "Finances": "Finans",
+      "Abonnements": "Abònman yo",
+      "Rapports": "Rapò yo",
+      "Accueil": "Akèy",
+      "Vitrine Centrale": "Vitrin Santral",
+      "Espace Vendeur": "Espas Vandè",
+      "Espace Affilié": "Espas Afilye",
+      "Vitrine Affilié": "Vitrin Afilye",
+      "Plans & Tarifs": "Plan & Pri",
+      "Page Paiement": "Paj Peman",
+      "Panier": "Panye",
+      "Contact & Support": "Kontak & Sipò",
+      "Aperçu des Ventes (Mois en cours)": "Rezime Lavant (Mwa sa a)",
+      "Revenus Bruts": "Revni Brit",
+      "Commandes Totales": "Total Kòmand",
+      "Stock Faible": "Estòk Ba",
+      "À Expédier": "Pou Voye",
+      "Clics produits": "Klik pwodui",
+      "Solde vendeur": "Balans vandè",
+      "Livraison de retards": "Livrezon an reta",
+      "Retraits": "Retrè",
+      "À configurer": "Pou konfigire",
+      "Gérer ma Boutique": "Jere Boutik mwen",
+      "Gérer mon Plan Vendeur": "Jere Plan Vandè mwen",
+      "Basculer / Devenir affilié (sans réinscription)": "Pase nan Wòl Afilye (san re-enskri)",
+      "Basculer vers Espace Vendeur (sans réinscription)": "Pase nan Espas Vandè (san re-enskri)",
+      "Suivi de fiabilité": "Swivi Fyabilite",
+      "Ventes totales": "Total Lavant",
+      "Vitrines actives": "Vitrin aktif",
+      "Commissions": "Komisyon",
+      "Validation des retraits": "Validasyon Retrè yo",
+      "Activité récente": "Aktivite resan",
+      "Sources de trafic": "Sous trafik",
+      "Top vitrines": "Meyè vitrin yo",
+      "Évolution des ventes": "Evolisyon lavant",
+      "Ventes par catégorie": "Lavant pa kategori",
+      "Ajouter un produit": "Ajoute yon pwodui",
+      "Générer un rapport": "Jenere yon rapò",
+      "Télécharger le rapport": "Telechaje rapò a",
+      "Vitrine": "Vitrin",
+      "Plans": "Plan yo",
+      "Acheter": "Achte",
+      "Voir l'offre": "Wè òf la",
+      "Gérez vos produits et commandes ici !": "Jere pwodui ak kòmand ou yo isit la!"
+    },
+    es: {
+      "Tableau de bord": "Panel de control",
+      "Tableau de bord 👋": "Panel de control 👋",
+      "Produits": "Productos",
+      "Commandes": "Pedidos",
+      "Statistiques": "Estadísticas",
+      "Paramètres": "Configuración",
+      "Vitrines": "Vitrinas",
+      "Affiliations": "Afiliados",
+      "Utilisateurs": "Usuarios",
+      "Vendeurs": "Vendedores",
+      "Finances": "Finanzas",
+      "Abonnements": "Suscripciones",
+      "Rapports": "Informes",
+      "Accueil": "Inicio",
+      "Vitrine Centrale": "Vitrina Central",
+      "Espace Vendeur": "Espacio Vendedor",
+      "Espace Affilié": "Espacio Afiliado",
+      "Vitrine Affilié": "Vitrina Afiliado",
+      "Plans & Tarifs": "Planes y Tarifas",
+      "Page Paiement": "Página de Pago",
+      "Panier": "Carrito",
+      "Contact & Support": "Contacto y Soporte",
+      "Aperçu des Ventes (Mois en cours)": "Resumen de Ventas (Mes actual)",
+      "Revenus Bruts": "Ingresos Brutos",
+      "Commandes Totales": "Pedidos Totales",
+      "Stock Faible": "Stock Bajo",
+      "À Expédier": "Por Enviar",
+      "Clics produits": "Clics en productos",
+      "Solde vendeur": "Saldo vendedor",
+      "Livraison de retards": "Entregas retrasadas",
+      "Retraits": "Retiros",
+      "À configurer": "Por configurar",
+      "Gérer ma Boutique": "Gestionar mi Tienda",
+      "Gérer mon Plan Vendeur": "Gestionar mi Plan Vendedor",
+      "Basculer / Devenir affilié (sans réinscription)": "Cambiar a Afiliado (sin nuevo registro)",
+      "Basculer vers Espace Vendeur (sans réinscription)": "Cambiar a Espacio Vendedor (sin nuevo registro)",
+      "Suivi de fiabilité": "Seguimiento de fiabilidad",
+      "Ventes totales": "Ventas totales",
+      "Vitrines actives": "Vitrinas activas",
+      "Commissions": "Comisiones",
+      "Validation des retraits": "Validación de retiros",
+      "Activité récente": "Actividad reciente",
+      "Sources de trafic": "Fuentes de tráfico",
+      "Top vitrines": "Mejores vitrinas",
+      "Évolution des ventes": "Evolución de ventas",
+      "Ventes par catégorie": "Ventas por categoría",
+      "Ajouter un produit": "Añadir producto",
+      "Générer un rapport": "Generar informe",
+      "Télécharger le rapport": "Descargar informe",
+      "Vitrine": "Vitrina",
+      "Plans": "Planes",
+      "Acheter": "Comprar",
+      "Voir l'offre": "Ver oferta",
+      "Gérez vos produits et commandes ici !": "¡Gestiona tus productos y pedidos aquí!"
+    },
+    zh: {
+      "Tableau de bord": "控制面板",
+      "Produits": "商品",
+      "Commandes": "订单",
+      "Statistiques": "统计",
+      "Paramètres": "设置",
+      "Vitrines": "橱窗",
+      "Affiliations": "联盟推广",
+      "Utilisateurs": "用户",
+      "Vendeurs": "卖家",
+      "Finances": "财务",
+      "Abonnements": "订阅方案",
+      "Rapports": "报告",
+      "Accueil": "首页",
+      "Vitrine Centrale": "中心橱窗",
+      "Espace Vendeur": "卖家中心",
+      "Espace Affilié": "联盟中心",
+      "Plans & Tarifs": "方案与价格",
+      "Page Paiement": "支付页面",
+      "Panier": "购物车",
+      "Contact & Support": "联系与支持",
+      "Ventes totales": "总销售额",
+      "Vitrines actives": "活跃橱窗",
+      "Commissions": "佣金",
+      "Acheter": "购买",
+      "Voir l'offre": "查看优惠"
+    }
+  };
+
+  function translatePageDom(lang) {
+    if (!document.body) return;
+    const dict = DOM_PHRASES[lang] || null;
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+    let node;
+    while ((node = walker.nextNode())) {
+      const parentTag = node.parentElement ? node.parentElement.tagName : '';
+      if (parentTag === 'SCRIPT' || parentTag === 'STYLE' || parentTag === 'NOSCRIPT') continue;
+      if (!originalTextMap.has(node)) {
+        originalTextMap.set(node, node.nodeValue);
+      }
+      const orig = originalTextMap.get(node);
+      if (lang === 'fr' || !dict) {
+        if (node.nodeValue !== orig) node.nodeValue = orig;
+        continue;
+      }
+      const trimmed = orig.trim();
+      if (!trimmed) continue;
+      let translated = dict[trimmed];
+      if (!translated && trimmed.startsWith('Bienvenue,')) {
+        translated = trimmed.replace('Bienvenue,', lang === 'en' ? 'Welcome,' : lang === 'ht' ? 'Byenveni,' : lang === 'es' ? 'Bienvenido,' : '欢迎，');
+      }
+      if (!translated && trimmed.startsWith('Plan Vendeur :')) {
+        translated = trimmed.replace('Plan Vendeur :', lang === 'en' ? 'Seller Plan:' : lang === 'ht' ? 'Plan Vandè :' : lang === 'es' ? 'Plan Vendedor:' : '卖家方案：');
+      }
+      if (translated) {
+        node.nodeValue = orig.replace(trimmed, translated);
+      }
+    }
+    document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(el => {
+      if (!originalAttrMap.has(el)) originalAttrMap.set(el, el.getAttribute('placeholder'));
+      const origPh = originalAttrMap.get(el);
+      if (lang === 'fr' || !dict) {
+        if (origPh !== null) el.setAttribute('placeholder', origPh);
+      } else if (dict[origPh]) {
+        el.setAttribute('placeholder', dict[origPh]);
+      }
+    });
   }
 
   window.setSiteLanguage = function (newLang) {
@@ -280,11 +527,22 @@
     applySiteTranslations(newLang);
   };
 
+  function isHomePage() {
+    const p = (window.location.pathname || '/').toLowerCase();
+    return p === '/' || p === '/index.html' || p === '/public/index.html';
+  }
+
   function ensureLanguageSelector() {
-    // Si la page a déjà le sélecteur officiel de l'accueil, on ne fait rien de plus
+    // La liste de langue en haut ne doit apparaître que sur la page d'accueil (/index.html).
+    // Sur les pages internes, le changement de langue se fait depuis le pied de page (footer).
+    if (!isHomePage()) {
+      document.querySelectorAll('#site-lang-select').forEach(el => {
+        if (!el.closest('footer')) el.remove();
+      });
+      return;
+    }
     if (document.getElementById('site-lang-select')) return;
 
-    // Créer un sélecteur universel
     const currentLang = getLang();
     const select = document.createElement('select');
     select.id = 'site-lang-select';
@@ -303,19 +561,12 @@
       window.setSiteLanguage(select.value);
     });
 
-    // Insérer dans le header existant s'il existe
     const nav = document.querySelector('header nav') || document.querySelector('header');
     if (nav) {
       const wrapper = document.createElement('div');
       wrapper.className = 'inline-flex items-center ml-2';
       wrapper.appendChild(select);
       nav.appendChild(wrapper);
-    } else {
-      // Sinon, afficher un badge discret et soigné en haut à droite
-      const floatBox = document.createElement('div');
-      floatBox.style.cssText = 'position:fixed;top:12px;right:16px;z-index:9990';
-      floatBox.appendChild(select);
-      document.body.appendChild(floatBox);
     }
   }
 

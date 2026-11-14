@@ -579,7 +579,7 @@
                         </div>
                     </div>
 
-                    <!-- ASSISTANTE IA PRIVEE - NEY -->
+                    <!-- ASSISTANTE IA PRIVEE - NEY (CHEF & SUPERVISEUR) -->
                     <div
                         class="bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white p-5 rounded-3xl shadow-xl space-y-4">
                         <div class="flex items-center justify-between border-b border-white/10 pb-3">
@@ -587,16 +587,24 @@
                                 <span
                                     class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm"><i
                                         class="fas fa-robot text-pink-300"></i></span>
-                                <strong class="text-sm">Ney, assistante administrative</strong>
+                                <div>
+                                    <strong class="text-sm block leading-tight">Ney — Chef & Superviseur</strong>
+                                    <span class="text-[10px] text-pink-200">Accès total interne confidentiel</span>
+                                </div>
                             </div>
                             <span
-                                class="text-[10px] font-bold bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-full">Actif</span>
+                                class="text-[10px] font-bold bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-full">100% Actif</span>
                         </div>
 
-                        <div class="p-3 bg-white/10 rounded-2xl backdrop-blur-md text-xs leading-relaxed">
-                            <p class="font-bold text-pink-200">Bonjour.</p>
-                            <p class="mt-1 text-slate-200">Je suis Ney. Je peux préparer vos rapports, analyser les
-                                vitrines et vous assister dans les tâches administratives.</p>
+                        <!-- Canal Interne IA (JEOAH & Jack -> Ney) -->
+                        <div class="p-3 bg-white/10 rounded-2xl backdrop-blur-md space-y-2">
+                            <div class="flex items-center justify-between text-[10px] uppercase tracking-wider font-bold text-pink-200">
+                                <span><i class="fas fa-lock mr-1"></i>Canal Interne IA (JEOAH • Jack • Ney)</span>
+                                <button type="button" onclick="renderInternalAiBus()" title="Actualiser le canal interne" class="text-white/70 hover:text-white"><i class="fas fa-sync-alt"></i></button>
+                            </div>
+                            <div id="ney-internal-bus-feed" class="space-y-1.5 max-h-28 overflow-y-auto text-[11px] text-slate-100">
+                                <p class="text-white/70 italic">En attente de rapports internes de JEOAH et Jack...</p>
+                            </div>
                         </div>
 
                         <!-- Actions Rapides Assistant -->
@@ -608,28 +616,23 @@
                                 class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition block">Ajouter
                                 un produit</a>
                             <button onclick="generateDailyReport()"
-                                class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition">Générer un
-                                rapport</button>
-                            <button onclick="openJack()"
-                                class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition">Ouvrir
-                                Jack</button>
-                            <a href="/faq.html"
-                                class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition block">Aide &
-                                support</a>
+                                class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition">Rapport complet</button>
+                            <button onclick="toggleNeyStreamingInfo()"
+                                class="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-center transition"><i class="fas fa-video mr-1 text-pink-300"></i>Vidéo Live</button>
                         </div>
 
                         <div class="flex gap-2 pt-1">
-                            <input type="text" id="admin-ai-input" placeholder="Demandez à Ney..."
+                            <input type="text" id="admin-ai-input" placeholder="Écrivez ou parlez à Ney..."
                                 class="flex-1 px-3 py-2 bg-white/15 border border-white/20 rounded-xl text-xs text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-pink-400">
-                            <button type="button" id="admin-ai-mic" title="Parler à Ney" aria-label="Parler à Ney"
+                            <button type="button" id="admin-ai-mic" title="Parler à Ney (réponse vocale auto)" aria-label="Parler à Ney"
                                 class="px-3 py-2 bg-white/15 hover:bg-white/20 rounded-xl text-xs font-bold text-white"><i
                                     class="fas fa-microphone"></i></button>
-                            <button type="button" id="admin-ai-send" onclick="sendAdminAi()" title="Envoyer à Ney" aria-label="Envoyer à Ney"
+                            <button type="button" id="admin-ai-send" onclick="sendAdminAi(false)" title="Envoyer par écrit (réponse écrite)" aria-label="Envoyer à Ney"
                                 class="px-3.5 py-2 bg-pink-600 hover:bg-pink-700 rounded-xl text-xs font-bold text-white shadow"><i
                                     class="fas fa-paper-plane"></i></button>
                         </div>
                         <div class="flex items-center justify-between gap-2">
-                            <p id="admin-ai-response" class="hidden text-xs leading-relaxed text-pink-100"></p>
+                            <p id="admin-ai-response" class="hidden text-xs leading-relaxed text-pink-100 whitespace-pre-line"></p>
                             <button type="button" id="admin-ai-speak" title="Lire la réponse de Ney"
                                 aria-label="Lire la réponse de Ney"
                                 class="hidden shrink-0 px-2 py-1 bg-white/15 hover:bg-white/20 rounded-lg text-xs text-white"><i
@@ -639,6 +642,35 @@
 
                 </div>
             </div>
+
+            <!-- ESPACE DEDIE INGENIEUR IA — JACK (Isole du reste du site) -->
+            <section id="jack-corner" class="bg-slate-900 text-slate-100 rounded-3xl border border-slate-700/80 p-6 shadow-xl space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/80 pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center text-lg">
+                            <i class="fas fa-microchip"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-base text-white">Espace Ingénieur IA — Jack</h3>
+                            <p class="text-xs text-slate-400">Diagnostic fluidité, veille mises à jour IA, protection des données clients et rapports techniques internes pour Ney</p>
+                        </div>
+                    </div>
+                    <span class="text-[11px] font-bold bg-cyan-500/20 text-cyan-300 px-3 py-1 rounded-full">Poste isolé • Zéro perturbation</span>
+                </div>
+
+                <div class="flex flex-wrap gap-2.5 text-xs font-bold">
+                    <button type="button" onclick="runJackTask('diagnostic', 'Analyse la fluidité du site, les performances des pages et la protection des données clients, puis propose des améliorations concrètes.')"
+                        class="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl transition"><i class="fas fa-gauge-high mr-1.5"></i>Diagnostic Fluidité & Données</button>
+                    <button type="button" onclick="runJackTask('ai-updates', 'Fais le point sur les dernières mises à jour IA utiles pour rendre JEOAH, Ney et la vitrine plus rapides et plus fluides.')"
+                        class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 rounded-xl transition"><i class="fas fa-sparkles mr-1.5"></i>Veille Mises à jour IA</button>
+                    <button type="button" onclick="openJack()"
+                        class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 rounded-xl transition"><i class="fas fa-terminal mr-1.5"></i>Instruction personnalisée</button>
+                </div>
+
+                <div id="jack-console-output" class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 leading-relaxed whitespace-pre-line">
+                    Jack est prêt dans son espace technique. Chaque analyse effectuée ici est automatiquement transmise à Ney sur le canal interne confidentiel.
+                </div>
+            </section>
 
         </main>
     </div>
@@ -681,7 +713,6 @@
             }
             lastNeyReply = reportText;
             if (speakBtn) speakBtn.classList.remove('hidden');
-            speakNeyAdmin(reportText);
             showAdminResult('Rapport quotidien en direct', reportText + '<br><button type="button" onclick="downloadDailyReport()" class="mt-3 rounded-lg bg-indigo-700 px-3 py-2 text-xs font-bold text-white">Télécharger le rapport</button>');
         }
 
@@ -699,9 +730,61 @@
         const adminVoiceLocales = { fr: 'fr-FR', ht: 'fr-FR', en: 'en-US', es: 'es-ES', zh: 'zh-CN' };
         let lastNeyReply = '';
         let neyAdminAudio = null;
+        let neyInputWasVoice = false;
+
+        const INTERNAL_AI_BUS_KEY = 'jeoahs_ai_internal_bus';
+        function getInternalAiBus() {
+            try {
+                const raw = localStorage.getItem(INTERNAL_AI_BUS_KEY);
+                const list = raw ? JSON.parse(raw) : [];
+                return Array.isArray(list) ? list : [];
+            } catch (_) {
+                return [];
+            }
+        }
+
+        function postInternalAiBus(sender, topic, message) {
+            try {
+                const list = getInternalAiBus();
+                list.push({
+                    sender: String(sender || 'SYSTEM'),
+                    topic: String(topic || 'rapport'),
+                    message: String(message || '').slice(0, 600),
+                    ts: new Date().toISOString()
+                });
+                localStorage.setItem(INTERNAL_AI_BUS_KEY, JSON.stringify(list.slice(-30)));
+                renderInternalAiBus();
+            } catch (_) {}
+        }
+
+        function renderInternalAiBus() {
+            const feed = document.getElementById('ney-internal-bus-feed');
+            if (!feed) return;
+            const list = getInternalAiBus();
+            if (!list.length) {
+                feed.innerHTML = '<p class="text-white/70 italic">Canal interne actif — aucun nouveau message de JEOAH ou Jack pour le moment.</p>';
+                return;
+            }
+            feed.innerHTML = list.slice(-6).reverse().map((item) => {
+                const senderName = String(item.sender || item.from || 'IA').toUpperCase();
+                const rawTime = item.ts || item.at;
+                const time = rawTime ? new Date(rawTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+                const badgeColor = senderName === 'JACK' ? 'bg-cyan-500/30 text-cyan-200' : senderName === 'JEOAH' ? 'bg-amber-500/30 text-amber-200' : 'bg-pink-500/30 text-pink-200';
+                const safeMsg = String(item.message || item.summary || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return `<div class="p-1.5 rounded-lg bg-black/20"><span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${badgeColor}">${senderName}</span> <span class="text-[9px] text-white/60">${time}</span><p class="mt-0.5 text-white/90">${safeMsg}</p></div>`;
+            }).join('');
+        }
+
+        function toggleNeyStreamingInfo() {
+            const output = document.getElementById('admin-ai-response');
+            if (output) {
+                output.classList.remove('hidden');
+                output.textContent = 'Vidéo Streaming de Ney : interface prête. Pour activer l’avatar vidéo en direct (streaming), ajoutez une clé API HeyGen ou D-ID dans les variables d’environnement Vercel.';
+            }
+        }
 
         function getSiteLanguage() {
-            const raw = localStorage.getItem('jeoah_lang') || localStorage.getItem('jeoahs_lang') || document.documentElement.lang || 'fr';
+            const raw = localStorage.getItem('jeoahs-lang') || localStorage.getItem('jeoahs_lang') || localStorage.getItem('jeoah_lang') || document.documentElement.lang || 'fr';
             const code = String(raw).toLowerCase().slice(0, 2);
             return adminVoiceLocales[code] ? code : 'fr';
         }
@@ -809,10 +892,12 @@
             const output = document.getElementById('admin-ai-response');
 
             if (input) {
+                input.addEventListener('input', () => { neyInputWasVoice = false; });
                 input.addEventListener('keydown', e => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
-                        sendAdminAi();
+                        neyInputWasVoice = false;
+                        sendAdminAi(false);
                     }
                 });
             }
@@ -844,7 +929,11 @@
                             : 'Je n’ai pas capté votre voix. Réessayez ou tapez votre message.';
                     }
                 };
-                recognition.onresult = event => { input.value = event.results[0][0].transcript; sendAdminAi(); };
+                recognition.onresult = event => {
+                    neyInputWasVoice = true;
+                    input.value = event.results[0][0].transcript;
+                    sendAdminAi(true);
+                };
                 mic.addEventListener('click', () => {
                     if (isListening) {
                         try { recognition.stop(); } catch (_) {}
@@ -863,6 +952,10 @@
             });
         }
         setupNeyVoice();
+        renderInternalAiBus();
+        window.addEventListener('storage', (ev) => {
+            if (ev.key === INTERNAL_AI_BUS_KEY) renderInternalAiBus();
+        });
 
         function localNeyReply(prompt) {
             const text = prompt.toLowerCase();
@@ -904,11 +997,13 @@
             return chosen.other;
         }
 
-        async function sendAdminAi() {
+        async function sendAdminAi(fromVoice = false) {
             const input = document.getElementById('admin-ai-input');
             const language = getSiteLanguage();
             const prompt = input.value.trim();
             if (!prompt) return;
+            const shouldSpeak = Boolean(fromVoice || neyInputWasVoice);
+            neyInputWasVoice = false;
             const output = document.getElementById('admin-ai-response');
             output.classList.remove('hidden');
             output.textContent = 'Ney analyse votre demande...';
@@ -922,39 +1017,64 @@
                     output.textContent = reply;
                     lastNeyReply = reply;
                     document.getElementById('admin-ai-speak').classList.remove('hidden');
-                    speakNeyAdmin(reply);
+                    if (shouldSpeak) speakNeyAdmin(reply);
                     neyAdminMemory.push({ role: 'assistant', content: reply });
                     return;
                 }
-                const response = await fetch('/api/ney-admin', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ prompt, language, task: 'administration', liveStats: window.__jeoahsLiveStats || {}, memory: neyAdminMemory.slice(0, -1).slice(-10) }) });
+                const response = await fetch('/api/ney-admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({
+                        prompt,
+                        language,
+                        task: 'administration',
+                        liveStats: window.__jeoahsLiveStats || {},
+                        internalBus: getInternalAiBus().slice(-10),
+                        memory: neyAdminMemory.slice(0, -1).slice(-10)
+                    })
+                });
                 const data = await response.json();
                 const reply = data.reply || localNeyReply(prompt);
                 output.textContent = reply;
                 lastNeyReply = reply;
                 document.getElementById('admin-ai-speak').classList.remove('hidden');
-                speakNeyAdmin(reply);
+                if (shouldSpeak) speakNeyAdmin(reply);
                 neyAdminMemory.push({ role: 'assistant', content: reply });
             } catch (error) {
                 const reply = localNeyReply(prompt);
                 output.textContent = reply;
                 lastNeyReply = reply;
                 document.getElementById('admin-ai-speak').classList.remove('hidden');
-                speakNeyAdmin(reply);
+                if (shouldSpeak) speakNeyAdmin(reply);
+            }
+        }
+
+        async function runJackTask(task, prompt) {
+            const consoleEl = document.getElementById('jack-console-output');
+            if (consoleEl) consoleEl.textContent = 'Jack analyse en arrière-plan (poste isolé)...';
+            try {
+                const token = await window.getNeyAdminToken();
+                const response = await fetch('/api/jack', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ prompt, task: task || 'diagnostic', environment: 'production', action: 'analyze', testsPassed: true })
+                });
+                const data = await response.json();
+                const reply = data.reply || data.error || 'Aucune analyse disponible.';
+                if (consoleEl) consoleEl.textContent = reply;
+                postInternalAiBus('JACK', task || 'diagnostic', reply);
+            } catch (error) {
+                const msg = error.message === 'ADMIN_SESSION_REQUIRED'
+                    ? 'Connectez-vous avec votre session administrateur pour exécuter Jack.'
+                    : 'Jack est temporairement indisponible. Vérifiez la configuration serveur.';
+                if (consoleEl) consoleEl.textContent = msg;
             }
         }
 
         async function openJack() {
-            const prompt = window.prompt('Que voulez-vous faire analyser par Jack ?', 'Analyse la configuration actuelle du site et propose les tests a effectuer.');
+            const prompt = window.prompt('Que voulez-vous faire analyser par Jack ?', 'Analyse la configuration actuelle du site, la fluidité et propose les améliorations IA.');
             if (!prompt) return;
-            showAdminResult('Jack analyse...', 'Vérification de votre session administrateur et préparation de l’analyse technique.');
-            try {
-                const token = await window.getNeyAdminToken();
-                const response = await fetch('/api/jack.js', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ prompt, task: 'diagnostic', environment: 'staging', action: 'analyze', testsPassed: false }) });
-                const data = await response.json();
-                showAdminResult('Jack, ingénieur IA', data.reply || data.error || 'Aucune analyse disponible.');
-            } catch (error) {
-                showAdminResult('Jack, ingénieur IA', error.message === 'ADMIN_SESSION_REQUIRED' ? 'Connectez-vous avec votre session administrateur pour utiliser Jack.' : 'Jack est temporairement indisponible. Vérifiez la configuration serveur.');
-            }
+            await runJackTask('diagnostic', prompt);
         }
 
         const adminSections = {

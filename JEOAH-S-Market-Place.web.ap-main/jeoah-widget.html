@@ -268,6 +268,12 @@
       if (!voiceEnabled) stopAllSpeech();
     });
 
+    let lastInputWasVoice = false;
+
+    input.addEventListener('keydown', () => {
+      lastInputWasVoice = false;
+    });
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       recognition = new SpeechRecognition();
@@ -276,6 +282,7 @@
       recognition.maxAlternatives = 1;
       recognition.onstart = () => {
         stopAllSpeech();
+        lastInputWasVoice = true;
         enableVoiceAutomatically();
         micButton.style.background = '#fce7f3';
         micButton.style.color = '#be185d';
@@ -284,8 +291,10 @@
       recognition.onresult = event => {
         const transcript = Array.from(event.results).map(result => result[0].transcript).join('');
         input.value = transcript;
+        lastInputWasVoice = true;
       };
       recognition.onerror = () => {
+        lastInputWasVoice = false;
         appendMessage('JEOAH', 'Je n’ai pas pu entendre votre demande. Vérifiez l’autorisation du microphone et réessayez.', false);
       };
       recognition.onend = () => {
@@ -293,10 +302,12 @@
         micButton.style.color = '#7c3aed';
         micButton.setAttribute('aria-pressed', 'false');
         if (input.value.trim()) {
+          lastInputWasVoice = true;
           form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true }));
         }
       };
       micButton.addEventListener('click', () => {
+        lastInputWasVoice = true;
         enableVoiceAutomatically();
         const selectedLanguage = langSelect.value === 'auto' ? (localStorage.getItem('jeoahs-lang') || 'fr') : langSelect.value;
         recognition.lang = (languageConfig[selectedLanguage] || languageConfig.fr).locale;
@@ -438,14 +449,28 @@
       return answer;
     }
 
+    function reportToInternalAiBus(topic, summary) {
+      try {
+        const bus = JSON.parse(localStorage.getItem('jeoahs_ai_internal_bus') || '[]');
+        bus.push({
+          id: `MSG-${Date.now()}`,
+          from: 'JEOAH',
+          to: 'NEY',
+          topic,
+          summary: String(summary).slice(0, 220),
+          at: new Date().toISOString()
+        });
+        localStorage.setItem('jeoahs_ai_internal_bus', JSON.stringify(bus.slice(-30)));
+      } catch (_) {}
+    }
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const prompt = input.value.trim();
       if (!prompt) return;
 
-      if (/\b(parle|voix|écoute|ecoute|audio|pale|vwa|speak|voice|talk|habla|voz)\b/i.test(prompt)) {
-        enableVoiceAutomatically();
-      }
+      const shouldSpeak = lastInputWasVoice || /\b(parle|voix|audio|pale|speak|voice|habla)\b/i.test(prompt);
+      lastInputWasVoice = false;
 
       const settings = languageConfig[langSelect.value] || languageConfig.fr;
       appendMessage(settings.you, prompt, true);
@@ -466,7 +491,7 @@
       messages.scrollTop = messages.scrollHeight;
 
       try {
-        const res = await fetch('/api/jeoah.js', {
+        const res = await fetch('/api/jeoah', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -483,21 +508,24 @@
 
         if (res.ok && data.reply) {
           appendMessage('JEOAH', data.reply, false);
-          speak(data.reply, currentLang);
+          if (shouldSpeak) speak(data.reply, currentLang);
           memory.push({ role: 'assistant', content: data.reply });
+          reportToInternalAiBus(`Demande ${currentRole}`, `${prompt} -> ${data.reply}`);
         } else {
           if (data.error) appendMessage('JEOAH', 'Le service avancé est momentanément indisponible. Je vous réponds avec mon aide intégrée.', false);
           const smartReply = getSmartFallback(prompt, currentLang);
           appendMessage('JEOAH', smartReply, false);
-          speak(smartReply, currentLang);
+          if (shouldSpeak) speak(smartReply, currentLang);
           memory.push({ role: 'assistant', content: smartReply });
+          reportToInternalAiBus(`Demande ${currentRole} (secours)`, prompt);
         }
       } catch (err) {
         loadingDiv.remove();
         const smartReply = getSmartFallback(prompt, currentLang);
         appendMessage('JEOAH', smartReply, false);
-        speak(smartReply, currentLang);
+        if (shouldSpeak) speak(smartReply, currentLang);
         memory.push({ role: 'assistant', content: smartReply });
+        reportToInternalAiBus(`Demande ${currentRole} (hors-ligne)`, prompt);
       }
     });
   })();

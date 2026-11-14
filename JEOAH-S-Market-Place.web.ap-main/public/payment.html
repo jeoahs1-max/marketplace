@@ -278,7 +278,7 @@
         };
 
         function getPayLang() {
-            const raw = localStorage.getItem('jeoah_lang') || localStorage.getItem('jeoahs_lang') || document.documentElement.lang || 'fr';
+            const raw = localStorage.getItem('jeoahs-lang') || localStorage.getItem('jeoah_lang') || document.documentElement.lang || 'fr';
             const code = String(raw).toLowerCase().slice(0, 2);
             return PAY_I18N[code] ? code : 'fr';
         }

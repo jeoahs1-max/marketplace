@@ -23,10 +23,10 @@ async function authenticate(req) {
 
 function chooseModel(task) {
   const complex = /rapport|analyse|planif|coordonn|décision|decision|statistique|formation|campagne|probl[eè]me/i.test(task || '');
-  return complex ? (process.env.NEY_COMPLEX_MODEL || 'gpt-5.6-terra') : (process.env.NEY_FAST_MODEL || 'gpt-5.6-terra');
+  return complex ? (process.env.NEY_COMPLEX_MODEL || 'gpt-4o-mini') : (process.env.NEY_FAST_MODEL || 'gpt-4o-mini');
 }
 
-const languageNames = { auto: 'la langue utilisee dans le dernier message administrateur', fr: 'francais', ht: 'kreyol ayisyen', en: 'anglais', es: 'espagnol' };
+const languageNames = { auto: 'la langue utilisee dans le dernier message administrateur', fr: 'francais', ht: 'kreyol ayisyen', en: 'anglais', es: 'espagnol', zh: 'chinois' };
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
     const user = await authenticate(req);
     if (!user) return res.status(401).json({ error: 'ADMIN_AUTH_REQUIRED', message: 'Session administrateur non vérifiée.' });
 
-    const { prompt, language = 'auto', task = 'courant', memory = [], liveStats = {} } = req.body || {};
+    const { prompt, language = 'auto', task = 'courant', memory = [], liveStats = {}, internalBus = [] } = req.body || {};
     if (!prompt) return res.status(400).json({ error: 'Instruction manquante.' });
 
     let serverStats = { ...liveStats };
@@ -64,7 +64,11 @@ module.exports = async (req, res) => {
     const model = chooseModel(`${task} ${prompt}`);
     const responseLanguage = languageNames[language] || languageNames.auto;
     const statsSummary = `Données réelles actuelles de JEOAH'S Market Place (à utiliser directement quand l'admin demande un rapport ou des chiffres, ne dis JAMAIS que tu n'as pas accès aux données) : Produits Vitrine Centrale = ${serverStats.centralProductsCount || 0}, Produits totaux = ${serverStats.productsCount || 0}, Commandes = ${serverStats.ordersCount || 0}, Ventes totales = $${Number(serverStats.totalSalesUsd || 0).toFixed(2)} USD, Commissions (3%) = $${Number(serverStats.commissionsUsd || 0).toFixed(2)} USD, Utilisateurs inscrits = ${serverStats.usersCount || 0}, Vitrines actives = ${serverStats.activeStoresCount || 0}, Retraits en attente = ${serverStats.pendingWithdrawalsCount || 0}.`;
-    const system = `Tu es Ney, l'assistante administrative privée de JEOAH'S Market Place. Réponds en ${responseLanguage}. ${statsSummary} Sois concise, structurée et précise. Ne répète pas les formulations déjà présentes dans l'historique : traite la demande en cours. Ne prends aucune décision irréversible et ne contacte personne sans validation humaine.`;
+    const busList = Array.isArray(internalBus) ? internalBus.slice(-8) : [];
+    const busSummary = busList.length
+      ? `Messages récents du canal interne IA (JEOAH, Jack & Support Client -> Ney) : ${busList.map(m => `[${m.sender || m.from || 'IA'} - ${m.topic || 'info'}] ${m.message || m.summary || ''}`).join(' | ')}`
+      : 'Aucun nouveau message interne de JEOAH ou Jack pour le moment.';
+    const system = `Tu es Ney, co-assistante administrative, Chef et Superviseur de JEOAH'S Market Place. Réponds en ${responseLanguage}. Tu as un accès interne complet et STRICTEMENT CONFIDENTIEL (réservé uniquement à toi et à l'Administratrice) aux retraits, dépôts, commandes, échanges acheteur-vendeur, ainsi qu'aux rapports de JEOAH (vitrines, clients, affiliés, quotas textes/vidéos pub) et de Jack (diagnostics techniques, fluidité, mises à jour IA). Tu coordonnes JEOAH et Jack en interne pour résoudre tout blocage. Ne divulgue JAMAIS ces données internes à l'extérieur. ${statsSummary} ${busSummary} Sois concise, humaine, structurée et précise. Ne répète pas les formulations déjà présentes dans l'historique.`;
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
