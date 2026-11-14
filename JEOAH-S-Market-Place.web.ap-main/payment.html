@@ -60,10 +60,18 @@
                 <!-- Choix du moyen de paiement -->
                 <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 id="i18n-step2-title" class="text-base font-extrabold text-slate-900">2. Choisissez votre moyen de paiement</h2>
-                    <div class="mt-4 grid grid-cols-3 gap-3">
+                    <div class="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                         <button type="button" id="method-card" onclick="selectMethod('card')" class="cursor-pointer rounded-xl border-2 border-indigo-600 bg-indigo-50/70 p-3 text-center font-bold text-xs text-indigo-950 transition">
                             <i class="fas fa-credit-card block text-xl mb-1 text-indigo-600"></i>
                             <span id="i18n-method-card">Carte / Stripe</span>
+                        </button>
+                        <button type="button" id="method-paypal" onclick="selectMethod('paypal')" class="cursor-pointer rounded-xl border-2 border-slate-200 bg-white p-3 text-center font-bold text-xs text-slate-700 hover:border-sky-500 transition">
+                            <i class="fab fa-paypal block text-xl mb-1 text-sky-600"></i>
+                            PayPal
+                        </button>
+                        <button type="button" id="method-wise" onclick="selectMethod('wise')" class="cursor-pointer rounded-xl border-2 border-slate-200 bg-white p-3 text-center font-bold text-xs text-slate-700 hover:border-emerald-500 transition">
+                            <i class="fas fa-globe block text-xl mb-1 text-emerald-600"></i>
+                            Wise
                         </button>
                         <button type="button" id="method-moncash" onclick="selectMethod('moncash')" class="cursor-pointer rounded-xl border-2 border-slate-200 bg-white p-3 text-center font-bold text-xs text-slate-700 hover:border-red-400 transition">
                             <i class="fas fa-mobile-screen-button block text-xl mb-1 text-red-600"></i>
@@ -71,7 +79,7 @@
                         </button>
                         <button type="button" id="method-natcash" onclick="selectMethod('natcash')" class="cursor-pointer rounded-xl border-2 border-slate-200 bg-white p-3 text-center font-bold text-xs text-slate-700 hover:border-blue-400 transition">
                             <i class="fas fa-wallet block text-xl mb-1 text-blue-600"></i>
-                            Natcash
+                            NatCash
                         </button>
                     </div>
 
@@ -96,14 +104,45 @@
 
                         <!-- Champs Mobile Money (MonCash / Natcash) -->
                         <div id="fields-mobile" class="hidden space-y-4">
-                            <div class="rounded-xl bg-amber-50 border border-amber-200 p-3.5 text-xs text-amber-900">
-                                <strong id="mobile-provider-title">Paiement Mobile MonCash :</strong> <span id="i18n-mobile-hint">Saisissez votre numéro de téléphone associé à votre compte mobile et le code de confirmation reçu.</span>
+                            <div class="rounded-xl bg-amber-50 border border-amber-300 p-4 text-xs text-amber-950 space-y-2">
+                                <div>
+                                    <strong id="mobile-provider-title" class="text-sm">Paiement Mobile MonCash :</strong>
+                                    <p id="i18n-mobile-hint" class="mt-0.5 text-amber-900">Envoyez votre paiement directement sur le compte officiel ci-dessous, puis saisissez votre numéro et la référence de transaction reçue.</p>
+                                </div>
+                                <div class="rounded-lg bg-white/90 border border-amber-200 p-3 space-y-1 text-slate-900">
+                                    <div class="flex items-center justify-between">
+                                        <span id="i18n-beneficiary-num-lbl" class="font-semibold text-slate-600">Numéro MonCash / NatCash :</span>
+                                        <strong class="text-sm font-extrabold text-indigo-700 select-all">+509 3740 1113</strong>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span id="i18n-beneficiary-name-lbl" class="font-semibold text-slate-600">Nom du bénéficiaire :</span>
+                                        <strong class="text-sm font-extrabold text-slate-900">Jasmine Jean-Louis</strong>
+                                    </div>
+                                </div>
+                                <div class="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-[11px] font-bold text-red-800 flex items-start gap-2">
+                                    <i class="fas fa-triangle-exclamation mt-0.5 text-red-600"></i>
+                                    <span id="i18n-mobile-fee-warn">Important : Veuillez obligatoirement ajouter les frais de retrait au montant total envoyé.</span>
+                                </div>
                             </div>
-                            <label class="block text-xs font-bold text-slate-700"><span id="i18n-mobile-phone">Numéro de téléphone (Haïti / International)</span>
+                            <label class="block text-xs font-bold text-slate-700"><span id="i18n-mobile-phone">Votre numéro de téléphone émetteur (Haïti / International)</span>
                                 <input id="mobile-phone" type="tel" placeholder="+509 3700-0000" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-indigo-600 focus:outline-none">
                             </label>
-                            <label class="block text-xs font-bold text-slate-700"><span id="i18n-mobile-pin">Code PIN / Référence de transaction</span>
-                                <input id="mobile-pin" type="password" maxlength="8" placeholder="••••" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-indigo-600 focus:outline-none">
+                            <label class="block text-xs font-bold text-slate-700"><span id="i18n-mobile-pin">Numéro / Référence de transaction (reçu par SMS)</span>
+                                <input id="mobile-pin" type="text" maxlength="30" placeholder="Ex. Trans ID / Réf. MonCash ou NatCash" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-indigo-600 focus:outline-none">
+                            </label>
+                        </div>
+
+                        <!-- Champs PayPal / Wise -->
+                        <div id="fields-intl" class="hidden space-y-4">
+                            <div class="rounded-xl bg-sky-50 border border-sky-200 p-4 text-xs text-sky-950 space-y-1.5">
+                                <strong id="intl-provider-title" class="text-sm">Paiement International PayPal :</strong>
+                                <p id="intl-provider-desc">Renseignez l'adresse e-mail de votre compte et la référence du transfert sécurisé JEOAH'S.</p>
+                            </div>
+                            <label class="block text-xs font-bold text-slate-700"><span>E-mail ou identifiant de votre compte (PayPal / Wise)</span>
+                                <input id="intl-email" type="email" placeholder="votre.email@exemple.com" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-indigo-600 focus:outline-none">
+                            </label>
+                            <label class="block text-xs font-bold text-slate-700"><span>Référence de transaction (si déjà effectué)</span>
+                                <input id="intl-ref" type="text" maxlength="40" placeholder="Ex. ID de transaction PayPal ou Wise" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-indigo-600 focus:outline-none">
                             </label>
                         </div>
 
@@ -189,8 +228,10 @@
                 roleVenTitle: 'Rôle Vendeur', roleVenDesc: 'Boutique directe, gestion de stocks, commandes sécurisées & Vitrine Centrale.',
                 selected: 'Sélectionné', step2Title: '2. Choisissez votre moyen de paiement', methodCard: 'Carte / Stripe',
                 cardHolder: 'Nom sur la carte', cardNum: 'Numéro de carte', cardExp: 'Expiration (MM/AA)',
-                mobileHint: 'Saisissez votre numéro de téléphone associé à votre compte mobile et le code de confirmation reçu.',
-                mobilePhone: 'Numéro de téléphone (Haïti / International)', mobilePin: 'Code PIN / Référence de transaction',
+                mobileHint: 'Envoyez votre paiement directement sur le compte officiel ci-dessous, puis saisissez votre numéro et la référence de transaction reçue.',
+                beneficiaryNumLbl: 'Numéro MonCash / NatCash :', beneficiaryNameLbl: 'Nom du bénéficiaire :',
+                mobileFeeWarn: 'Important : Veuillez obligatoirement ajouter les frais de retrait au montant total envoyé.',
+                mobilePhone: 'Votre numéro de téléphone émetteur (Haïti / International)', mobilePin: 'Numéro / Référence de transaction (reçu par SMS)',
                 sumTitle: 'Récapitulatif de commande', sumTypeLbl: 'Type :', sumRoleLbl: 'Rôle couvert :', sumPlanLbl: 'Formule / Détail :',
                 sumSubLbl: 'Sous-total :', sumFeeLbl: 'Frais de service JEOAH\'S :', sumTotalLbl: 'Total à payer :',
                 typeSub: 'Abonnement Mensuel (30 jours)', typeCart: 'Commande Produits',
@@ -213,8 +254,10 @@
                 roleVenTitle: 'Seller Role', roleVenDesc: 'Direct store, inventory management, secure orders & Central Storefront.',
                 selected: 'Selected', step2Title: '2. Choose your payment method', methodCard: 'Card / Stripe',
                 cardHolder: 'Cardholder name', cardNum: 'Card number', cardExp: 'Expiry (MM/YY)',
-                mobileHint: 'Enter the phone number linked to your mobile money account and your confirmation code.',
-                mobilePhone: 'Phone number (Haiti / International)', mobilePin: 'PIN / Transaction reference',
+                mobileHint: 'Send your payment to the official account below, then enter your sender phone number and the transaction reference.',
+                beneficiaryNumLbl: 'MonCash / NatCash Number:', beneficiaryNameLbl: 'Beneficiary Name:',
+                mobileFeeWarn: 'Important: Please make sure to add the withdrawal fees to the total amount sent.',
+                mobilePhone: 'Your sender phone number (Haiti / International)', mobilePin: 'Transaction ID / Reference (received via SMS)',
                 sumTitle: 'Order summary', sumTypeLbl: 'Type:', sumRoleLbl: 'Covered role:', sumPlanLbl: 'Plan / Details:',
                 sumSubLbl: 'Subtotal:', sumFeeLbl: 'JEOAH\'S service fee:', sumTotalLbl: 'Total due:',
                 typeSub: 'Monthly Subscription (30 days)', typeCart: 'Product Order',
@@ -237,8 +280,10 @@
                 roleVenTitle: 'Wòl Vandè', roleVenDesc: 'Boutik dirèk, jesyon estòk, kòmand sekirize & Vitrin Santral.',
                 selected: 'Chwazi', step2Title: '2. Chwazi mwayen peman ou', methodCard: 'Kat / Stripe',
                 cardHolder: 'Non sou kat la', cardNum: 'Nimewo kat la', cardExp: 'Dat ekspirasyon (MM/AA)',
-                mobileHint: 'Antre nimewo telefòn kont mobil ou ak kòd konfimasyon ou resevwa a.',
-                mobilePhone: 'Nimewo telefòn (Ayiti / Entènasyonal)', mobilePin: 'Kòd PIN / Referans tranzaksyon',
+                mobileHint: 'Voye peman ou dirèkteman sou kont ofisyèl ki anba a, epi antre nimewo telefòn ou ak referans tranzaksyon ou resevwa a.',
+                beneficiaryNumLbl: 'Nimewo MonCash / NatCash :', beneficiaryNameLbl: 'Non benefisyè a :',
+                mobileFeeWarn: 'Enpòtan : Tanpri pa bliye ajoute frè retrè yo (frais de retrait) sou montan total w ap voye a.',
+                mobilePhone: 'Nimewo telefòn ou (Ayiti / Entènasyonal)', mobilePin: 'Nimewo / Referans tranzaksyon (ou resevwa pa SMS)',
                 sumTitle: 'Rezime kòmand la', sumTypeLbl: 'Tip :', sumRoleLbl: 'Wòl kouvri :', sumPlanLbl: 'Fòmil / Detay :',
                 sumSubLbl: 'Sou-total :', sumFeeLbl: 'Frè sèvis JEOAH\'S :', sumTotalLbl: 'Total pou peye :',
                 typeSub: 'Abònman Chak Mwa (30 jou)', typeCart: 'Kòmand Pwodui',
@@ -261,8 +306,10 @@
                 roleVenTitle: 'Rol Vendedor', roleVenDesc: 'Tienda directa, inventario, pedidos seguros & Vitrina Central.',
                 selected: 'Seleccionado', step2Title: '2. Elige tu método de pago', methodCard: 'Tarjeta / Stripe',
                 cardHolder: 'Nombre en la tarjeta', cardNum: 'Número de tarjeta', cardExp: 'Vencimiento (MM/AA)',
-                mobileHint: 'Ingresa tu número de teléfono asociado a tu cuenta móvil y el código de confirmación.',
-                mobilePhone: 'Teléfono (Haití / Internacional)', mobilePin: 'PIN / Referencia de transacción',
+                mobileHint: 'Envía tu pago a la cuenta oficial indicada abajo y luego ingresa tu número de teléfono y la referencia de la transacción.',
+                beneficiaryNumLbl: 'Número MonCash / NatCash:', beneficiaryNameLbl: 'Nombre del beneficiario:',
+                mobileFeeWarn: 'Importante: Por favor incluye las comisiones de retiro (frais de retrait) en el monto enviado.',
+                mobilePhone: 'Tu teléfono emisor (Haití / Internacional)', mobilePin: 'ID / Referencia de transacción (SMS)',
                 sumTitle: 'Resumen del pedido', sumTypeLbl: 'Tipo:', sumRoleLbl: 'Rol cubierto:', sumPlanLbl: 'Plan / Detalle:',
                 sumSubLbl: 'Subtotal:', sumFeeLbl: 'Tarifa de servicio JEOAH\'S:', sumTotalLbl: 'Total a pagar:',
                 typeSub: 'Suscripción Mensual (30 días)', typeCart: 'Pedido de Productos',
@@ -304,6 +351,9 @@
             set('i18n-card-num', t.cardNum);
             set('i18n-card-exp', t.cardExp);
             set('i18n-mobile-hint', t.mobileHint);
+            set('i18n-beneficiary-num-lbl', t.beneficiaryNumLbl);
+            set('i18n-beneficiary-name-lbl', t.beneficiaryNameLbl);
+            set('i18n-mobile-fee-warn', t.mobileFeeWarn);
             set('i18n-mobile-phone', t.mobilePhone);
             set('i18n-mobile-pin', t.mobilePin);
             set('i18n-summary-title', t.sumTitle);
@@ -345,8 +395,9 @@
 
         window.selectMethod = function (method) {
             selectedMethod = method;
-            ['card', 'moncash', 'natcash'].forEach(m => {
+            ['card', 'paypal', 'wise', 'moncash', 'natcash'].forEach(m => {
                 const btn = document.getElementById(`method-${m}`);
+                if (!btn) return;
                 if (m === method) {
                     btn.className = 'cursor-pointer rounded-xl border-2 border-indigo-600 bg-indigo-50/70 p-3 text-center font-bold text-xs text-indigo-950 transition';
                 } else {
@@ -354,12 +405,22 @@
                 }
             });
             const isCard = method === 'card';
+            const isMobile = method === 'moncash' || method === 'natcash';
+            const isIntl = method === 'paypal' || method === 'wise';
             document.getElementById('fields-card').classList.toggle('hidden', !isCard);
-            document.getElementById('fields-mobile').classList.toggle('hidden', isCard);
+            document.getElementById('fields-mobile').classList.toggle('hidden', !isMobile);
+            const intlFields = document.getElementById('fields-intl');
+            if (intlFields) intlFields.classList.toggle('hidden', !isIntl);
             document.getElementById('card-holder').required = isCard;
-            document.getElementById('mobile-phone').required = !isCard;
-            if (!isCard) {
-                document.getElementById('mobile-provider-title').textContent = method === 'moncash' ? 'Paiement Mobile MonCash (Digicel) :' : 'Paiement Mobile Natcash (Natcom) :';
+            document.getElementById('mobile-phone').required = isMobile;
+            const intlEmail = document.getElementById('intl-email');
+            if (intlEmail) intlEmail.required = isIntl;
+            if (isMobile) {
+                document.getElementById('mobile-provider-title').textContent = method === 'moncash' ? 'Paiement Mobile MonCash (Digicel) :' : 'Paiement Mobile NatCash (Natcom) :';
+            }
+            if (isIntl) {
+                const intlTitle = document.getElementById('intl-provider-title');
+                if (intlTitle) intlTitle.textContent = method === 'paypal' ? 'Paiement International PayPal :' : 'Paiement International Wise :';
             }
         };
 
