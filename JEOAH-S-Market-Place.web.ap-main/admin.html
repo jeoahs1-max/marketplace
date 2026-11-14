@@ -12,16 +12,97 @@
     <script type="module">
         import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { collection, doc, getFirestore, onSnapshot, query, serverTimestamp, updateDoc, where } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { collection, doc, getDocs, getFirestore, onSnapshot, query, serverTimestamp, updateDoc, where } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
         const app = firebaseConfig ? (getApps()[0] || initializeApp(firebaseConfig)) : null;
         const auth = app ? getAuth(app) : null;
         const db = app ? getFirestore(app) : null;
+        const appId = 'jeoahs1-max-03326376-49b27';
         let administrator = null;
 
+        window.__jeoahsLiveStats = {
+            productsCount: 0,
+            centralProductsCount: 0,
+            ordersCount: 0,
+            totalSalesUsd: 0,
+            commissionsUsd: 0,
+            usersCount: 0,
+            activeStoresCount: 0,
+            pendingWithdrawalsCount: 0,
+            updatedAt: new Date().toISOString()
+        };
+
+        async function loadRealPlatformStats() {
+            const localVendorProds = JSON.parse(localStorage.getItem('jeoahs_vendor_products') || '[]');
+            const localAffProds = JSON.parse(localStorage.getItem('jeoahs_affiliate_products') || '[]');
+            const localCentralProds = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]');
+            const localOrders = JSON.parse(localStorage.getItem('jeoahs_vendor_orders') || '[]');
+
+            let productsCount = localVendorProds.length + localAffProds.length;
+            let centralProductsCount = localCentralProds.length;
+            let ordersCount = localOrders.length;
+            let totalSalesUsd = localOrders.reduce((s, o) => s + Number(o.total || 0), 0);
+            let usersCount = 0;
+            let activeStoresSet = new Set();
+
+            [...localVendorProds, ...localAffProds, ...localCentralProds].forEach(p => {
+                if (p?.ownerUid || p?.sellerId || p?.affiliateId) activeStoresSet.add(p.ownerUid || p.sellerId || p.affiliateId);
+            });
+
+            if (db) {
+                try {
+                    const [prodSnap, profSnap, orderSnap] = await Promise.all([
+                        getDocs(collection(db, `artifacts/${appId}/public/data/products`)).catch(() => null),
+                        getDocs(collection(db, 'profiles')).catch(() => null),
+                        getDocs(collection(db, `artifacts/${appId}/public/data/orders`)).catch(() => null)
+                    ]);
+                    if (prodSnap) {
+                        centralProductsCount = Math.max(centralProductsCount, prodSnap.size);
+                        productsCount = Math.max(productsCount, prodSnap.size);
+                        prodSnap.forEach(d => {
+                            const data = d.data();
+                            if (data?.ownerUid || data?.sellerId || data?.affiliateId) {
+                                activeStoresSet.add(data.ownerUid || data.sellerId || data.affiliateId);
+                            }
+                        });
+                    }
+                    if (profSnap) usersCount = profSnap.size;
+                    if (orderSnap && !orderSnap.empty) {
+                        ordersCount = Math.max(ordersCount, orderSnap.size);
+                        let fsSales = 0;
+                        orderSnap.forEach(d => { fsSales += Number(d.data()?.total || 0); });
+                        totalSalesUsd = Math.max(totalSalesUsd, fsSales);
+                    }
+                } catch (_) {}
+            }
+
+            const commissionsUsd = +(totalSalesUsd * 0.03).toFixed(2);
+            window.__jeoahsLiveStats = {
+                productsCount,
+                centralProductsCount,
+                ordersCount,
+                totalSalesUsd: +totalSalesUsd.toFixed(2),
+                commissionsUsd,
+                usersCount: Math.max(usersCount, localStorage.getItem('jeoahs_auth_user') ? 1 : 0),
+                activeStoresCount: activeStoresSet.size,
+                pendingWithdrawalsCount: window.__jeoahsLiveStats.pendingWithdrawalsCount || 0,
+                updatedAt: new Date().toISOString()
+            };
+
+            const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            setTxt('admin-kpi-sales', `$${window.__jeoahsLiveStats.totalSalesUsd.toFixed(2)}`);
+            setTxt('admin-kpi-orders', String(window.__jeoahsLiveStats.ordersCount));
+            setTxt('admin-kpi-users', String(window.__jeoahsLiveStats.usersCount));
+            setTxt('admin-kpi-stores', String(window.__jeoahsLiveStats.activeStoresCount));
+            setTxt('admin-kpi-commissions', `$${window.__jeoahsLiveStats.commissionsUsd.toFixed(2)}`);
+            setTxt('admin-live-date', `En direct · ${new Date().toLocaleDateString('fr-FR')}`);
+        }
+
+        loadRealPlatformStats();
         if (auth) onAuthStateChanged(auth, user => {
             administrator = user;
+            loadRealPlatformStats();
             if (user?.email?.toLowerCase() === 'jeoahs1@gmail.com' && db) loadPendingWithdrawals();
         });
         window.getNeyAdminToken = async function () {
@@ -223,11 +304,12 @@
                 </div>
             </div>
 
-            <div class="flex items-center gap-4 text-xs font-bold text-slate-700">
-                <button class="relative text-slate-500 hover:text-indigo-600"><i class="fas fa-bell text-base"></i><span
-                        class="absolute -top-1.5 -right-1.5 bg-pink-600 text-white text-[9px] px-1 rounded-full">5</span></button>
-                <button class="relative text-slate-500 hover:text-indigo-600"><i
-                        class="fas fa-comment-dots text-base"></i></button>
+            <div class="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-700">
+                <a href="/index.html" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 transition"><i class="fas fa-home mr-1"></i> Accueil</a>
+                <a href="/showcase.html" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 transition"><i class="fas fa-gem mr-1"></i> Vitrine</a>
+                <button type="button" onclick="switchRoleAndGo('vendeur')" class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition"><i class="fas fa-store mr-1"></i> Espace Vendeur</button>
+                <button type="button" onclick="switchRoleAndGo('affilie')" class="px-2.5 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 transition"><i class="fas fa-link mr-1"></i> Espace Affilié</button>
+                <a href="/plans.html" class="px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition"><i class="fas fa-crown mr-1"></i> Plans</a>
                 <div class="flex items-center gap-2 pl-3 border-l border-slate-200">
                     <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"
                         alt="Admin" class="w-7 h-7 rounded-full object-cover">
@@ -264,11 +346,11 @@
                 <div
                     class="inline-flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 shadow-sm">
                     <i class="far fa-calendar-alt text-indigo-600"></i>
-                    <span>12 août – 18 août 2026</span>
+                    <span id="admin-live-date">En direct · Aujourd'hui</span>
                 </div>
             </div>
 
-            <!-- Top Stat KPI Cards (5 Cards comme la maquette) -->
+            <!-- Top Stat KPI Cards (Données réelles en direct) -->
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
 
                 <div class="admin-stat-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
@@ -276,12 +358,11 @@
                         <span
                             class="w-8 h-8 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-sm font-bold"><i
                                 class="fas fa-shopping-cart"></i></span>
-                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i
-                                class="fas fa-arrow-up text-[9px]"></i> 18.6%</span>
+                        <span class="text-[11px] font-bold text-emerald-600">Réel</span>
                     </div>
                     <div>
                         <p class="text-xs text-slate-500 font-medium">Ventes totales</p>
-                        <strong class="text-xl font-extrabold text-slate-900 block mt-0.5">$28,560.45</strong>
+                        <strong id="admin-kpi-sales" class="text-xl font-extrabold text-slate-900 block mt-0.5">$0.00</strong>
                     </div>
                 </div>
 
@@ -290,12 +371,11 @@
                         <span
                             class="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold"><i
                                 class="fas fa-shopping-bag"></i></span>
-                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i
-                                class="fas fa-arrow-up text-[9px]"></i> 12.4%</span>
+                        <span class="text-[11px] font-bold text-emerald-600">Réel</span>
                     </div>
                     <div>
                         <p class="text-xs text-slate-500 font-medium">Commandes</p>
-                        <strong class="text-xl font-extrabold text-slate-900 block mt-0.5">342</strong>
+                        <strong id="admin-kpi-orders" class="text-xl font-extrabold text-slate-900 block mt-0.5">0</strong>
                     </div>
                 </div>
 
@@ -304,12 +384,11 @@
                         <span
                             class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm font-bold"><i
                                 class="fas fa-users"></i></span>
-                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i
-                                class="fas fa-arrow-up text-[9px]"></i> 15.7%</span>
+                        <span class="text-[11px] font-bold text-emerald-600">Réel</span>
                     </div>
                     <div>
                         <p class="text-xs text-slate-500 font-medium">Utilisateurs</p>
-                        <strong class="text-xl font-extrabold text-slate-900 block mt-0.5">1,248</strong>
+                        <strong id="admin-kpi-users" class="text-xl font-extrabold text-slate-900 block mt-0.5">0</strong>
                     </div>
                 </div>
 
@@ -318,12 +397,11 @@
                         <span
                             class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-sm font-bold"><i
                                 class="fas fa-store"></i></span>
-                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i
-                                class="fas fa-arrow-up text-[9px]"></i> 9.1%</span>
+                        <span class="text-[11px] font-bold text-emerald-600">Réel</span>
                     </div>
                     <div>
                         <p class="text-xs text-slate-500 font-medium">Vitrines actives</p>
-                        <strong class="text-xl font-extrabold text-slate-900 block mt-0.5">12</strong>
+                        <strong id="admin-kpi-stores" class="text-xl font-extrabold text-slate-900 block mt-0.5">0</strong>
                     </div>
                 </div>
 
@@ -332,12 +410,11 @@
                         <span
                             class="w-8 h-8 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center text-sm font-bold"><i
                                 class="fas fa-percent"></i></span>
-                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5"><i
-                                class="fas fa-arrow-up text-[9px]"></i> 14.3%</span>
+                        <span class="text-[11px] font-bold text-emerald-600">3%</span>
                     </div>
                     <div>
                         <p class="text-xs text-slate-500 font-medium">Commissions</p>
-                        <strong class="text-xl font-extrabold text-slate-900 block mt-0.5">$6,245.30</strong>
+                        <strong id="admin-kpi-commissions" class="text-xl font-extrabold text-slate-900 block mt-0.5">$0.00</strong>
                     </div>
                 </div>
 
@@ -579,19 +656,38 @@
             result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
+        function switchRoleAndGo(targetRole) {
+            const role = targetRole === 'vendeur' ? 'vendeur' : 'affilie';
+            try {
+                const account = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+                if (account) {
+                    account.role = role;
+                    account.roles = Array.from(new Set([...(account.roles || []), role]));
+                    localStorage.setItem('jeoahs_auth_user', JSON.stringify(account));
+                    localStorage.setItem('jeoahs_user', JSON.stringify(account));
+                }
+            } catch (_) {}
+            window.location.href = role === 'vendeur' ? '/vendor_dashboard.html' : '/affiliate-dashboard.html';
+        }
+
         function generateDailyReport() {
-            const products = JSON.parse(localStorage.getItem('jeoahs_vendor_products') || '[]');
-            const orders = JSON.parse(localStorage.getItem('jeoahs_vendor_orders') || '[]');
-            const revenue = orders.reduce((total, order) => total + Number(order.total || 0), 0);
-            const report = `Rapport du ${new Date().toLocaleDateString('fr-FR')}\n\nProduits locaux : ${products.length}\nCommandes locales : ${orders.length}\nRevenus locaux : ${revenue.toFixed(2)} EUR\n\nLes statistiques globales affichées restent indicatives tant que les données serveur ne sont pas connectées.`;
-            showAdminResult('Rapport quotidien', report.replaceAll('\n', '<br>') + '<br><button type="button" onclick="downloadDailyReport()" class="mt-3 rounded-lg bg-indigo-700 px-3 py-2 text-xs font-bold text-white">Télécharger le rapport</button>');
+            const s = window.__jeoahsLiveStats || {};
+            const reportText = `Rapport JEOAH'S du ${new Date().toLocaleDateString('fr-FR')} : ${s.centralProductsCount || 0} produit(s) en Vitrine Centrale, ${s.productsCount || 0} produit(s) au total, ${s.ordersCount || 0} commande(s), $${Number(s.totalSalesUsd || 0).toFixed(2)} USD de ventes, $${Number(s.commissionsUsd || 0).toFixed(2)} USD de commissions, ${s.usersCount || 0} utilisateur(s) et ${s.activeStoresCount || 0} vitrine(s) active(s).`;
+            const output = document.getElementById('admin-ai-response');
+            const speakBtn = document.getElementById('admin-ai-speak');
+            if (output) {
+                output.classList.remove('hidden');
+                output.textContent = reportText;
+            }
+            lastNeyReply = reportText;
+            if (speakBtn) speakBtn.classList.remove('hidden');
+            speakNeyAdmin(reportText);
+            showAdminResult('Rapport quotidien en direct', reportText + '<br><button type="button" onclick="downloadDailyReport()" class="mt-3 rounded-lg bg-indigo-700 px-3 py-2 text-xs font-bold text-white">Télécharger le rapport</button>');
         }
 
         function downloadDailyReport() {
-            const products = JSON.parse(localStorage.getItem('jeoahs_vendor_products') || '[]');
-            const orders = JSON.parse(localStorage.getItem('jeoahs_vendor_orders') || '[]');
-            const revenue = orders.reduce((total, order) => total + Number(order.total || 0), 0);
-            const text = `Rapport JEOAH'S\nDate : ${new Date().toLocaleString('fr-FR')}\nProduits locaux : ${products.length}\nCommandes locales : ${orders.length}\nRevenus locaux : ${revenue.toFixed(2)} EUR`;
+            const s = window.__jeoahsLiveStats || {};
+            const text = `Rapport JEOAH'S\nDate : ${new Date().toLocaleString('fr-FR')}\nProduits Vitrine Centrale : ${s.centralProductsCount || 0}\nProduits totaux : ${s.productsCount || 0}\nCommandes : ${s.ordersCount || 0}\nVentes totales : $${Number(s.totalSalesUsd || 0).toFixed(2)} USD\nCommissions (3%) : $${Number(s.commissionsUsd || 0).toFixed(2)} USD\nUtilisateurs : ${s.usersCount || 0}\nVitrines actives : ${s.activeStoresCount || 0}`;
             const link = document.createElement('a');
             link.href = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
             link.download = `rapport-jeoahs-${new Date().toISOString().slice(0, 10)}.txt`;
@@ -646,16 +742,45 @@
             if (!text) return;
             const cleanText = String(text).replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}✦✨💬🔊🔇🎤]/gu, '').trim();
             if (!cleanText) return;
+            const speakBtn = document.getElementById('admin-ai-speak');
+            if (speakBtn) speakBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+
             if (neyAdminAudio) {
                 try { neyAdminAudio.pause(); neyAdminAudio.currentTime = 0; } catch (_) {}
                 neyAdminAudio = null;
             }
-            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            if ('speechSynthesis' in window) {
+                try { window.speechSynthesis.cancel(); window.speechSynthesis.resume(); } catch (_) {}
+            }
+
             const langVal = getSiteLanguage();
             const locale = adminVoiceLocales[langVal] || 'fr-FR';
+            const resetSpeakIcon = () => {
+                if (speakBtn) speakBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+            };
+
+            const fallbackBrowserSpeech = () => {
+                if (!('speechSynthesis' in window)) { resetSpeakIcon(); return; }
+                try { window.speechSynthesis.resume(); } catch (_) {}
+                const chosenVoice = pickAdminFeminineVoice(locale);
+                const sentences = cleanText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleanText];
+                sentences.forEach((s, idx) => {
+                    const trimmed = s.trim();
+                    if (!trimmed) return;
+                    const u = new SpeechSynthesisUtterance(trimmed);
+                    u.lang = locale;
+                    if (chosenVoice) u.voice = chosenVoice;
+                    u.rate = 1.02;
+                    u.pitch = 1.07;
+                    if (idx === sentences.length - 1) u.onend = resetSpeakIcon;
+                    u.onerror = resetSpeakIcon;
+                    window.speechSynthesis.speak(u);
+                });
+                setTimeout(resetSpeakIcon, 12000);
+            };
 
             try {
-                const res = await fetch('/api/tts.js', {
+                const res = await fetch('/api/tts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: cleanText, persona: 'ney', language: langVal })
@@ -665,26 +790,16 @@
                     const blob = await res.blob();
                     const url = URL.createObjectURL(blob);
                     neyAdminAudio = new Audio(url);
-                    neyAdminAudio.onended = () => URL.revokeObjectURL(url);
+                    neyAdminAudio.onended = () => { URL.revokeObjectURL(url); resetSpeakIcon(); };
+                    neyAdminAudio.onerror = () => { URL.revokeObjectURL(url); fallbackBrowserSpeech(); };
+                    if (speakBtn) speakBtn.innerHTML = '<i class="fas fa-volume-high text-emerald-300"></i>';
                     await neyAdminAudio.play();
                     return;
                 }
             } catch (_) {}
 
-            if ('speechSynthesis' in window) {
-                const chosenVoice = pickAdminFeminineVoice(locale);
-                const sentences = cleanText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleanText];
-                sentences.forEach(s => {
-                    const trimmed = s.trim();
-                    if (!trimmed) return;
-                    const u = new SpeechSynthesisUtterance(trimmed);
-                    u.lang = locale;
-                    if (chosenVoice) u.voice = chosenVoice;
-                    u.rate = 1.02;
-                    u.pitch = 1.07;
-                    window.speechSynthesis.speak(u);
-                });
-            }
+            if (speakBtn) speakBtn.innerHTML = '<i class="fas fa-volume-high text-emerald-300"></i>';
+            fallbackBrowserSpeech();
         }
 
         function setupNeyVoice() {
@@ -811,7 +926,7 @@
                     neyAdminMemory.push({ role: 'assistant', content: reply });
                     return;
                 }
-                const response = await fetch('/api/ney-admin.js', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ prompt, language, task: 'administration', memory: neyAdminMemory.slice(0, -1).slice(-10) }) });
+                const response = await fetch('/api/ney-admin', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ prompt, language, task: 'administration', liveStats: window.__jeoahsLiveStats || {}, memory: neyAdminMemory.slice(0, -1).slice(-10) }) });
                 const data = await response.json();
                 const reply = data.reply || localNeyReply(prompt);
                 output.textContent = reply;

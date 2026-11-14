@@ -34,14 +34,37 @@ module.exports = async (req, res) => {
     const user = await authenticate(req);
     if (!user) return res.status(401).json({ error: 'ADMIN_AUTH_REQUIRED', message: 'Session administrateur non vérifiée.' });
 
-    const { prompt, language = 'auto', task = 'courant', memory = [] } = req.body || {};
+    const { prompt, language = 'auto', task = 'courant', memory = [], liveStats = {} } = req.body || {};
     if (!prompt) return res.status(400).json({ error: 'Instruction manquante.' });
 
+    let serverStats = { ...liveStats };
+    if (admin.apps.length) {
+      try {
+        const appId = 'jeoahs1-max-03326376-49b27';
+        const [prodSnap, profSnap, orderSnap, withdrawSnap] = await Promise.all([
+          admin.firestore().collection(`artifacts/${appId}/public/data/products`).get().catch(() => null),
+          admin.firestore().collection('profiles').get().catch(() => null),
+          admin.firestore().collection(`artifacts/${appId}/public/data/orders`).get().catch(() => null),
+          admin.firestore().collection(`artifacts/${appId}/public/data/withdrawals`).where('status', '==', 'pending').get().catch(() => null)
+        ]);
+        if (prodSnap) serverStats.centralProductsCount = Math.max(Number(serverStats.centralProductsCount || 0), prodSnap.size);
+        if (profSnap) serverStats.usersCount = Math.max(Number(serverStats.usersCount || 0), profSnap.size);
+        if (orderSnap && !orderSnap.empty) {
+          serverStats.ordersCount = Math.max(Number(serverStats.ordersCount || 0), orderSnap.size);
+          let sales = 0;
+          orderSnap.forEach(d => { sales += Number(d.data()?.total || 0); });
+          serverStats.totalSalesUsd = Math.max(Number(serverStats.totalSalesUsd || 0), +sales.toFixed(2));
+        }
+        if (withdrawSnap) serverStats.pendingWithdrawalsCount = withdrawSnap.size;
+      } catch (_) {}
+    }
+
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) return res.status(200).json({ reply: 'Ney fonctionne en mode sécurisé local. Configurez le fournisseur IA pour activer ses réponses avancées.', model: 'local', local: true });
+    if (!apiKey) return res.status(200).json({ reply: `Rapport JEOAH'S en direct : ${serverStats.centralProductsCount || 0} produit(s) en Vitrine Centrale, ${serverStats.ordersCount || 0} commande(s), $${Number(serverStats.totalSalesUsd || 0).toFixed(2)} USD de ventes, ${serverStats.usersCount || 0} utilisateur(s), ${serverStats.pendingWithdrawalsCount || 0} retrait(s) en attente.`, model: 'local', local: true });
     const model = chooseModel(`${task} ${prompt}`);
     const responseLanguage = languageNames[language] || languageNames.auto;
-    const system = `Tu es Ney, l'assistante administrative privée de JEOAH'S. Réponds en ${responseLanguage}. Si la langue est automatique, réponds dans la langue du dernier message administrateur. Sois concise, structurée et précise. Ne répète pas les formulations déjà présentes dans l'historique : traite la demande en cours. Ne prends aucune décision irréversible et ne contacte personne sans validation humaine. Modèle utilisé: ${model}.`;
+    const statsSummary = `Données réelles actuelles de JEOAH'S Market Place (à utiliser directement quand l'admin demande un rapport ou des chiffres, ne dis JAMAIS que tu n'as pas accès aux données) : Produits Vitrine Centrale = ${serverStats.centralProductsCount || 0}, Produits totaux = ${serverStats.productsCount || 0}, Commandes = ${serverStats.ordersCount || 0}, Ventes totales = $${Number(serverStats.totalSalesUsd || 0).toFixed(2)} USD, Commissions (3%) = $${Number(serverStats.commissionsUsd || 0).toFixed(2)} USD, Utilisateurs inscrits = ${serverStats.usersCount || 0}, Vitrines actives = ${serverStats.activeStoresCount || 0}, Retraits en attente = ${serverStats.pendingWithdrawalsCount || 0}.`;
+    const system = `Tu es Ney, l'assistante administrative privée de JEOAH'S Market Place. Réponds en ${responseLanguage}. ${statsSummary} Sois concise, structurée et précise. Ne répète pas les formulations déjà présentes dans l'historique : traite la demande en cours. Ne prends aucune décision irréversible et ne contacte personne sans validation humaine.`;
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
