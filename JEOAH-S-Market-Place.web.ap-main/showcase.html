@@ -28,14 +28,6 @@
         <a href="/public/auth.html" title="Messages"><i class="fas fa-comment-dots"></i></a>
         <a href="/panier.html" title="Panier"><i class="fas fa-shopping-cart"></i></a>
         <a href="/public/auth.html" class="rounded-lg bg-fuchsia-600 px-3 py-2 text-white" id="nav-account">Mon compte</a>
-        <select id="site-lang-select" onchange="window.setSiteLanguage ? window.setSiteLanguage(this.value) : (localStorage.setItem('jeoahs-lang', this.value), window.dispatchEvent(new CustomEvent('jeoahs-lang-changed', {detail:{lang:this.value}})))"
-          style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:12px;background:#fff;font-weight:700;color:#1e293b;cursor:pointer">
-          <option value="fr">🇫🇷 FR</option>
-          <option value="ht">🇭🇹 HT</option>
-          <option value="en">🇺🇸 EN</option>
-          <option value="es">🇪🇸 ES</option>
-          <option value="zh">🇨🇳 中文</option>
-        </select>
       </nav>
     </div>
   </header>
@@ -120,6 +112,9 @@
       return categoryMatch && (!text || `${product.name || product.title || ''} ${product.hook || ''} ${product.description || ''} ${product.category || ''} ${product.source || ''} ${offersText}`.toLowerCase().includes(text));
     }
     function hasActivePlan(product) {
+      if (!product) return false;
+      const email = String(product.ownerEmail || product.email || product.vendorEmail || '').trim().toLowerCase();
+      if (product.isInternalTest === true || email === 'jeoahs1@gmail.com') return false;
       if (product.subscriptionPlan === 'tester' || product.subscriptionPlan === 'enterprise') return true;
       const value = product.subscriptionExpiresAt;
       const expiresAt = value?.toDate ? value.toDate().getTime() : new Date(value).getTime();
@@ -201,46 +196,6 @@
       const t = uiText[currentLang] || uiText.fr;
       const stores = [...new Set(products.map(product => product.storeName || product.sellerName || product.affiliateName || product.source).filter(Boolean))].slice(0, 4); document.getElementById('stores').innerHTML = stores.length ? stores.map(store => `<a href="#products" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-fuchsia-300"><p class="font-bold">${escape(store)}</p><p class="mt-1 text-xs text-slate-500">Voir les offres disponibles</p></a>`).join('') : `<p class="text-sm text-slate-500">${t.storesEmpty}</p>`;
     }
-    const DEMO_SHOWCASE_PRODUCTS = [
-      {
-        id: 'demo-casque-1',
-        name: "Casque Audio Bluetooth Sans Fil Réduction de Bruit Active — Sélection JEOAH'S",
-        hook: "Le son studio haute définition comparé sur 3 marchands",
-        category: "Électronique",
-        description: "Casque circum-auriculaire sans fil avec réduction de bruit active, autonomie 40h et micro HD. Comparez les prix Amazon, eBay et Walmart ci-dessous et cliquez sur l'offre de votre choix.",
-        price: "$29.99",
-        imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
-        storeName: "Tech & Audio by JEOAH'S",
-        productType: "affiliate",
-        subscriptionActive: true,
-        subscriptionPlan: "pro",
-        subscriptionExpiresAt: "2099-12-31T23:59:59.000Z",
-        offers: [
-          { platform: "Amazon", price: "$29.99", url: "https://www.amazon.com/s?k=wireless+noise+cancelling+headphones&tag=jeoahs-20" },
-          { platform: "eBay", price: "$26.50", url: "https://www.ebay.com/sch/i.html?_nkw=wireless+noise+cancelling+headphones" },
-          { platform: "Walmart", price: "$27.99", url: "https://www.walmart.com/search?q=wireless+noise+cancelling+headphones" }
-        ]
-      },
-      {
-        id: 'demo-casque-2',
-        name: "Casque Gaming Pro RGB Surround 7.1 avec Micro Anti-Bruit",
-        hook: "Précision audio maximale pour joueurs et créateurs",
-        category: "Électronique",
-        description: "Casque confortable à mémoire de forme compatible PC, PS5, Xbox et Mobile. Choisissez votre marchand préféré pour profiter du meilleur tarif.",
-        price: "$34.99",
-        imageUrl: "https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=600&q=80",
-        storeName: "Tech & Audio by JEOAH'S",
-        productType: "affiliate",
-        subscriptionActive: true,
-        subscriptionPlan: "pro",
-        subscriptionExpiresAt: "2099-12-31T23:59:59.000Z",
-        offers: [
-          { platform: "Amazon", price: "$34.99", url: "https://www.amazon.com/s?k=gaming+headset+rgb&tag=jeoahs-20" },
-          { platform: "eBay", price: "$31.20", url: "https://www.ebay.com/sch/i.html?_nkw=gaming+headset+rgb" },
-          { platform: "Walmart", price: "$32.90", url: "https://www.walmart.com/search?q=gaming+headset+rgb" }
-        ]
-      }
-    ];
     async function loadProducts() {
       const byId = new Map();
       const localCentral = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]').filter(hasActivePlan);
@@ -253,7 +208,6 @@
           snapshot.docs.map(item => ({ id: item.id, ...item.data() })).filter(hasActivePlan).forEach(p => byId.set(p.id, p));
         }
       } catch (_) {}
-      DEMO_SHOWCASE_PRODUCTS.forEach(p => { if (!byId.has(p.id)) byId.set(p.id, p); });
       products = Array.from(byId.values());
       document.getElementById('market-status').textContent = `${products.length} offre(s) vérifiée(s) disponible(s). Comparez Amazon, eBay, Walmart ou achetez auprès de nos vendeurs.`;
       renderStores();

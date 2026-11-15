@@ -330,6 +330,7 @@
         <div class="vendor-shell">
             <aside class="vendor-sidebar h-fit">
                 <a href="vendor_dashboard.html" class="active"><i class="fas fa-chart-pie"></i> Tableau de bord</a>
+                <a href="affiliate-storefront.html?role=vendeur" class="text-purple-700 font-extrabold bg-purple-50 border border-purple-200"><i class="fas fa-store text-purple-600"></i> Ma Vitrine Personnalisée</a>
                 <a href="vendor-products.html"><i class="fas fa-box"></i> Produits</a>
                 <a href="vendor_orders.html"><i class="fas fa-clipboard-list"></i> Commandes</a>
                 <a href="#report" onclick="showVendorReport(); return false;"><i class="fas fa-chart-line"></i>
@@ -354,10 +355,16 @@
                     </div>
                     <div class="mt-4 sm:mt-0 text-sm text-right">
                         <p id="user-id-display" class="text-gray-400">ID Vendeur: (Chargement...)</p>
-                        <a href="vendor-setup.html"
-                            class="text-blue-600 hover:text-blue-800 font-semibold transition mt-1 block">
-                            <i class="fas fa-store mr-1"></i> Gérer ma Boutique
-                        </a>
+                        <div class="flex flex-wrap justify-end gap-2 mt-2">
+                            <a href="affiliate-storefront.html?role=vendeur"
+                                class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-xs shadow hover:from-purple-700 hover:to-pink-700 transition inline-flex items-center gap-1.5">
+                                <i class="fas fa-magic"></i> Ma Vitrine Personnalisée
+                            </a>
+                            <a href="vendor-setup.html"
+                                class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 font-bold text-xs transition inline-flex items-center gap-1.5">
+                                <i class="fas fa-store"></i> Gérer ma Boutique
+                            </a>
+                        </div>
                         <p id="subscription-status" class="text-sm font-semibold text-green-700 mt-2">Abonnement actif
                         </p>
                         <a href="/plans.html?role=vendeur"
@@ -425,10 +432,10 @@
                             <p class="text-sm text-gray-500">Retards livraison</p>
                             <p id="late-delivery-count" class="text-2xl font-extrabold text-gray-900 mt-1">0</p>
                         </div>
-                        <div class="stat-card border-l-4 border-violet-500">
+                        <a href="vendor-setup.html#payouts" class="stat-card border-l-4 border-violet-500 block hover:bg-violet-50/40 transition">
                             <p class="text-sm text-gray-500">Retraits</p>
-                            <p class="text-2xl font-extrabold text-gray-900 mt-1">À configurer</p>
-                        </div>
+                            <p id="payout-config-status" class="text-xl font-extrabold text-violet-700 mt-1">À configurer →</p>
+                        </a>
                     </div>
                     <div class="mt-4 rounded-xl border border-orange-200 bg-orange-50 p-4">
                         <p class="font-bold text-orange-800">Suivi de fiabilité</p>

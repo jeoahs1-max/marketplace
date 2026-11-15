@@ -231,12 +231,14 @@
                 : filteredByCategory;
 
             const renderCard = (p, isFeatured = false) => {
+                const isDirectVendorProd = p.productType === 'vendor' || (!Array.isArray(p.offers) || p.offers.length === 0);
                 const offersList = (Array.isArray(p.offers) && p.offers.length)
                     ? p.offers
-                    : [{ price: p.price || '$22.00', platform: 'Amazon', url: p.url || '#' }];
-                const primaryOffer = offersList[0];
+                    : [];
+                const primaryOffer = offersList[0] || { price: p.price ? `$${Number(p.price).toFixed(2)}` : '$0.00', platform: p.vendorName || 'Boutique Directe' };
+                const displayPrice = typeof p.price === 'number' ? `$${p.price.toFixed(2)}` : (String(p.price || '').startsWith('$') ? p.price : `$${p.price || '0.00'}`);
                 const img = p.imageUrl || p.image || 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=500&q=80';
-                const shortDesc = p.description || 'Comparez les offres officielles ci-dessous et choisissez votre marchand.';
+                const shortDesc = p.description || 'Produit sélectionné dans cette vitrine personnalisée.';
                 return `
                     <div class="product-card bg-white rounded-2xl overflow-hidden shadow-sm flex flex-col relative group">
                         ${isOwner ? `
@@ -252,21 +254,31 @@
                         </div>
                         <div class="p-4 flex-1 flex flex-col justify-between">
                             <div>
-                                <p class="text-[11px] font-bold uppercase tracking-wider text-purple-700">${esc(p.hook || primaryOffer.platform || 'Recommandé')}</p>
-                                <h3 class="font-bold text-slate-900 text-sm mt-1 line-clamp-2 leading-tight">${esc(p.name || 'Produit de qualité')}</h3>
+                                <p class="text-[11px] font-bold uppercase tracking-wider text-purple-700">${esc(p.hook || primaryOffer.platform || 'Boutique Vérifiée')}</p>
+                                <h3 class="font-bold text-slate-900 text-sm mt-1 line-clamp-2 leading-tight">${esc(p.name || 'Produit')}</h3>
                                 <p class="text-xs text-slate-500 mt-1.5 line-clamp-2">${esc(shortDesc)}</p>
                             </div>
                             <div class="mt-3 pt-3 border-t border-slate-100 space-y-2">
-                                <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Choisissez votre marchand :</p>
-                                <div class="space-y-1.5">
-                                    ${offersList.slice(0, 4).map(off => {
-                                        const clickHref = `/api/affiliate-click.js?affiliate_id=${encodeURIComponent(p.affiliateId || targetId || 'marketplace')}&url=${encodeURIComponent(off.url || '#')}`;
-                                        return `<a href="${esc(clickHref)}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-600 text-purple-900 hover:text-white text-xs font-bold border border-purple-200 transition">
-                                            <span><i class="fas fa-bag-shopping mr-1 opacity-75"></i> ${esc(off.platform || 'Partenaire')}</span>
-                                            <span class="font-extrabold">${esc(off.price || p.price || '$25.00')} <i class="fas fa-arrow-up-right-from-square text-[9px] ml-1"></i></span>
-                                        </a>`;
-                                    }).join('')}
-                                </div>
+                                ${isDirectVendorProd ? `
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs text-slate-500 font-semibold">Prix direct :</span>
+                                        <span class="text-base font-extrabold text-purple-700">${esc(displayPrice)}</span>
+                                    </div>
+                                    <a href="/payment.html?amount=${encodeURIComponent(String(p.price || '0').replace(/[^0-9.]/g, ''))}&item=${encodeURIComponent(p.name || 'Produit')}" class="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xs font-bold shadow-sm transition">
+                                        <i class="fas fa-shopping-cart"></i> Acheter maintenant
+                                    </a>
+                                ` : `
+                                    <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Choisissez votre marchand :</p>
+                                    <div class="space-y-1.5">
+                                        ${offersList.slice(0, 4).map(off => {
+                                            const clickHref = `/api/affiliate-click.js?affiliate_id=${encodeURIComponent(p.affiliateId || targetId || 'marketplace')}&url=${encodeURIComponent(off.url || '#')}`;
+                                            return `<a href="${esc(clickHref)}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-600 text-purple-900 hover:text-white text-xs font-bold border border-purple-200 transition">
+                                                <span><i class="fas fa-bag-shopping mr-1 opacity-75"></i> ${esc(off.platform || 'Partenaire')}</span>
+                                                <span class="font-extrabold">${esc(off.price || p.price || '$25.00')} <i class="fas fa-arrow-up-right-from-square text-[9px] ml-1"></i></span>
+                                            </a>`;
+                                        }).join('')}
+                                    </div>
+                                `}
                             </div>
                             ${p.videoUrl ? `<a href="${esc(p.videoUrl)}" target="_blank" rel="noopener noreferrer" class="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-pink-600 hover:text-pink-700"><i class="fas fa-play-circle"></i> Voir la vidéo pub</a>` : ''}
                         </div>
@@ -289,26 +301,37 @@
         }
 
         async function loadStorefront() {
-            // 1. Charger données profil (Firestore + fallback local)
+            const requestedRole = (urlParams.get('role') || authUser?.role || '').toLowerCase();
+            const isVendorMode = requestedRole === 'vendeur' || requestedRole === 'vendor' || (authUser?.roles?.includes('vendeur') && !requestedRole.includes('affilie'));
+            const localVendorProfile = JSON.parse(localStorage.getItem('jeoahs_vendor_profile') || 'null');
+            const localAffiliateProfile = JSON.parse(localStorage.getItem('jeoahs_affiliate_profile') || 'null');
+
+            // 1. Charger données profil (Firestore + fallback local vendeur/affilié)
             try {
                 const snap = await getDoc(doc(db, `artifacts/${appId}/public/data/affiliates`, targetId));
                 if (snap.exists()) {
                     const data = snap.data();
-                    storeData.name = data.username || data.name || storeData.name;
-                    storeData.bio = data.bio || storeData.bio;
+                    storeData.name = data.username || data.storeName || data.name || storeData.name;
+                    storeData.bio = data.bio || data.storeDescription || storeData.bio;
                     storeData.avatar = data.profilePictureUrl || storeData.avatar;
                     storeData.socialLinks = data.socialLinks || {};
                 } else {
                     throw Error('Non trouvé dans Firestore');
                 }
             } catch (err) {
-                const localProfile = JSON.parse(localStorage.getItem('jeoahs_affiliate_profile') || 'null');
-                if (localProfile) {
-                    storeData.name = localProfile.username || storeData.name;
-                    storeData.bio = localProfile.bio || storeData.bio;
-                    storeData.avatar = localProfile.profilePictureUrl || storeData.avatar;
+                if (isVendorMode && localVendorProfile) {
+                    storeData.name = localVendorProfile.storeName || authUser?.storeName || authUser?.name || 'Ma Boutique Personnalisée';
+                    storeData.bio = localVendorProfile.storeDescription || 'Bienvenue dans notre vitrine personnalisée assistée par JEOAH IA.';
+                    storeData.avatar = localVendorProfile.logoUrl || authUser?.photoUrl || storeData.avatar;
+                } else if (localAffiliateProfile) {
+                    storeData.name = localAffiliateProfile.username || storeData.name;
+                    storeData.bio = localAffiliateProfile.bio || storeData.bio;
+                    storeData.avatar = localAffiliateProfile.profilePictureUrl || storeData.avatar;
+                } else if (localVendorProfile) {
+                    storeData.name = localVendorProfile.storeName || storeData.name;
+                    storeData.bio = localVendorProfile.storeDescription || storeData.bio;
                 } else if (authUser) {
-                    storeData.name = authUser.name || 'Caro';
+                    storeData.name = authUser.storeName || authUser.name || 'Ma Boutique Personnalisée';
                     storeData.avatar = authUser.photoUrl || storeData.avatar;
                 }
             }
@@ -318,31 +341,52 @@
             document.getElementById('store-breadcrumb-name').textContent = storeData.name;
             document.getElementById('store-bio-display').textContent = storeData.bio;
             document.getElementById('store-about-text').textContent = storeData.bio;
+
+            const roleBadgeEl = document.getElementById('store-role-badge-text');
+            const storeTypeTextEl = document.getElementById('store-type-label');
+            if (isVendorMode || localVendorProfile) {
+                if (roleBadgeEl) roleBadgeEl.textContent = 'Boutique Vendeur & Affilié Vérifiée (Modèle Personnalisé)';
+                if (storeTypeTextEl) storeTypeTextEl.textContent = 'Vitrine Personnalisée Utilisateur';
+            }
+
             const referralCodeDisplay = document.getElementById('referral-code-display');
             if (referralCodeDisplay && authUser?.accountCode) referralCodeDisplay.textContent = `Code : ${authUser.accountCode}`;
             if (storeData.avatar && storeData.avatar.startsWith('http')) {
                 document.getElementById('store-avatar-img').src = storeData.avatar;
             }
 
-            // Afficher l'action de gestion dans la section d'aide si propriétaire.
+            // Afficher l'action de gestion si propriétaire
             if (isOwner) {
                 document.getElementById('owner-product-action')?.classList.remove('hidden');
-                document.getElementById('add-product-link').href = '/affiliate-product-add.html';
+                const addLink = document.getElementById('add-product-link');
+                if (addLink) {
+                    addLink.href = isVendorMode ? '/vendor-products.html' : '/affiliate-product-add.html';
+                    addLink.onclick = null;
+                }
             }
 
-            // 3. Charger les produits de cette boutique
+            // 3. Charger les produits de cette boutique (Vendeur + Affilié combinés pour le propriétaire)
             let prods = [];
             try {
                 const pSnap = await getDocs(query(collection(db, `artifacts/${appId}/public/data/affiliate_products`), where('affiliateId', '==', targetId)));
                 prods = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             } catch (_) { }
 
-            if (!prods.length) {
-                const isVendor = authUser?.role === 'vendeur' || authUser?.roles?.includes('vendeur');
-                prods = JSON.parse(localStorage.getItem(isVendor ? 'jeoahs_vendor_products' : 'jeoahs_affiliate_products') || '[]');
+            const vendorProds = JSON.parse(localStorage.getItem('jeoahs_vendor_products') || '[]');
+            const affiliateProds = JSON.parse(localStorage.getItem('jeoahs_affiliate_products') || '[]');
+            const combinedLocal = [...(Array.isArray(vendorProds) ? vendorProds : []), ...(Array.isArray(affiliateProds) ? affiliateProds : [])];
+            if (combinedLocal.length > 0) {
+                const existingIds = new Set(prods.map(item => String(item.id)));
+                combinedLocal.forEach(item => {
+                    if (!existingIds.has(String(item.id))) {
+                        prods.push(item);
+                    }
+                });
             }
 
             storeProducts = prods;
+            const totalProdsEl = document.getElementById('store-stat-products-count');
+            if (totalProdsEl) totalProdsEl.textContent = String(storeProducts.length);
             renderProductGrids();
         }
 
@@ -385,16 +429,13 @@
                 <a href="/index.html" class="hidden sm:flex items-center gap-1.5 hover:text-purple-600 transition"><i
                         class="fas fa-home text-sm"></i> Accueil</a>
                 <a href="/showcase.html" class="hidden sm:flex items-center gap-1.5 hover:text-purple-600 transition"><i
-                        class="fas fa-th-large text-sm"></i> Catégories</a>
-                <a href="/public/auth.html"
-                    class="hidden sm:flex items-center gap-1.5 hover:text-purple-600 transition"><i
-                        class="fas fa-comment-dots text-sm"></i> Messages</a>
-                <a href="/public/auth.html" class="relative hover:text-purple-600 transition"><i
-                        class="fas fa-bell text-base"></i><span
-                        class="absolute -top-1.5 -right-1.5 bg-pink-600 text-white text-[9px] font-bold px-1 rounded-full">3</span></a>
-                <a href="/panier.html" class="relative hover:text-purple-600 transition"><i
-                        class="fas fa-shopping-cart text-base"></i><span
-                        class="absolute -top-1.5 -right-1.5 bg-purple-600 text-white text-[9px] font-bold px-1 rounded-full">2</span></a>
+                        class="fas fa-th-large text-sm"></i> Vitrine Centrale</a>
+                <a href="/vendor_dashboard.html" class="hidden sm:flex items-center gap-1.5 hover:text-purple-600 transition"><i
+                        class="fas fa-chart-pie text-sm"></i> Tableau de bord</a>
+                <a href="/vendor-products.html" class="hidden sm:flex items-center gap-1.5 hover:text-purple-600 transition"><i
+                        class="fas fa-boxes text-sm"></i> Mes Produits</a>
+                <a href="/panier.html" class="relative hover:text-purple-600 transition" title="Panier"><i
+                        class="fas fa-shopping-cart text-base"></i></a>
                 <a href="/public/auth.html" class="flex items-center gap-2 pl-2 border-l border-slate-200">
                     <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"
                         alt="Avatar" class="w-7 h-7 rounded-full object-cover">
@@ -412,10 +453,10 @@
             <span>›</span>
             <a href="/showcase.html" class="hover:text-purple-600">Boutiques</a>
             <span>›</span>
-            <span id="store-breadcrumb-name" class="text-slate-900 font-bold">Ma Boutique</span>
+            <span id="store-breadcrumb-name" class="text-slate-900 font-bold">Ma Boutique Personnalisée</span>
         </nav>
 
-        <!-- BANNIÈRE HERO DE LA BOUTIQUE (Exactement comme la maquette Image 1) -->
+        <!-- BANNIÈRE HERO DE LA BOUTIQUE (Modèle de Vitrine Personnalisée Utilisateur) -->
         <div
             class="store-hero-banner p-6 sm:p-10 text-white shadow-xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
 
@@ -426,36 +467,34 @@
                         src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80"
                         alt="Avatar"
                         class="w-28 h-28 sm:w-36 sm:h-36 rounded-full border-4 border-white object-cover shadow-2xl">
-                    <button
+                    <a href="/vendor-setup.html" title="Personnaliser ma boutique"
                         class="absolute bottom-1 right-1 bg-white text-purple-700 p-2 rounded-full shadow-md text-xs hover:bg-slate-100 transition"><i
-                            class="fas fa-camera"></i></button>
+                            class="fas fa-camera"></i></a>
                 </div>
                 <div class="space-y-2">
                     <div
                         class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-bold">
                         <i class="fas fa-check-circle text-emerald-300"></i>
-                        <span>Affilié vérifié</span>
+                        <span id="store-role-badge-text">Vitrine Personnalisée Vérifiée</span>
                     </div>
                     <h1 id="store-name-display"
-                        class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">Beauty by
-                        Carel</h1>
+                        class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">Ma Boutique Personnalisée</h1>
                     <p id="store-bio-display" class="text-sm sm:text-base text-purple-100 max-w-xl leading-relaxed">
-                        Produits de beauté et soins naturels pour votre bien-être.</p>
+                        Bienvenue sur notre vitrine personnalisée assistée par JEOAH IA pour vous guider jusqu'à la finalisation de vos achats.</p>
                     <div class="flex flex-wrap items-center gap-4 text-xs text-purple-100/90 pt-1">
-                        <span class="flex items-center gap-1"><i class="fas fa-map-marker-alt text-pink-300"></i>
-                            Port-au-Prince, Haiti</span>
-                        <span class="flex items-center gap-1"><i class="fas fa-clock text-pink-300"></i> Répond en
-                            général en quelques heures</span>
+                        <span class="flex items-center gap-1"><i class="fas fa-shield-alt text-pink-300"></i>
+                            Paiement sécurisé JEOAH'S</span>
+                        <span class="flex items-center gap-1"><i class="fas fa-robot text-pink-300"></i> Assistée en direct par JEOAH IA</span>
                     </div>
                     <div class="flex flex-wrap items-center gap-3 pt-3">
-                        <a href="/public/auth.html"
+                        <a href="/contact.html"
                             class="px-5 py-2.5 bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-2">
                             <i class="fas fa-comment-dots"></i> Contacter la boutique
                         </a>
-                        <button onclick="shareStore()"
+                        <a href="/vendor-products.html"
                             class="px-4 py-2.5 bg-white/15 hover:bg-white/25 border border-white/25 text-white text-xs font-bold rounded-xl backdrop-blur-md transition flex items-center gap-2">
-                            <i class="far fa-heart"></i> Suivre la boutique
-                        </button>
+                            <i class="fas fa-plus-circle"></i> Gérer mes Produits
+                        </a>
                         <button onclick="shareStore()" title="Partager cette vitrine"
                             class="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 text-white rounded-xl backdrop-blur-md transition">
                             <i class="fas fa-share-alt"></i>
@@ -464,25 +503,24 @@
                 </div>
             </div>
 
-            <!-- Carte Statistiques Flottante Droite -->
+            <!-- Carte Statistiques Flottante Droite (Chiffres réels uniquement) -->
             <div class="bg-white text-slate-900 p-5 rounded-2xl shadow-2xl w-full lg:w-72 flex-shrink-0 z-10 space-y-3">
                 <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                     <div>
-                        <span class="text-xl font-extrabold text-slate-900 block">98%</span>
-                        <span class="text-[11px] text-slate-500 font-medium">Réponse rapide</span>
+                        <span class="text-xl font-extrabold text-emerald-600 block">JEOAH IA</span>
+                        <span class="text-[11px] text-slate-500 font-medium">Guide d'achat actif</span>
                     </div>
                     <div class="text-right">
-                        <span class="text-xl font-extrabold text-slate-900 block">245</span>
-                        <span class="text-[11px] text-slate-500 font-medium">Recommandations</span>
+                        <span id="store-stat-products-count" class="text-xl font-extrabold text-slate-900 block">0</span>
+                        <span class="text-[11px] text-slate-500 font-medium">Produits actifs</span>
                     </div>
                 </div>
                 <div class="flex items-center justify-between pt-1">
-                    <div class="flex items-center gap-1 text-amber-500 font-bold text-sm">
-                        <i class="fas fa-star"></i> 4.8 <span class="text-[11px] text-slate-400 font-medium">(128
-                            avis)</span>
+                    <div class="flex items-center gap-1 text-purple-700 font-bold text-xs">
+                        <i class="fas fa-check-circle"></i> Modèle Utilisateur
                     </div>
-                    <span class="text-[11px] text-slate-500 font-medium flex items-center gap-1"><i
-                            class="far fa-calendar-alt text-purple-600"></i> Depuis Mars 2024</span>
+                    <a href="/vendor-setup.html" class="text-[11px] text-purple-600 font-bold hover:underline flex items-center gap-1"><i
+                            class="fas fa-cog"></i> Configurer</a>
                 </div>
             </div>
         </div>
@@ -574,16 +612,15 @@
                         <div class="flex items-center justify-between">
                             <span class="text-slate-500 font-medium flex items-center gap-1.5"><i
                                     class="fas fa-tag text-purple-600"></i> Type de vitrine</span>
-                            <span class="font-bold text-slate-800">Recommandations affiliées</span>
+                            <span id="store-type-label" class="font-bold text-slate-800">Modèle Personnalisé Utilisateur</span>
                         </div>
                         <div class="flex items-center justify-between">
                             <span class="text-slate-500 font-medium flex items-center gap-1.5"><i
                                     class="fas fa-address-book text-purple-600"></i> Moyens de contact</span>
                             <div class="flex gap-2 text-purple-700 text-sm">
-                                <i class="fab fa-whatsapp hover:text-emerald-500 cursor-pointer"></i>
-                                <i class="fas fa-phone hover:text-blue-500 cursor-pointer"></i>
-                                <i class="fas fa-envelope hover:text-pink-500 cursor-pointer"></i>
-                                <i class="fab fa-facebook-messenger hover:text-indigo-500 cursor-pointer"></i>
+                                <a href="/contact.html" title="WhatsApp"><i class="fab fa-whatsapp hover:text-emerald-500 cursor-pointer"></i></a>
+                                <a href="/contact.html" title="Téléphone"><i class="fas fa-phone hover:text-blue-500 cursor-pointer"></i></a>
+                                <a href="/contact.html" title="Email"><i class="fas fa-envelope hover:text-pink-500 cursor-pointer"></i></a>
                             </div>
                         </div>
                         <div class="flex items-center justify-between">
@@ -606,7 +643,7 @@
                         <div class="flex items-start gap-3">
                             <span
                                 class="w-5 h-5 rounded-full bg-purple-700 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">2</span>
-                            <p>Contactez le vendeur via le chat ou découvrez l'offre officielle.</p>
+                            <p>Posez vos questions à JEOAH IA ou découvrez l'offre officielle.</p>
                         </div>
                         <div class="flex items-start gap-3">
                             <span
@@ -624,27 +661,30 @@
                         <i class="fas fa-percent"></i>
                         <span>Frais de service JEOAH'S : 3% à la charge de l'acheteur.</span>
                     </div>
-                    <div id="owner-product-action" class="hidden pt-3 border-t border-purple-100 space-y-2.5">
-                        <p class="text-xs font-extrabold text-purple-950">Gérer ma vitrine & mes rôles</p>
+                    <div id="owner-product-action" class="pt-3 border-t border-purple-100 space-y-2.5">
+                        <p class="text-xs font-extrabold text-purple-950">Gérer ma vitrine & mes produits</p>
                         <div class="flex flex-wrap gap-2">
-                            <a id="add-product-link" href="/affiliate-product-add.html"
-                                onclick="window.location.href='/affiliate-product-add.html'; return false;"
+                            <a id="add-product-link" href="/vendor-products.html"
                                 class="inline-flex items-center gap-1.5 rounded-lg bg-purple-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-purple-800">
+                                <i class="fas fa-boxes"></i> Mes Produits Vendeur
+                            </a>
+                            <a href="/affiliate-product-add.html"
+                                class="inline-flex items-center gap-1.5 rounded-lg bg-pink-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-pink-700">
                                 <i class="fas fa-wand-magic-sparkles"></i> Studio Produit & Pub JEOAH
                             </a>
-                            <a href="/affiliate_onboarding_step1.html?upgrade=affiliate"
+                            <a href="/vendor-setup.html"
                                 class="inline-flex items-center gap-1.5 rounded-lg border border-purple-300 bg-purple-50 px-3 py-2 text-xs font-bold text-purple-800 transition hover:bg-purple-100">
-                                <i class="fas fa-link"></i> Mes 1 à 10 IDs (Amazon, eBay...)
+                                <i class="fas fa-cog"></i> Paramètres & Retraits
                             </a>
                         </div>
                         <div class="flex flex-wrap gap-2 pt-1">
                             <a href="/plans.html?role=affilie"
                                 class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[11px] font-bold text-indigo-800 hover:bg-indigo-100">
-                                <i class="fas fa-crown"></i> Mon Plan Affilié
+                                <i class="fas fa-crown"></i> Gérer mon Plan
                             </a>
                             <button type="button" onclick="activateVendorFromStorefront()"
                                 class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50">
-                                <i class="fas fa-store text-blue-600"></i> Basculer / Devenir Vendeur (sans réinscription)
+                                <i class="fas fa-store text-blue-600"></i> Tableau de bord Vendeur
                             </button>
                         </div>
                     </div>
@@ -673,18 +713,8 @@
             const container = document.getElementById('footer-container');
             if (container) container.innerHTML = html;
         });
-        fetch('/jeoah-widget.html').then(r => r.text()).then(html => {
-            const container = document.getElementById('ney-widget-container');
-            if (container) {
-                container.innerHTML = html;
-                container.querySelectorAll('script').forEach(s => {
-                    const n = document.createElement('script');
-                    n.textContent = s.textContent;
-                    document.body.appendChild(n);
-                });
-            }
-        });
     </script>
+    <script src="/public/jeoah-loader.js" defer></script>
 </body>
 
 </html>

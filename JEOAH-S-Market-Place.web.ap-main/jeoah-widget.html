@@ -260,12 +260,25 @@
       });
     }
 
+    let lastJeoahReplyText = '';
+
     voiceButton.addEventListener('click', () => {
-      voiceEnabled = !voiceEnabled;
-      voiceButton.setAttribute('aria-pressed', String(voiceEnabled));
-      voiceButton.style.background = voiceEnabled ? '#f5f3ff' : '#fff';
+      const isCurrentlySpeaking = ('speechSynthesis' in window && window.speechSynthesis.speaking) || Boolean(currentAudio);
+      if (isCurrentlySpeaking) {
+        stopAllSpeech();
+        voiceEnabled = false;
+        voiceButton.setAttribute('aria-pressed', 'false');
+        voiceButton.style.background = '#fff';
+        applyLanguage(langSelect.value);
+        return;
+      }
+      voiceEnabled = true;
+      voiceButton.setAttribute('aria-pressed', 'true');
+      voiceButton.style.background = '#f5f3ff';
       applyLanguage(langSelect.value);
-      if (!voiceEnabled) stopAllSpeech();
+      const selectedLanguage = (!langSelect.value || langSelect.value === 'auto') ? (localStorage.getItem('jeoahs-lang') || 'fr') : langSelect.value;
+      const textToRead = lastJeoahReplyText || (languageConfig[selectedLanguage] || languageConfig.fr).greeting;
+      speak(textToRead, selectedLanguage);
     });
 
     let lastInputWasVoice = false;
@@ -320,6 +333,9 @@
     }
 
     function appendMessage(sender, text, isUser) {
+      if (!isUser) {
+        lastJeoahReplyText = text;
+      }
       const msg = document.createElement('div');
       msg.style.maxWidth = '85%';
       msg.style.padding = '10px 14px';
@@ -329,26 +345,45 @@
       msg.style.border = isUser ? 'none' : '1px solid #eadff4';
       msg.style.alignSelf = isUser ? 'flex-end' : 'flex-start';
       msg.style.boxShadow = '0 2px 6px rgba(0,0,0,0.04)';
-      msg.innerHTML = `<strong>${sender} :</strong> ${text}`;
+      msg.innerHTML = `<div><strong>${sender} :</strong> ${text}</div>`;
+      if (!isUser) {
+        const listenBtn = document.createElement('button');
+        listenBtn.type = 'button';
+        listenBtn.style.cssText = 'margin-top:6px;padding:3px 8px;border-radius:8px;border:1px solid #ddd6fe;background:#f5f3ff;color:#6d28d9;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px';
+        listenBtn.innerHTML = '🔊 Écouter';
+        listenBtn.addEventListener('click', () => {
+          voiceEnabled = true;
+          voiceButton.setAttribute('aria-pressed', 'true');
+          voiceButton.style.background = '#f5f3ff';
+          applyLanguage(langSelect.value);
+          speak(text, langSelect.value);
+        });
+        msg.appendChild(listenBtn);
+      }
       messages.appendChild(msg);
       messages.scrollTop = messages.scrollHeight;
     }
 
+    let speechTimer = null;
     function speakBrowserMasculine(cleanText, locale) {
       if (!('speechSynthesis' in window) || !cleanText) return;
-      window.speechSynthesis.cancel();
-      const chosenVoice = pickBestMasculineVoice(locale);
-      const sentences = cleanText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleanText];
-      sentences.forEach(sentence => {
-        const trimmed = sentence.trim();
-        if (!trimmed) return;
-        const utterance = new SpeechSynthesisUtterance(trimmed);
-        utterance.lang = locale;
-        if (chosenVoice) utterance.voice = chosenVoice;
-        utterance.rate = 1.0;
-        utterance.pitch = 0.94;
-        window.speechSynthesis.speak(utterance);
-      });
+      if (speechTimer) clearTimeout(speechTimer);
+      try { window.speechSynthesis.cancel(); } catch (_) {}
+      speechTimer = setTimeout(() => {
+        try { window.speechSynthesis.resume(); } catch (_) {}
+        const chosenVoice = pickBestMasculineVoice(locale);
+        const sentences = cleanText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleanText];
+        sentences.forEach(sentence => {
+          const trimmed = sentence.trim();
+          if (!trimmed) return;
+          const utterance = new SpeechSynthesisUtterance(trimmed);
+          utterance.lang = locale;
+          if (chosenVoice) utterance.voice = chosenVoice;
+          utterance.rate = 1.0;
+          utterance.pitch = 0.94;
+          window.speechSynthesis.speak(utterance);
+        });
+      }, 65);
     }
 
     async function speak(text, language) {
@@ -359,6 +394,7 @@
       const selectedLanguage = (!language || language === 'auto') ? (localStorage.getItem('jeoahs-lang') || 'fr') : language;
       const locale = (languageConfig[selectedLanguage] || languageConfig.fr).locale;
 
+      // Lecture immédiate via la synthèse vocale du navigateur pour éviter tout blocage d'autoplay après un appel réseau
       try {
         const res = await fetch('/api/tts.js', {
           method: 'POST',
@@ -469,7 +505,8 @@
       const prompt = input.value.trim();
       if (!prompt) return;
 
-      const shouldSpeak = lastInputWasVoice || /\b(parle|voix|audio|pale|speak|voice|habla)\b/i.test(prompt);
+      const shouldSpeak = voiceEnabled || lastInputWasVoice || /\b(parle|voix|audio|pale|speak|voice|habla)\b/i.test(prompt);
+      if (shouldSpeak) enableVoiceAutomatically();
       lastInputWasVoice = false;
 
       const settings = languageConfig[langSelect.value] || languageConfig.fr;
