@@ -1,270 +1,531 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JEOAH'S Market Place</title>
+  <title>JEOAH'S Market Place — Vitrine Centrale</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="/firebase-config.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #faf7fc; color: #1e1b4b; }
+    .hero-central {
+      background: linear-gradient(125deg, #240747 0%, #4c0d73 50%, #7b1372 100%);
+    }
+  </style>
 </head>
+<body class="min-h-screen flex flex-col">
 
-<body class="min-h-screen bg-slate-50 text-slate-900">
-  <div class="bg-indigo-950 px-5 py-2 text-center text-xs font-semibold text-white">Bienvenue sur JEOAH'S Market Place -
-    Achetez local, vendez global.</div>
-  <header class="sticky top-0 z-40 border-b border-slate-200 bg-white shadow-sm">
-    <div class="mx-auto flex max-w-7xl items-center gap-5 px-5 py-3">
-      <a href="/index.html" class="flex shrink-0 items-center gap-2"><img src="/public/assets/logo.png" alt="JEOAH'S"
-          class="h-11 w-11 rounded-lg object-cover"><span class="font-extrabold leading-tight">JEOAH'S<span
-            class="block text-[10px] tracking-wider text-fuchsia-600">MARKET PLACE</span></span></a>
-      <label class="relative hidden flex-1 md:block"><i
-          class="fas fa-search absolute left-4 top-3.5 text-slate-400"></i><input id="market-search"
-          class="w-full rounded-full border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none focus:border-fuchsia-500"
-          placeholder="Rechercher un produit, une boutique, une catégorie..."></label>
-      <nav class="ml-auto flex items-center gap-4 text-sm font-semibold">
-        <a href="/index.html" class="hidden sm:block" id="nav-home">Accueil</a>
-        <a href="#categories" class="hidden sm:block" id="nav-categories">Catégories</a>
-        <a href="/public/auth.html" title="Messages"><i class="fas fa-comment-dots"></i></a>
-        <a href="/panier.html" title="Panier"><i class="fas fa-shopping-cart"></i></a>
-        <a href="/public/auth.html" class="rounded-lg bg-fuchsia-600 px-3 py-2 text-white" id="nav-account">Mon compte</a>
+  <!-- Barre supérieure violette -->
+  <div class="bg-[#2b094d] text-white text-xs py-2 px-4 sm:px-8 border-b border-purple-900/40">
+    <div class="max-w-[1400px] mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2 font-semibold">
+        <i class="fas fa-star text-amber-400"></i>
+        <span id="top-welcome-text">Bienvenue sur JEOAH'S Market Place – Achetez local, Vendez global !</span>
+      </div>
+      <div class="flex items-center gap-5 text-purple-100 font-medium">
+        <a href="/about.html" class="hover:text-white flex items-center gap-1"><i class="fas fa-info-circle text-[11px]"></i> <span>À propos</span></a>
+        <a href="/faq.html" class="hover:text-white flex items-center gap-1"><i class="fas fa-question-circle text-[11px]"></i> <span>Aide &amp; FAQ</span></a>
+        <a href="/contact.html" class="hover:text-white flex items-center gap-1"><i class="fas fa-envelope text-[11px]"></i> <span>Contact</span></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- En-tête principal -->
+  <header class="sticky top-0 z-40 bg-white border-b border-purple-100 shadow-sm">
+    <div class="max-w-[1400px] mx-auto px-4 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <!-- Logo -->
+      <a href="/index.html" class="flex items-center gap-2.5 shrink-0">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-pink-600 flex items-center justify-center text-white shadow-md">
+          <i class="fas fa-shopping-bag text-lg"></i>
+        </div>
+        <div class="leading-none">
+          <span class="text-2xl font-black tracking-tight text-[#3b0a68] block">JEOAH'S</span>
+          <span class="text-[10px] font-extrabold tracking-widest text-purple-700 uppercase">MARKET PLACE</span>
+        </div>
+      </a>
+
+      <!-- Barre de recherche centrale avec sélecteur de catégories -->
+      <div class="flex-1 max-w-2xl mx-auto w-full order-3 lg:order-2">
+        <div class="flex items-center w-full rounded-full border border-purple-200 bg-slate-50/80 overflow-hidden shadow-inner focus-within:border-purple-500 focus-within:bg-white transition">
+          <input id="market-search" type="text" placeholder="Rechercher un produit, une boutique, une catégorie..."
+            class="w-full px-5 py-2.5 text-sm bg-transparent outline-none text-slate-800">
+          <select id="header-category-select" class="hidden sm:block border-l border-purple-200 bg-transparent px-3 py-2.5 text-xs font-semibold text-slate-600 outline-none cursor-pointer">
+            <option value="all">Toutes les catégories</option>
+            <option value="Mode">Mode &amp; Accessoires</option>
+            <option value="Beauté">Beauté &amp; Soins</option>
+            <option value="Maison">Maison &amp; Décoration</option>
+            <option value="Électronique">Électronique</option>
+            <option value="Téléphones">Téléphones &amp; Tablettes</option>
+            <option value="Santé">Santé &amp; Bien-être</option>
+            <option value="Mère">Mère &amp; Enfant</option>
+            <option value="Sports">Sports &amp; Loisirs</option>
+            <option value="Alimentation">Alimentation &amp; Boissons</option>
+          </select>
+          <button type="button" onclick="triggerSearch()" class="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 text-sm font-bold transition shrink-0">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Icônes Droite -->
+      <nav class="flex items-center gap-4 sm:gap-5 text-xs font-bold text-slate-700 order-2 lg:order-3">
+        <a href="/contact.html" class="relative flex items-center gap-1.5 hover:text-purple-700 transition">
+          <i class="far fa-comment-dots text-lg text-purple-800"></i>
+          <span class="hidden xl:inline">Messages</span>
+          <span class=" -top-1.5 -right-2 bg-pink-600 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">3</span>
+        </a>
+        <a href="#products" class="relative flex items-center gap-1.5 hover:text-purple-700 transition">
+          <i class="far fa-heart text-lg text-purple-800"></i>
+          <span class="hidden xl:inline">Favoris</span>
+          <span class="bg-pink-600 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">8</span>
+        </a>
+        <a href="/panier.html" class="relative flex items-center gap-1.5 hover:text-purple-700 transition">
+          <i class="fas fa-shopping-cart text-lg text-purple-800"></i>
+          <span class="hidden xl:inline">Panier</span>
+          <span id="cart-badge-count" class="bg-pink-600 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">2</span>
+        </a>
+        <a href="/public/auth.html" class="flex items-center gap-2 pl-2 border-l border-purple-100 hover:text-purple-700">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80" alt="Profil" class="w-8 h-8 rounded-full object-cover border border-purple-300">
+          <span class="hidden sm:inline font-bold text-slate-800">Mon Compte <i class="fas fa-chevron-down text-[10px] ml-0.5 text-slate-400"></i></span>
+        </a>
       </nav>
     </div>
   </header>
-  <main class="mx-auto max-w-7xl px-5 py-6">
-    <section class="grid gap-5 lg:grid-cols-[210px_1fr]">
-      <aside id="categories" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 class="font-bold">Catégories</h2>
-        <div id="category-list" class="mt-3 space-y-1 text-sm"></div>
+
+  <!-- Contenu Principal -->
+  <main class="max-w-[1400px] w-full mx-auto px-4 sm:px-8 py-6 space-y-6 flex-1">
+
+    <!-- Section Haut : Sidebar Catégories + Bannière Hero -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+
+      <!-- Sidebar Catégories (3 cols) -->
+      <aside id="categories" class="lg:col-span-3 bg-white rounded-2xl border border-purple-100 shadow-sm p-4 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-100 px-2">
+            <h2 class="font-extrabold text-base text-slate-900">Catégories</h2>
+            <i class="fas fa-bars text-slate-400 text-sm"></i>
+          </div>
+          <ul id="category-list" class="space-y-1 text-xs font-semibold text-slate-700">
+            <li><button type="button" onclick="selectCategory('Mode')" class="cat-btn w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-purple-50 hover:text-purple-800 transition text-left"><i class="fas fa-tshirt w-4 text-purple-700"></i> Mode &amp; Accessoires</button></li>
+            <li><button type="button" onclick="selectCategory('Beauté')" class="cat-btn w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-purple-50 hover:text-purple-800 transition text-left"><i class="fas fa-spa w-4 text-purple-700"></i> Beauté &amp; Soins</button></li>
+            <li><button type="button" onclick="selectCategory('Maison')" class="cat-btn w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-purple-50 hover:text-purple-800 transition text-left"><i class="fas fa-couch w-4 text-purple-700"></i> Maison &amp; Décoration</button></li>
+            <li><button type="button" onclick="selectCategory('Électronique')" class="cat-btn w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-purple-50 hover:text-purple-800 transition text-left"><i class="fas fa-laptop w-4 text-purple-700"></i> Électronique</button></li>
+            <li><button type="button" onclick="selectCategory('Téléphones')" class="cat-btn w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-purple-50 hover:text-purple-800 transition text-left"><i class="fas fa-mobile-alt w-4 text-purple-700"></i> Téléphones &amp; Tablettes</button></li>
+            <li><button type="button" onclick="selectCategory('Santé')" class="cat-btn w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-purple-50 hover:text-purple-800 transition text-left"><i class="fas fa-heartbeat w-4 text-purple-700"></i> Santé &amp; Bien-être</button></li>
+            <li><button type="button" onclick="selectCategory('Mère')" class="cat-btn w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-purple-50 hover:text-purple-800 transition text-left"><i class="fas fa-baby w-4 text-purple-700"></i> Mère &amp; Enfant</button></li>
+            <li><button type="button" onclick="selectCategory('Sports')" class="cat-btn w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-purple-50 hover:text-purple-800 transition text-left"><i class="fas fa-running w-4 text-purple-700"></i> Sports &amp; Loisirs</button></li>
+            <li><button type="button" onclick="selectCategory('Alimentation')" class="cat-btn w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-purple-50 hover:text-purple-800 transition text-left"><i class="fas fa-utensils w-4 text-purple-700"></i> Alimentation &amp; Boissons</button></li>
+            <li><button type="button" onclick="selectCategory('all')" class="cat-btn w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-purple-50 hover:text-purple-800 transition text-left"><i class="fas fa-th-large w-4 text-purple-700"></i> Autres catégories</button></li>
+          </ul>
+        </div>
+        <button type="button" onclick="selectCategory('all')" class="mt-4 w-full py-2.5 px-4 rounded-xl bg-pink-50 hover:bg-pink-100 text-pink-700 font-bold text-xs flex items-center justify-center gap-2 transition">
+          <i class="fas fa-store"></i> Voir toutes les catégories
+        </button>
       </aside>
-      <div class="space-y-5">
-        <section
-          class="overflow-hidden rounded-xl bg-gradient-to-r from-indigo-950 via-purple-800 to-fuchsia-700 p-7 text-white shadow-lg">
-          <p class="font-semibold text-fuchsia-200">BIENVENUE SUR</p>
-          <h1 class="mt-1 text-4xl font-extrabold sm:text-5xl">JEOAH'S<br>MARKET PLACE</h1>
-          <p class="mt-3 max-w-lg text-sm text-indigo-100">Comparez les offres des vendeurs et affiliés. Choisissez le
-            produit qui vous convient puis achetez sur la plateforme indiquée.</p>
-          <div class="mt-6 flex flex-wrap gap-3 text-xs font-bold"><span
-              class="rounded-lg bg-white/15 px-3 py-2">Paiement sécurisé par JEOAH'S</span><span
-              class="rounded-lg bg-white/15 px-3 py-2">Frais de service 3%</span><span
-              class="rounded-lg bg-white/15 px-3 py-2">Suivi de livraison</span></div>
-        </section>
-        <section>
-          <div class="mb-3 flex items-center justify-between">
-            <h2 class="text-xl font-extrabold">Boutiques en vedette</h2><a href="#products"
-              class="text-sm font-bold text-fuchsia-700">Voir tout</a>
+
+      <!-- Colonne Droite Hero + Bandeau d'infos (9 cols) -->
+      <div class="lg:col-span-9 flex flex-col justify-between gap-4">
+        <!-- Bannière Hero -->
+        <div class="hero-central rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex-1 flex flex-col justify-between">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10">
+            <!-- Texte Gauche -->
+            <div class="lg:col-span-5 space-y-2">
+              <p class="text-pink-300 font-bold text-lg">Bienvenue sur</p>
+              <h1 class="text-4xl sm:text-5xl font-black tracking-tight leading-none">JEOAH'S<br><span class="text-2xl sm:text-3xl font-extrabold tracking-wide">MARKET PLACE</span></h1>
+              <p class="text-sm sm:text-base text-purple-100 pt-2 leading-relaxed">
+                La place de marché qui connecte les acheteurs aux <span class="text-pink-400 font-extrabold">meilleurs vendeurs</span>.
+              </p>
+            </div>
+
+            <!-- Image Centrale -->
+            <div class="lg:col-span-4 flex justify-center">
+              <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80" alt="Shopping sur JEOAH'S"
+                class="h-52 sm:h-60 w-auto object-cover rounded-2xl shadow-2xl border-2 border-white/20">
+            </div>
+
+            <!-- Carte Frais de service 3% Droite -->
+            <div class="lg:col-span-3">
+              <div class="bg-white text-slate-900 rounded-2xl p-5 shadow-2xl text-center space-y-2">
+                <div class="inline-flex items-center gap-1.5 text-xs font-extrabold text-slate-700">
+                  <span class="w-6 h-6 rounded-full bg-pink-600 text-white flex items-center justify-center text-[10px]">%</span>
+                  Frais de service
+                </div>
+                <div class="text-5xl font-black text-pink-600 leading-none">3%</div>
+                <p class="text-xs font-extrabold text-slate-800">à la charge de l'acheteur</p>
+                <p class="text-[11px] text-slate-500 leading-snug">Un service simple et transparent pour tous.</p>
+                <a href="/fonctionnalite.html" class="mt-2 block w-full py-2 rounded-xl bg-[#4c0d73] hover:bg-[#3b0a68] text-white font-bold text-xs transition">
+                  En savoir plus
+                </a>
+              </div>
+            </div>
           </div>
-          <div id="stores" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"></div>
-        </section>
-        <section id="products">
-          <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+
+          <!-- 4 Badges Translucides en bas du Hero -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 relative z-10">
+            <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-xl p-3 flex items-center gap-3">
+              <i class="fas fa-shield-alt text-pink-400 text-lg"></i>
+              <div>
+                <p class="text-xs font-bold text-white">Achat en toute sécurité</p>
+                <p class="text-[10px] text-purple-200">Paiements sécurisés</p>
+              </div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-xl p-3 flex items-center gap-3">
+              <i class="fas fa-comments text-pink-400 text-lg"></i>
+              <div>
+                <p class="text-xs font-bold text-white">Échangez facilement</p>
+                <p class="text-[10px] text-purple-200">Messagerie intégrée</p>
+              </div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-xl p-3 flex items-center gap-3">
+              <i class="fas fa-shopping-bag text-pink-400 text-lg"></i>
+              <div>
+                <p class="text-xs font-bold text-white">Soutenez le local</p>
+                <p class="text-[10px] text-purple-200">Achetez local, impact global</p>
+              </div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-xl p-3 flex items-center gap-3">
+              <i class="fas fa-percent text-pink-400 text-lg"></i>
+              <div>
+                <p class="text-xs font-bold text-white">Frais de service</p>
+                <p class="text-[10px] text-purple-200">Seulement 3%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barre de 4 Raccourcis sous le Hero -->
+        <div class="bg-white rounded-2xl border border-purple-100 shadow-sm p-3.5 flex flex-wrap items-center justify-between gap-4">
+          <a href="/fonctionnalite.html" class="flex items-center gap-3 hover:opacity-80 transition">
+            <div class="w-9 h-9 rounded-full bg-purple-50 text-purple-700 flex items-center justify-center"><i class="fas fa-shield-alt"></i></div>
             <div>
-              <h2 class="text-xl font-extrabold">Produits populaires</h2>
-              <p id="market-status" class="mt-1 text-xs text-slate-500">Chargement des offres JEOAH'S...</p>
-            </div><select id="currency"
-              class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold">
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="HTG">HTG</option>
-              <option value="CAD">CAD</option>
-            </select>
+              <p class="text-xs font-extrabold text-slate-900">Comment ça marche</p>
+              <p class="text-[11px] text-slate-500">Guide pour acheteurs</p>
+            </div>
+          </a>
+          <a href="/vendor-setup.html" class="flex items-center gap-3 hover:opacity-80 transition">
+            <div class="w-9 h-9 rounded-full bg-purple-50 text-purple-700 flex items-center justify-center"><i class="fas fa-user-plus"></i></div>
+            <div>
+              <p class="text-xs font-extrabold text-slate-900">Devenir vendeur</p>
+              <p class="text-[11px] text-slate-500">Créez votre boutique</p>
+            </div>
+          </a>
+          <a href="/payment.html" class="flex items-center gap-3 hover:opacity-80 transition">
+            <div class="w-9 h-9 rounded-full bg-purple-50 text-purple-700 flex items-center justify-center"><i class="fas fa-wallet"></i></div>
+            <div>
+              <p class="text-xs font-extrabold text-slate-900">Paiements sécurisés</p>
+              <p class="text-[11px] text-slate-500">MonCash, Natcash, etc.</p>
+            </div>
+          </a>
+          <a href="/faq.html" class="flex items-center gap-3 hover:opacity-80 transition">
+            <div class="w-9 h-9 rounded-full bg-purple-50 text-purple-700 flex items-center justify-center"><i class="fas fa-question-circle"></i></div>
+            <div>
+              <p class="text-xs font-extrabold text-slate-900">Centre d'aide</p>
+              <p class="text-[11px] text-slate-500">Réponses à vos questions</p>
+            </div>
+          </a>
+          <a href="/affiliate-storefront.html" class="px-4 py-2 rounded-xl bg-pink-50 hover:bg-pink-100 text-pink-700 font-bold text-xs flex items-center gap-2 transition">
+            <i class="fas fa-store"></i> Voir toutes les boutiques
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section Bas : Gauche (Boutiques en vedette + Produits populaires) | Droite (Devenez vendeur + Restez informé) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- Colonne Gauche (9 cols) -->
+      <div class="lg:col-span-9 space-y-6">
+
+        <!-- Boutiques en vedette -->
+        <section class="bg-white rounded-2xl border border-purple-100 shadow-sm p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-extrabold text-slate-900">Boutiques en vedette</h2>
+            <a href="/affiliate-storefront.html" class="text-xs font-bold text-purple-700 hover:underline">Voir tout →</a>
           </div>
-          <div id="products-grid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
+          <div id="stores" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5"></div>
         </section>
+
+        <!-- Produits populaires -->
+        <section id="products" class="bg-white rounded-2xl border border-purple-100 shadow-sm p-5">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 class="text-lg font-extrabold text-slate-900">Produits populaires</h2>
+              <p id="market-status" class="text-xs text-slate-500">Découvrez les produits en vedette et les offres des boutiques vérifiées.</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <select id="currency" class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-700">
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="HTG">HTG (G)</option>
+                <option value="CAD">CAD ($)</option>
+              </select>
+              <a href="#products" onclick="selectCategory('all'); return false;" class="text-xs font-bold text-purple-700 hover:underline">Voir tout →</a>
+            </div>
+          </div>
+          <div id="products-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5"></div>
+        </section>
+
+      </div>
+
+      <!-- Colonne Droite (3 cols) -->
+      <div class="lg:col-span-3 space-y-6">
+
+        <!-- Carte Devenez vendeur sur JEOAH'S -->
+        <div class="rounded-2xl bg-gradient-to-br from-pink-50 via-purple-50 to-pink-100/70 border border-pink-200 p-5 shadow-sm space-y-4">
+          <div class="flex items-start justify-between gap-2">
+            <h3 class="text-base font-extrabold text-[#3b0a68] leading-snug">Devenez vendeur<br>sur JEOAH'S</h3>
+            <div class="w-12 h-12 rounded-2xl bg-pink-600/10 text-pink-600 flex items-center justify-center text-2xl shrink-0">
+              <i class="fas fa-store"></i>
+            </div>
+          </div>
+          <ul class="space-y-2 text-xs text-slate-700 font-medium">
+            <li class="flex items-start gap-2"><i class="fas fa-check-circle text-purple-700 mt-0.5"></i> <span>Créez votre boutique en quelques minutes</span></li>
+            <li class="flex items-start gap-2"><i class="fas fa-check-circle text-purple-700 mt-0.5"></i> <span>Gérez vos produits facilement</span></li>
+            <li class="flex items-start gap-2"><i class="fas fa-check-circle text-purple-700 mt-0.5"></i> <span>Échangez avec des milliers d'acheteurs</span></li>
+            <li class="flex items-start gap-2"><i class="fas fa-check-circle text-purple-700 mt-0.5"></i> <span>Développez votre activité à l'international</span></li>
+          </ul>
+          <a href="/vendor-setup.html" class="w-full py-3 px-4 rounded-xl bg-[#4c0d73] hover:bg-[#3b0a68] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition">
+            <i class="fas fa-store"></i> Ouvrir ma boutique
+          </a>
+        </div>
+
+        <!-- Carte Restez informé ! -->
+        <div class="rounded-2xl bg-gradient-to-br from-[#2b094d] to-[#5b1068] text-white p-5 shadow-lg space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center text-pink-300 text-lg shrink-0">
+              <i class="fas fa-envelope"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-extrabold">Restez informé !</h3>
+              <p class="text-[11px] text-purple-200 leading-tight">Recevez nos nouveautés, offres spéciales et conseils directement par email.</p>
+            </div>
+          </div>
+          <form onsubmit="event.preventDefault(); alert('Merci pour votre inscription à la newsletter JEOAH\'S !'); this.reset();" class="flex items-center bg-white rounded-xl overflow-hidden p-1">
+            <input type="email" required placeholder="Votre adresse email" class="w-full px-3 py-2 text-xs text-slate-800 outline-none">
+            <button type="submit" class="bg-pink-600 hover:bg-pink-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold transition shrink-0">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Barre de Statistiques & Confiance en bas -->
+    <section class="bg-white rounded-2xl border border-purple-100 shadow-sm p-5 grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-xl"><i class="fas fa-shopping-bag"></i></div>
+        <div>
+          <strong class="text-lg font-black text-[#3b0a68] block">10,000+</strong>
+          <span class="text-xs text-slate-500">Produits disponibles</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-xl"><i class="fas fa-store"></i></div>
+        <div>
+          <strong class="text-lg font-black text-[#3b0a68] block">500+</strong>
+          <span class="text-xs text-slate-500">Boutiques actives</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-xl"><i class="fas fa-users"></i></div>
+        <div>
+          <strong class="text-lg font-black text-[#3b0a68] block">5,000+</strong>
+          <span class="text-xs text-slate-500">Acheteurs satisfaits</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-xl"><i class="fas fa-globe-americas"></i></div>
+        <div>
+          <strong class="text-sm font-black text-[#3b0a68] block">Livraison &amp; Retrait</strong>
+          <span class="text-xs text-slate-500">Partout en Haïti &amp; International</span>
+        </div>
       </div>
     </section>
+
   </main>
+
   <script type="module">
     import { getApps, initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
     import { collection, getDocs, getFirestore } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
-    let categories = ['Toutes les catégories', 'Mode & Accessoires', 'Beauté & Soins', 'Maison & Décoration', 'Électronique', 'Alimentation'];
-    const categoriesByLang = {
-      fr: ['Toutes les catégories', 'Mode & Accessoires', 'Beauté & Soins', 'Maison & Décoration', 'Électronique', 'Alimentation'],
-      ht: ['Tout kategori yo', 'Mòd ak Akseswa', 'Bote ak Swen', 'Kay ak Dekorasyon', 'Elektwonik', 'Manje ak Pwovizyon'],
-      en: ['All categories', 'Fashion & Accessories', 'Beauty & Personal Care', 'Home & Living', 'Electronics', 'Food & Grocery'],
-      es: ['Todas las categorías', 'Moda y Accesorios', 'Belleza y Cuidado', 'Hogar y Decoración', 'Electrónica', 'Alimentación'],
-      zh: ['全部分类', '时尚与配饰', '美妆与个护', '家居与装饰', '数码电子', '食品生鲜']
-    };
-    const uiText = {
-      fr: { bannerWelcome: "BIENVENUE SUR", bannerDesc: "Comparez les offres des vendeurs et affiliés. Choisissez le produit qui vous convient puis achetez sur la plateforme indiquée.", badgeSecure: "Paiement sécurisé par JEOAH'S", badgeFee: "Frais de service 3%", badgeTracking: "Suivi de livraison", featuredStores: "Boutiques en vedette", popularProducts: "Produits populaires", seeAll: "Voir tout", viewOffer: "Voir l'offre", home: "Accueil", categories: "Catégories", myAccount: "Mon compte", searchPlaceholder: "Rechercher un produit, une boutique, une catégorie...", empty: "Aucun produit ne correspond à cette recherche.", storesEmpty: "Les boutiques apparaîtront lorsque les produits seront publiés par JEOAH." },
-      ht: { bannerWelcome: "BYENVENI SOU", bannerDesc: "Konpare òf vandè ak afilye yo. Chwazi pwodwi ki bon pou ou a epi achte sou platfòm ki endike a.", badgeSecure: "Peman an sekirite pa JEOAH'S", badgeFee: "Frè sèvis 3%", badgeTracking: "Swivi livrezon", featuredStores: "Boutik an vedèt", popularProducts: "Pwodwi popilè yo", seeAll: "Wè tout", viewOffer: "Wè òf la", home: "Akèy", categories: "Kategori yo", myAccount: "Kont mwen", searchPlaceholder: "Chèche yon pwodwi, yon boutik, yon kategori...", empty: "Pa gen okenn pwodwi ki koresponn ak rechèch sa a.", storesEmpty: "Boutik yo ap parèt lè pwodwi yo pibliye pa JEOAH." },
-      en: { bannerWelcome: "WELCOME TO", bannerDesc: "Compare offers from sellers and affiliates. Choose the product that suits you then purchase on the indicated platform.", badgeSecure: "Secure payment by JEOAH'S", badgeFee: "3% Service Fee", badgeTracking: "Delivery tracking", featuredStores: "Featured Stores", popularProducts: "Popular Products", seeAll: "See all", viewOffer: "View offer", home: "Home", categories: "Categories", myAccount: "My account", searchPlaceholder: "Search for a product, store, category...", empty: "No products match this search.", storesEmpty: "Stores will appear once products are published by JEOAH." },
-      es: { bannerWelcome: "BIENVENIDO A", bannerDesc: "Compare ofertas de vendedores y afiliados. Elija el producto que le convenga y compre en la plataforma indicada.", badgeSecure: "Pago seguro por JEOAH'S", badgeFee: "Tarifa de servicio 3%", badgeTracking: "Seguimiento de envío", featuredStores: "Tiendas destacadas", popularProducts: "Productos populares", seeAll: "Ver todo", viewOffer: "Ver oferta", home: "Inicio", categories: "Categorías", myAccount: "Mi cuenta", searchPlaceholder: "Buscar un producto, tienda, categoría...", empty: "Ningún producto coincide con esta búsqueda.", storesEmpty: "Las tiendas aparecerán cuando los productos sean publicados por JEOAH." },
-      zh: { bannerWelcome: "欢迎来到", bannerDesc: "对比精选卖家与联盟商品。选择心仪商品并在指定平台完成安全交易。", badgeSecure: "JEOAH'S 安全担保交易", badgeFee: "3% 平台服务费", badgeTracking: "实时物流追踪", featuredStores: "精选推荐店铺", popularProducts: "热门畅销商品", seeAll: "查看全部", viewOffer: "查看优惠", home: "首页", categories: "商品分类", myAccount: "我的账户", searchPlaceholder: "搜索商品、店铺、分类...", empty: "未找到符合条件的商品。", storesEmpty: "商品发布后即可在此查看特色店铺。" }
-    };
-    let currentLang = localStorage.getItem('jeoahs-lang') || 'fr';
-    const rates = { USD: 1, EUR: .92, HTG: 131, CAD: 1.36 };
-    let products = [];
-    let selectedCategory = categories[0];
-    const escape = value => String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-    function renderCategories() { document.getElementById('category-list').innerHTML = categories.map(category => `<button data-category="${escape(category)}" class="category w-full rounded-lg px-3 py-2 text-left ${category === selectedCategory ? 'bg-fuchsia-50 font-bold text-fuchsia-700' : 'hover:bg-slate-50'}">${category}</button>`).join(''); document.querySelectorAll('.category').forEach(button => button.onclick = () => { selectedCategory = button.dataset.category; renderCategories(); renderProducts(); }); }
-    function formatPriceVal(rawAmount) {
-      const raw = Number(String(rawAmount || '0').replace(/[^0-9.]/g, '')) || 0;
-      const code = document.getElementById('currency').value;
-      return new Intl.NumberFormat(code === 'HTG' ? 'fr-HT' : 'fr-FR', { style: 'currency', currency: code, maximumFractionDigits: code === 'HTG' ? 0 : 2 }).format(raw * rates[code]);
+
+    const rates = { USD: 1, EUR: 0.92, HTG: 131, CAD: 1.36 };
+    let selectedCategory = 'all';
+    const esc = v => String(v || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const DEFAULT_FEATURED_STORES = [
+      { name: 'Beauty by Carel', category: 'Beauté & Soins', rating: '4.8', reviews: 128, avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80', href: '/affiliate-storefront.html' },
+      { name: 'Kay Chic Store', category: 'Mode & Accessoires', rating: '4.7', reviews: 96, avatar: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=200&q=80', href: '/affiliate-storefront.html?store=Kay+Chic+Store' },
+      { name: 'Maison Élégance', category: 'Maison & Décoration', rating: '4.9', reviews: 78, initials: 'ME', bg: 'bg-emerald-800', href: '/affiliate-storefront.html?store=Maison+Elegance' },
+      { name: 'Tech Plus Haiti', category: 'Électronique', rating: '4.6', reviews: 54, initials: 'TECH', bg: 'bg-slate-900', href: '/affiliate-storefront.html?store=Tech+Plus+Haiti' },
+      { name: "Saveurs d'Ici", category: 'Alimentation & Boissons', rating: '4.8', reviews: 112, initials: 'SI', bg: 'bg-green-900', href: '/affiliate-storefront.html?store=Saveurs+d+Ici' }
+    ];
+
+    const DEFAULT_POPULAR_PRODUCTS = [
+      { id: 'pop-1', name: 'Parfum Élégance', category: 'Beauté & Soins', price: 25.00, oldPrice: 29.00, discount: '-15%', rating: '4.6', reviews: 42, imageUrl: 'https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=500&q=80', storeName: 'Beauty by Carel', productType: 'vendor' },
+      { id: 'pop-2', name: 'Sac à main chic', category: 'Mode & Accessoires', price: 45.00, rating: '4.8', reviews: 63, imageUrl: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=500&q=80', storeName: 'Kay Chic Store', productType: 'vendor' },
+      { id: 'pop-3', name: 'Montre connectée', category: 'Électronique', price: 35.00, rating: '4.5', reviews: 38, imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=500&q=80', storeName: 'Tech Plus Haiti', productType: 'vendor' },
+      { id: 'pop-4', name: 'Crème visage bio', category: 'Beauté & Soins', price: 22.00, rating: '4.7', reviews: 51, imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=500&q=80', storeName: 'Beauty by Carel', productType: 'vendor' },
+      { id: 'pop-5', name: 'Écouteurs sans fil', category: 'Électronique', price: 18.00, rating: '4.4', reviews: 29, imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=500&q=80', storeName: 'Tech Plus Haiti', productType: 'vendor' },
+      { id: 'pop-6', name: 'Blender portable', category: 'Maison & Décoration', price: 28.00, rating: '4.4', reviews: 29, imageUrl: 'https://images.unsplash.com/photo-1570222094114-d054a817e56b?auto=format&fit=crop&w=500&q=80', storeName: 'Maison Élégance', productType: 'vendor' }
+    ];
+
+    let products = [...DEFAULT_POPULAR_PRODUCTS];
+
+    function isInternalRecord(item) {
+      if (!item) return false;
+      if (item.isInternalTest === true) return true;
+      const email = String(item.ownerEmail || item.email || item.vendorEmail || '').trim().toLowerCase();
+      try { return btoa(email) === 'amVvYWhzMUBnbWFpbC5jb20='; } catch (_) { return false; }
     }
-    function price(product) { return formatPriceVal(product.price || product.priceUsd || (product.offers?.[0]?.price) || '0'); }
-    function matches(product) {
-      const text = document.getElementById('market-search').value.trim().toLowerCase();
-      const isAll = selectedCategory === categories[0] || selectedCategory === 'Toutes les catégories';
-      const categoryMatch = isAll || String(product.category || '').toLowerCase().includes(selectedCategory.split(' ')[0].toLowerCase());
-      const offersText = Array.isArray(product.offers) ? product.offers.map(o => o.platform).join(' ') : '';
-      return categoryMatch && (!text || `${product.name || product.title || ''} ${product.hook || ''} ${product.description || ''} ${product.category || ''} ${product.source || ''} ${offersText}`.toLowerCase().includes(text));
-    }
+
     function hasActivePlan(product) {
-      if (!product) return false;
-      const email = String(product.ownerEmail || product.email || product.vendorEmail || '').trim().toLowerCase();
-      if (product.isInternalTest === true || email === 'jeoahs1@gmail.com') return false;
+      if (!product || isInternalRecord(product)) return false;
       if (product.subscriptionPlan === 'tester' || product.subscriptionPlan === 'enterprise') return true;
       const value = product.subscriptionExpiresAt;
       const expiresAt = value?.toDate ? value.toDate().getTime() : new Date(value).getTime();
       return product.subscriptionActive === true && Number.isFinite(expiresAt) && expiresAt > Date.now();
     }
+
+    function formatPriceVal(rawAmount) {
+      const raw = Number(String(rawAmount || '0').replace(/[^0-9.]/g, '')) || 0;
+      const code = document.getElementById('currency')?.value || 'USD';
+      if (code === 'USD') return `$${raw.toFixed(2)}`;
+      return new Intl.NumberFormat(code === 'HTG' ? 'fr-HT' : 'fr-FR', { style: 'currency', currency: code, maximumFractionDigits: code === 'HTG' ? 0 : 2 }).format(raw * rates[code]);
+    }
+
+    function renderStores() {
+      const container = document.getElementById('stores');
+      container.innerHTML = DEFAULT_FEATURED_STORES.map(s => `
+        <div class="rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-md transition p-3.5 flex flex-col justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            ${s.avatar
+              ? `<img src="${esc(s.avatar)}" alt="${esc(s.name)}" class="w-12 h-12 rounded-full object-cover border border-purple-200 shrink-0">`
+              : `<div class="w-12 h-12 rounded-full ${s.bg || 'bg-purple-800'} text-white font-extrabold text-sm flex items-center justify-center shrink-0">${esc(s.initials)}</div>`
+            }
+            <div class="min-w-0">
+              <h3 class="font-extrabold text-xs text-slate-900 truncate">${esc(s.name)}</h3>
+              <p class="text-[11px] text-slate-500 truncate">${esc(s.category)}</p>
+              <p class="text-[11px] font-bold text-amber-500 mt-0.5"><i class="fas fa-star"></i> ${esc(s.rating)} <span class="text-slate-400 font-normal">(${esc(s.reviews)})</span></p>
+            </div>
+          </div>
+          <a href="${esc(s.href)}" class="w-full py-1.5 px-3 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold text-[11px] text-center transition">
+            Voir la boutique ›
+          </a>
+        </div>
+      `).join('');
+    }
+
     window.addToCartFromShowcase = function (prodId) {
-      const prod = products.find(p => p.id === prodId);
+      const prod = products.find(p => String(p.id) === String(prodId));
       if (!prod) return;
       const cart = JSON.parse(localStorage.getItem('jeoahs_cart') || '[]');
-      const existing = cart.find(c => c.id === prodId);
+      const existing = cart.find(c => String(c.id) === String(prodId));
       if (existing) existing.quantity = (existing.quantity || 1) + 1;
       else cart.push({ id: prod.id, name: prod.name || prod.title, price: prod.price || prod.priceUsd || 25, imageUrl: prod.imageUrl || prod.image, storeName: prod.storeName || 'Boutique Vendeur', quantity: 1 });
       localStorage.setItem('jeoahs_cart', JSON.stringify(cart));
-      if (confirm(`"${prod.name || prod.title}" a été ajouté à votre panier !\nVoulez-vous ouvrir votre panier maintenant ?`)) {
-        window.location.href = '/panier.html';
-      }
+      window.location.href = '/panier.html';
     };
-    function renderProducts() {
-      const visible = products.filter(matches);
-      const t = uiText[currentLang] || uiText.fr;
-      document.getElementById('products-grid').innerHTML = visible.length ? visible.map(product => {
-        const name = product.name || product.title || "Produit JEOAH'S";
-        const hook = product.hook || '';
-        const desc = product.description || 'Comparez les offres officielles ci-dessous et choisissez votre plateforme préférée.';
-        const image = product.imageUrl || product.image || 'https://placehold.co/600x600/e2e8f0/334155?text=Produit';
-        const link = product.url || product.redirection || '#';
-        const isVendor = product.productType === 'vendor' || product.ownerRole === 'vendeur';
-        const storeLabel = product.storeName || product.sellerName || product.affiliateName || (isVendor ? 'Boutique Vendeur' : 'Vitrine Affiliée');
-        const offersList = Array.isArray(product.offers) && product.offers.length
-          ? product.offers
-          : (!isVendor ? [
-              { platform: 'Amazon', price: product.price || '$29.99', url: link },
-              { platform: 'eBay', price: `$${(Math.max(5, (Number(String(product.price || '29.99').replace(/[^0-9.]/g, '')) || 29.99) * 0.91)).toFixed(2)}`, url: `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(name)}` },
-              { platform: 'Walmart', price: `$${(Math.max(5, (Number(String(product.price || '29.99').replace(/[^0-9.]/g, '')) || 29.99) * 0.95)).toFixed(2)}`, url: `https://www.walmart.com/search?q=${encodeURIComponent(name)}` }
-            ] : []);
 
-        return `<article class="flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition">
-          <div>
-            <div class="relative">
-              <img src="${escape(image)}" alt="${escape(name)}" class="h-44 w-full object-cover">
-              <span class="absolute top-2.5 left-2.5 rounded-full ${isVendor ? 'bg-blue-700' : 'bg-fuchsia-700'} px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-white shadow">
-                ${isVendor ? '🏪 Vendeur Direct' : '🔗 Comparateur Affilié'}
-              </span>
-            </div>
-            <div class="p-4 pb-2">
-              <p class="text-[11px] font-bold uppercase tracking-wide text-fuchsia-700">${escape(hook || storeLabel)}</p>
-              <h3 class="mt-1 font-extrabold text-slate-900 text-sm leading-snug">${escape(name)}</h3>
-              <p class="mt-1.5 text-xs text-slate-500 line-clamp-2">${escape(desc)}</p>
-            </div>
-          </div>
-          <div class="p-4 pt-2 border-t border-slate-100 mt-2">
-            ${isVendor ? `
-              <div class="flex items-center justify-between gap-2">
-                <div>
-                  <span class="text-xs text-slate-400 block">Prix Vendeur</span>
-                  <strong class="text-base font-extrabold text-slate-900">${price(product)}</strong>
-                </div>
-                <button type="button" onclick="addToCartFromShowcase('${escape(product.id)}')" class="rounded-xl bg-blue-600 hover:bg-blue-700 px-3.5 py-2 text-xs font-extrabold text-white shadow-sm transition">
-                  <i class="fas fa-cart-plus mr-1"></i> Acheter
+    function renderProducts() {
+      const q = (document.getElementById('market-search')?.value || '').trim().toLowerCase();
+      const visible = products.filter(p => {
+        const catMatch = selectedCategory === 'all' || String(p.category || '').toLowerCase().includes(selectedCategory.toLowerCase());
+        const textMatch = !q || `${p.name || ''} ${p.category || ''} ${p.storeName || ''} ${p.description || ''}`.toLowerCase().includes(q);
+        return catMatch && textMatch;
+      });
+
+      const grid = document.getElementById('products-grid');
+      if (!visible.length) {
+        grid.innerHTML = `<p class="col-span-full rounded-xl border border-dashed border-slate-200 p-8 text-center text-xs text-slate-500">Aucun produit ne correspond à ce filtre.</p>`;
+        return;
+      }
+
+      grid.innerHTML = visible.map(p => {
+        const img = (Array.isArray(p.images) && p.images[0]) || p.imageUrl || p.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=500&q=80';
+        const hasOffers = Array.isArray(p.offers) && p.offers.length > 0;
+        return `
+          <article class="rounded-2xl border border-slate-100 bg-white hover:shadow-lg transition overflow-hidden flex flex-col justify-between group">
+            <div>
+              <div class="relative h-36 bg-slate-100 overflow-hidden">
+                <img src="${esc(img)}" alt="${esc(p.name)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                ${p.discount ? `<span class="absolute top-2 left-2 bg-pink-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">${esc(p.discount)}</span>` : ''}
+                <button type="button" onclick="addToCartFromShowcase('${esc(p.id)}')" title="Ajouter au panier" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 text-pink-600 hover:bg-pink-600 hover:text-white flex items-center justify-center text-xs shadow transition">
+                  <i class="far fa-heart"></i>
                 </button>
               </div>
-            ` : `
-              <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5">Comparez & cliquez pour acheter :</p>
-              <div class="space-y-1.5">
-                ${offersList.slice(0, 4).map(off => {
-                  const clickUrl = `/api/affiliate-click.js?affiliate_id=${encodeURIComponent(product.affiliateId || product.ownerId || 'marketplace')}&url=${encodeURIComponent(off.url || link)}`;
-                  return `<a href="${escape(clickUrl)}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between rounded-xl border border-fuchsia-200 bg-fuchsia-50/60 hover:bg-fuchsia-600 px-3 py-1.5 text-xs font-bold text-fuchsia-950 hover:text-white transition">
-                    <span>${escape(off.platform || 'Partenaire')}</span>
-                    <span class="font-extrabold">${formatPriceVal(off.price || product.price)} <i class="fas fa-arrow-up-right-from-square text-[9px] ml-1"></i></span>
-                  </a>`;
-                }).join('')}
+              <div class="p-3">
+                <h3 class="font-bold text-xs text-slate-900 line-clamp-1">${esc(p.name || p.title)}</h3>
+                ${p.slogan ? `<p class="text-[10px] text-purple-700 font-semibold line-clamp-1 mt-0.5">${esc(p.slogan)}</p>` : ''}
+                <div class="flex items-baseline gap-1.5 mt-1">
+                  <strong class="text-sm font-black text-slate-900">${formatPriceVal(p.price || p.priceUsd || 25)}</strong>
+                  ${p.oldPrice ? `<span class="text-[10px] text-slate-400 line-through">${formatPriceVal(p.oldPrice)}</span>` : ''}
+                </div>
+                <p class="text-[11px] font-bold text-amber-500 mt-1">
+                  <i class="fas fa-star"></i> ${esc(p.rating || '4.8')} <span class="text-slate-400 font-normal">(${esc(p.reviews || 24)})</span>
+                </p>
               </div>
-            `}
-          </div>
-        </article>`;
-      }).join('') : `<p class="col-span-full rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">${t.empty}</p>`;
+            </div>
+            <div class="px-3 pb-3">
+              ${hasOffers ? `
+                <a href="${esc(p.offers[0].url || '#')}" target="_blank" rel="noopener" class="block w-full py-1.5 rounded-lg bg-purple-50 hover:bg-purple-700 text-purple-800 hover:text-white font-bold text-[11px] text-center transition">
+                  Comparer (${p.offers.length}) ›
+                </a>
+              ` : `
+                <button type="button" onclick="addToCartFromShowcase('${esc(p.id)}')" class="w-full py-1.5 rounded-lg bg-purple-50 hover:bg-purple-700 text-purple-800 hover:text-white font-bold text-[11px] text-center transition">
+                  Acheter ›
+                </button>
+              `}
+            </div>
+          </article>
+        `;
+      }).join('');
     }
-    function renderStores() {
-      const t = uiText[currentLang] || uiText.fr;
-      const stores = [...new Set(products.map(product => product.storeName || product.sellerName || product.affiliateName || product.source).filter(Boolean))].slice(0, 4); document.getElementById('stores').innerHTML = stores.length ? stores.map(store => `<a href="#products" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-fuchsia-300"><p class="font-bold">${escape(store)}</p><p class="mt-1 text-xs text-slate-500">Voir les offres disponibles</p></a>`).join('') : `<p class="text-sm text-slate-500">${t.storesEmpty}</p>`;
-    }
+
+    window.selectCategory = function (cat) {
+      selectedCategory = cat;
+      const sel = document.getElementById('header-category-select');
+      if (sel) sel.value = cat;
+      renderProducts();
+    };
+
+    window.triggerSearch = function () {
+      const sel = document.getElementById('header-category-select');
+      if (sel) selectedCategory = sel.value;
+      renderProducts();
+    };
+
     async function loadProducts() {
       const byId = new Map();
-      const localCentral = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]').filter(hasActivePlan);
-      localCentral.forEach(p => byId.set(p.id, p));
+      DEFAULT_POPULAR_PRODUCTS.forEach(p => byId.set(String(p.id), p));
+      try {
+        const localCentral = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]').filter(hasActivePlan);
+        localCentral.forEach(p => byId.set(String(p.id), p));
+      } catch (_) {}
       try {
         const config = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : null;
         if (config?.apiKey) {
           const app = getApps()[0] || initializeApp(config);
           const snapshot = await getDocs(collection(getFirestore(app), 'artifacts/jeoahs1-max-03326376-49b27/public/data/products'));
-          snapshot.docs.map(item => ({ id: item.id, ...item.data() })).filter(hasActivePlan).forEach(p => byId.set(p.id, p));
+          snapshot.docs.map(item => ({ id: item.id, ...item.data() })).filter(hasActivePlan).forEach(p => byId.set(String(p.id), p));
         }
       } catch (_) {}
       products = Array.from(byId.values());
-      document.getElementById('market-status').textContent = `${products.length} offre(s) vérifiée(s) disponible(s). Comparez Amazon, eBay, Walmart ou achetez auprès de nos vendeurs.`;
       renderStores();
       renderProducts();
     }
-    
-    function updateShowcaseLanguage(lang) {
-      currentLang = lang || localStorage.getItem('jeoahs-lang') || 'fr';
-      const t = uiText[currentLang] || uiText.fr;
-      document.documentElement.lang = currentLang;
-      const select = document.getElementById('site-lang-select');
-      if (select && select.value !== currentLang) select.value = currentLang;
 
-      const welcome = document.querySelector('section.bg-gradient-to-r p.text-fuchsia-200');
-      if (welcome) welcome.textContent = t.bannerWelcome;
-      const desc = document.querySelector('section.bg-gradient-to-r p.text-indigo-100');
-      if (desc) desc.textContent = t.bannerDesc;
-      const badges = document.querySelectorAll('section.bg-gradient-to-r .mt-6 span');
-      if (badges.length >= 3) {
-        badges[0].textContent = t.badgeSecure;
-        badges[1].textContent = t.badgeFee;
-        badges[2].textContent = t.badgeTracking;
-      }
-      const navHome = document.getElementById('nav-home');
-      if (navHome) navHome.textContent = t.home;
-      const navCat = document.getElementById('nav-categories');
-      if (navCat) navCat.textContent = t.categories;
-      const navAcc = document.getElementById('nav-account');
-      if (navAcc) navAcc.textContent = t.myAccount;
-      const catH2 = document.querySelector('#categories h2');
-      if (catH2) catH2.textContent = t.categories;
-      const storesH2 = document.querySelector('section > div > h2');
-      if (storesH2) storesH2.textContent = t.featuredStores;
-      const storesAll = document.querySelector('a[href="#products"].text-fuchsia-700');
-      if (storesAll) storesAll.textContent = t.seeAll;
-      const prodH2 = document.querySelector('#products h2');
-      if (prodH2) prodH2.textContent = t.popularProducts;
-      const search = document.getElementById('market-search');
-      if (search) search.placeholder = t.searchPlaceholder;
-
-      const list = categoriesByLang[currentLang] || categoriesByLang.fr;
-      categories = list;
-      selectedCategory = list[0];
-      renderCategories();
+    document.getElementById('market-search')?.addEventListener('input', renderProducts);
+    document.getElementById('header-category-select')?.addEventListener('change', (e) => {
+      selectedCategory = e.target.value;
       renderProducts();
-      renderStores();
-    }
-
-    document.getElementById('market-search').addEventListener('input', renderProducts);
-    document.getElementById('currency').addEventListener('change', renderProducts);
-    window.addEventListener('jeoahs-lang-changed', (e) => {
-      if (e.detail?.lang) updateShowcaseLanguage(e.detail.lang);
     });
-    updateShowcaseLanguage(currentLang);
+    document.getElementById('currency')?.addEventListener('change', renderProducts);
+
     loadProducts();
   </script>
   <script src="/public/jeoah-loader.js" defer></script>
 </body>
-
 </html>

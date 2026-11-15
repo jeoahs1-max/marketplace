@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mes Produits & Ma Vitrine Personnalisée - JEOAH'S Marketplace</title>
+    <title>Mes Produits & Ma Vitrine Vendeur - JEOAH'S Marketplace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -21,18 +21,15 @@
                 <span>JEOAH'S Marketplace</span>
             </a>
             <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-                <span id="internal-test-badge" class="hidden text-xs font-bold text-amber-800 bg-amber-100 border border-amber-300 px-3 py-1.5 rounded-full">
-                    <i class="fas fa-shield-alt mr-1"></i> Compte Interne (jeoahs1@gmail.com · Non affiché en public)
-                </span>
                 <span id="user-info" class="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-full">Espace Vendeur</span>
                 <a href="/vendor_dashboard.html" class="text-xs font-bold text-gray-700 hover:text-indigo-600 bg-gray-100 hover:bg-indigo-50 px-3 py-2 rounded-lg transition">
                     <i class="fas fa-chart-pie mr-1"></i> Tableau de bord
                 </a>
-                <a href="/vendor-setup.html" class="text-xs font-bold text-gray-700 hover:text-indigo-600 bg-gray-100 hover:bg-indigo-50 px-3 py-2 rounded-lg transition">
-                    <i class="fas fa-cog mr-1"></i> Paramètres Boutique
+                <a href="/affiliate-storefront.html?role=vendeur&edit=1" class="text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-3 py-2 rounded-lg transition">
+                    <i class="fas fa-paint-brush mr-1"></i> Personnaliser ma Vitrine
                 </a>
                 <a href="/affiliate-storefront.html?role=vendeur" class="text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-3.5 py-2 rounded-lg shadow-sm transition">
-                    <i class="fas fa-store mr-1"></i> Ma Vitrine Personnalisée
+                    <i class="fas fa-store mr-1"></i> Voir ma Vitrine
                 </a>
             </div>
         </div>
@@ -41,7 +38,7 @@
     <!-- Contenu Principal -->
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
-        <!-- APERÇU DU MODÈLE DE VITRINE PERSONNALISÉE UTILISATEUR (Différent de la Vitrine Centrale) -->
+        <!-- BANNIÈRE APERÇU DE LA VITRINE PERSONNALISABLE DU VENDEUR -->
         <section class="bg-gradient-to-r from-indigo-700 via-purple-700 to-pink-600 rounded-2xl shadow-xl p-6 sm:p-8 text-white relative overflow-hidden">
             <div class="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                 <div class="flex items-start sm:items-center gap-4">
@@ -51,24 +48,24 @@
                     <div>
                         <div class="flex flex-wrap items-center gap-2 mb-1">
                             <span class="bg-white/20 backdrop-blur text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                                <i class="fas fa-magic mr-1"></i> Modèle de Vitrine Personnalisée Utilisateur
+                                <i class="fas fa-store mr-1"></i> Vitrine Vendeur Personnalisable
                             </span>
                             <span id="preview-plan-badge" class="bg-emerald-400/20 border border-emerald-300/40 text-emerald-100 text-[11px] font-bold px-2.5 py-0.5 rounded-full">
                                 Plan Actif
                             </span>
                         </div>
-                        <h1 id="preview-store-name" class="text-2xl sm:text-3xl font-extrabold">Ma Boutique Personnalisée</h1>
+                        <h1 id="preview-store-name" class="text-2xl sm:text-3xl font-extrabold">Ma Boutique</h1>
                         <p id="preview-store-desc" class="text-purple-100 text-sm mt-1 max-w-2xl">
-                            Votre vitrine personnalisée dédiée à vos clients (design distinct de la Vitrine Centrale), assistée par JEOAH IA pour guider les acheteurs jusqu'au paiement final.
+                            Ajoutez vos produits (1 à 5 photos max, slogan, titre, description, prix et vidéo si nécessaire) et personnalisez librement votre page vitrine.
                         </p>
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
                     <a href="/affiliate-storefront.html?role=vendeur" class="flex-1 sm:flex-initial text-center px-5 py-3 bg-white text-purple-700 font-extrabold rounded-xl shadow-lg hover:bg-purple-50 transition text-sm">
-                        <i class="fas fa-external-link-alt mr-1.5"></i> Voir mon Modèle de Vitrine Personnalisée
+                        <i class="fas fa-external-link-alt mr-1.5"></i> Ouvrir ma Vitrine
                     </a>
-                    <a href="/vendor-setup.html" class="px-4 py-3 bg-white/15 hover:bg-white/25 text-white font-semibold rounded-xl border border-white/30 transition text-sm">
-                        <i class="fas fa-paint-brush mr-1"></i> Personnaliser
+                    <a href="/affiliate-storefront.html?role=vendeur&edit=1" class="px-4 py-3 bg-white/15 hover:bg-white/25 text-white font-semibold rounded-xl border border-white/30 transition text-sm">
+                        <i class="fas fa-paint-brush mr-1"></i> Modifier ma page Vitrine
                     </a>
                 </div>
             </div>
@@ -78,7 +75,7 @@
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
                 <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-900">Mes Produits (<span id="products-total-count">0</span>)</h2>
-                <p class="text-sm text-gray-500">Ajoutez et gérez les produits affichés dans votre vitrine personnalisée et synchronisés avec JEOAH IA.</p>
+                <p class="text-sm text-gray-500">Chaque produit peut inclure 1 à 5 photos maximum, un slogan, un titre, une description, un prix et une vidéo si nécessaire.</p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
                 <button id="add-product-btn" type="button" class="px-5 py-2.5 bg-emerald-600 text-white font-bold rounded-xl shadow-md hover:bg-emerald-700 transition flex items-center gap-2">
@@ -87,60 +84,99 @@
                 <button type="button" onclick="window.syncStorefrontToCentral()" class="px-4 py-2.5 bg-purple-600 text-white font-bold rounded-xl shadow-md hover:bg-purple-700 transition text-sm flex items-center gap-1.5">
                     <i class="fas fa-rocket"></i> Envoyer vers la Vitrine Centrale (JEOAH IA)
                 </button>
-                <a href="/vendor_product_submission.html" class="px-4 py-2.5 bg-indigo-50 text-indigo-700 font-semibold rounded-xl border border-indigo-200 hover:bg-indigo-100 transition text-sm">
-                    <i class="fas fa-sliders-h mr-1"></i> Formulaire Avancé (Tailles / Livraison)
-                </a>
             </div>
         </div>
 
         <div id="status-banner" class="hidden p-4 rounded-xl text-sm font-semibold"></div>
 
-        <!-- Formulaire d'Ajout/Modification de Produit -->
+        <!-- Formulaire d'Ajout/Modification de Produit (1 à 5 photos max, Slogan, Titre, Description, Prix, Vidéo optionnelle) -->
         <div id="product-form-container" class="hidden bg-white p-6 sm:p-8 rounded-2xl shadow-xl border border-indigo-100">
             <div class="flex justify-between items-center border-b pb-3 mb-5">
-                <h3 class="text-xl font-extrabold text-gray-800" id="form-title">Ajouter un Nouveau Produit</h3>
+                <div>
+                    <h3 class="text-xl font-extrabold text-gray-800" id="form-title">Ajouter un Nouveau Produit</h3>
+                    <p class="text-xs text-gray-500 mt-0.5">1 à 5 photos max · Slogan · Titre · Description · Prix · Vidéo si nécessaire</p>
+                </div>
                 <button type="button" id="close-form-x" class="text-gray-400 hover:text-gray-600 text-lg">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <form id="product-form" class="space-y-4">
                 <input type="hidden" id="edit-product-id" value="">
+
+                <!-- 1. Titre & Catégorie -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label for="product-name" class="block text-sm font-semibold text-gray-700">Nom du Produit *</label>
-                        <input type="text" id="product-name" required placeholder="Ex: Montre Connectée Pro, Robe d'été..." class="mt-1 block w-full px-3.5 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        <label for="product-name" class="block text-sm font-semibold text-gray-700">Titre du Produit *</label>
+                        <input type="text" id="product-name" required placeholder="Ex: Crème visage éclaircissante, Montre Connectée..." class="mt-1 block w-full px-3.5 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
                     </div>
                     <div>
                         <label for="product-category" class="block text-sm font-semibold text-gray-700">Catégorie *</label>
                         <select id="product-category" class="mt-1 block w-full px-3.5 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white">
-                            <option value="electronics">Électronique & High-Tech</option>
-                            <option value="fashion">Mode & Vêtements</option>
-                            <option value="beauty">Beauté & Soins</option>
-                            <option value="home">Maison & Décoration</option>
-                            <option value="sports">Sports & Loisirs</option>
-                            <option value="other">Autre catégorie</option>
+                            <option value="Beauté & Soins">Beauté &amp; Soins</option>
+                            <option value="Mode & Accessoires">Mode &amp; Accessoires</option>
+                            <option value="Maison & Décoration">Maison &amp; Décoration</option>
+                            <option value="Électronique">Électronique</option>
+                            <option value="Téléphones & Tablettes">Téléphones &amp; Tablettes</option>
+                            <option value="Santé & Bien-être">Santé &amp; Bien-être</option>
+                            <option value="Sports & Loisirs">Sports &amp; Loisirs</option>
+                            <option value="Alimentation & Boissons">Alimentation &amp; Boissons</option>
+                            <option value="Autre">Autre catégorie</option>
                         </select>
                     </div>
                 </div>
 
+                <!-- 2. Slogan du Produit (différent du texte pub et de la vidéo) -->
                 <div>
-                    <label for="product-description" class="block text-sm font-semibold text-gray-700">Description & Points Forts *</label>
-                    <textarea id="product-description" rows="3" required placeholder="Décrivez votre produit (utilisé par JEOAH IA pour vos slogans, textes pub et vidéos)..." class="mt-1 block w-full px-3.5 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                    <label for="product-slogan" class="block text-sm font-semibold text-gray-700">Slogan du Produit * <span class="text-xs font-normal text-purple-600">(Phrase d'accroche courte, distincte du texte pub et de la vidéo)</span></label>
+                    <input type="text" id="product-slogan" required placeholder="Ex: L'éclat naturel au quotidien — résultats visibles dès 7 jours !" class="mt-1 block w-full px-3.5 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <!-- 3. Description du Produit -->
+                <div>
+                    <label for="product-description" class="block text-sm font-semibold text-gray-700">Description du Produit *</label>
+                    <textarea id="product-description" rows="3" required placeholder="Décrivez les caractéristiques, avantages et détails de votre produit..." class="mt-1 block w-full px-3.5 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                </div>
+
+                <!-- 4. Prix & Stock -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label for="product-price" class="block text-sm font-semibold text-gray-700">Prix ($ USD) *</label>
-                        <input type="number" step="0.01" min="0.5" id="product-price" required placeholder="29.99" class="mt-1 block w-full px-3.5 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        <input type="number" step="0.01" min="0.5" id="product-price" required placeholder="22.00" class="mt-1 block w-full px-3.5 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
                     </div>
                     <div>
                         <label for="product-stock" class="block text-sm font-semibold text-gray-700">Stock disponible *</label>
                         <input type="number" id="product-stock" min="0" value="10" required class="mt-1 block w-full px-3.5 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
                     </div>
-                    <div>
-                        <label for="product-image-url" class="block text-sm font-semibold text-gray-700">URL de l'Image</label>
-                        <input type="url" id="product-image-url" placeholder="https://..." class="mt-1 block w-full px-3.5 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+
+                <!-- 5. Photos du Produit (1 à 5 photos max) -->
+                <div class="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <label class="block text-sm font-extrabold text-indigo-950">
+                            <i class="fas fa-images text-indigo-600 mr-1"></i> Photos du produit (1 à 5 photos maximum) *
+                        </label>
+                        <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition">
+                            <i class="fas fa-upload"></i> Choisir 1 à 5 photos depuis mon appareil
+                            <input type="file" id="product-photos-upload" accept="image/*" multiple class="hidden">
+                        </label>
                     </div>
+                    <p class="text-xs text-gray-500">Importez jusqu'à 5 photos depuis votre téléphone/ordinateur ou collez leurs liens ci-dessous (au moins 1 photo requise) :</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
+                        <input type="text" id="product-photo-1" placeholder="Photo 1 (principale) *" class="px-3 py-2 text-xs border border-gray-300 rounded-xl bg-white">
+                        <input type="text" id="product-photo-2" placeholder="Photo 2 (optionnel)" class="px-3 py-2 text-xs border border-gray-300 rounded-xl bg-white">
+                        <input type="text" id="product-photo-3" placeholder="Photo 3 (optionnel)" class="px-3 py-2 text-xs border border-gray-300 rounded-xl bg-white">
+                        <input type="text" id="product-photo-4" placeholder="Photo 4 (optionnel)" class="px-3 py-2 text-xs border border-gray-300 rounded-xl bg-white">
+                        <input type="text" id="product-photo-5" placeholder="Photo 5 (optionnel)" class="px-3 py-2 text-xs border border-gray-300 rounded-xl bg-white">
+                    </div>
+                    <div id="photos-preview-row" class="flex flex-wrap gap-2 pt-1"></div>
+                </div>
+
+                <!-- 6. Vidéo du Produit (si nécessaire) -->
+                <div>
+                    <label for="product-video-url" class="block text-sm font-semibold text-gray-700">
+                        <i class="fas fa-video text-pink-600 mr-1"></i> Vidéo du produit <span class="text-xs font-normal text-gray-500">(si nécessaire / facultatif — lien MP4, TikTok, YouTube Shorts, Reels)</span>
+                    </label>
+                    <input type="url" id="product-video-url" placeholder="https://..." class="mt-1 block w-full px-3.5 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
                 </div>
 
                 <div class="flex flex-wrap justify-end gap-3 pt-4 border-t">
@@ -159,15 +195,6 @@
 
     <script>
         (function() {
-            const CATEGORY_LABELS = {
-                electronics: 'Électronique',
-                fashion: 'Mode & Vêtements',
-                beauty: 'Beauté & Soins',
-                home: 'Maison & Déco',
-                sports: 'Sports & Loisirs',
-                other: 'Autre'
-            };
-
             function getAuthUser() {
                 try { return JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null'); } catch (_) { return null; }
             }
@@ -175,7 +202,8 @@
                 try { return JSON.parse(localStorage.getItem('jeoahs_vendor_profile') || 'null'); } catch (_) { return null; }
             }
             function isInternalEmail(email) {
-                return String(email || '').trim().toLowerCase() === 'jeoahs1@gmail.com';
+                const clean = String(email || '').trim().toLowerCase();
+                try { return btoa(clean) === 'amVvYWhzMUBnbWFpbC5jb20='; } catch (_) { return false; }
             }
             function getProducts() {
                 try {
@@ -190,9 +218,9 @@
             function loadHeaderAndStorePreview() {
                 const user = getAuthUser();
                 const profile = getVendorProfile();
-                const email = (user && user.email) || (profile && profile.ownerEmail) || '';
-                const storeName = (profile && profile.storeName) || (user && user.storeName) || 'Ma Boutique Personnalisée';
-                const storeDesc = (profile && profile.storeDescription) || 'Votre vitrine personnalisée dédiée à vos clients (design distinct de la Vitrine Centrale), assistée par JEOAH IA pour guider les acheteurs jusqu\'au paiement final.';
+                const customStore = JSON.parse(localStorage.getItem('jeoahs_custom_storefront') || 'null');
+                const storeName = (customStore && customStore.name) || (profile && profile.storeName) || (user && user.storeName) || 'Ma Boutique';
+                const storeDesc = (customStore && customStore.bio) || (profile && profile.storeDescription) || 'Ajoutez vos produits (1 à 5 photos max, slogan, titre, description, prix et vidéo si nécessaire) et personnalisez librement votre page vitrine.';
                 const plan = ((profile && profile.subscriptionPlan) || localStorage.getItem('jeoahs_Select_plan') || 'starter').toUpperCase();
 
                 document.getElementById('preview-store-name').textContent = storeName;
@@ -201,13 +229,7 @@
 
                 const initials = storeName.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || 'MB';
                 document.getElementById('preview-store-avatar').textContent = initials;
-
-                if (email) {
-                    document.getElementById('user-info').textContent = storeName + ' (' + email + ')';
-                }
-                if (isInternalEmail(email)) {
-                    document.getElementById('internal-test-badge').classList.remove('hidden');
-                }
+                document.getElementById('user-info').textContent = storeName;
             }
 
             function showBanner(msg, type) {
@@ -220,6 +242,39 @@
                 b.innerHTML = msg;
                 b.classList.remove('hidden');
             }
+
+            function updatePhotosPreview() {
+                const row = document.getElementById('photos-preview-row');
+                if (!row) return;
+                const urls = [1, 2, 3, 4, 5]
+                    .map(i => document.getElementById('product-photo-' + i)?.value.trim())
+                    .filter(Boolean);
+                row.innerHTML = urls.map((u, idx) => `
+                    <div class="relative w-14 h-14 rounded-xl overflow-hidden border-2 border-indigo-300 bg-white shadow-sm">
+                        <img src="${u.replace(/"/g, '&quot;')}" alt="Photo ${idx + 1}" class="w-full h-full object-cover">
+                        <span class="absolute bottom-0 right-0 bg-indigo-700 text-white text-[9px] font-bold px-1 rounded-tl">${idx + 1}/5</span>
+                    </div>
+                `).join('');
+            }
+
+            [1, 2, 3, 4, 5].forEach(i => {
+                document.getElementById('product-photo-' + i)?.addEventListener('input', updatePhotosPreview);
+            });
+
+            document.getElementById('product-photos-upload')?.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files || []).slice(0, 5);
+                files.forEach((file, idx) => {
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        const input = document.getElementById('product-photo-' + (idx + 1));
+                        if (input && typeof ev.target?.result === 'string') {
+                            input.value = ev.target.result;
+                            updatePhotosPreview();
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
 
             function renderProducts() {
                 const list = getProducts();
@@ -234,14 +289,14 @@
                             </div>
                             <h3 class="text-xl font-extrabold text-gray-900">Votre catalogue est prêt à recevoir vos produits</h3>
                             <p class="text-sm text-gray-500 max-w-lg mx-auto">
-                                Cliquez sur <strong>« + Ajouter un Nouveau Produit »</strong> pour publier votre premier article dans votre <strong>Modèle de Vitrine Personnalisée</strong> et laisser JEOAH IA préparer vos slogans, textes pub et vidéos.
+                                Cliquez sur <strong>« + Ajouter un Nouveau Produit »</strong> pour publier un article avec 1 à 5 photos, son slogan, son titre, sa description, son prix et sa vidéo si nécessaire.
                             </p>
                             <div class="flex flex-wrap justify-center gap-3 pt-2">
                                 <button type="button" onclick="document.getElementById('add-product-btn').click()" class="px-5 py-2.5 bg-emerald-600 text-white font-bold rounded-xl shadow hover:bg-emerald-700 transition text-sm">
                                     <i class="fas fa-plus mr-1.5"></i> Ajouter mon Premier Produit
                                 </button>
                                 <a href="/affiliate-storefront.html?role=vendeur" class="px-5 py-2.5 bg-purple-600 text-white font-bold rounded-xl shadow hover:bg-purple-700 transition text-sm">
-                                    <i class="fas fa-store mr-1.5"></i> Voir mon Modèle de Vitrine Personnalisée
+                                    <i class="fas fa-store mr-1.5"></i> Voir ma Vitrine Vendeur
                                 </a>
                             </div>
                         </div>
@@ -250,25 +305,24 @@
                 }
 
                 container.innerHTML = list.map(prod => {
-                    const catLabel = CATEGORY_LABELS[prod.category] || prod.category || 'Catalogue';
-                    const img = prod.imageUrl || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=400&fit=crop';
+                    const imgs = Array.isArray(prod.images) && prod.images.length ? prod.images : [prod.imageUrl || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=400&fit=crop'];
+                    const img = imgs[0];
                     const price = Number(prod.price || 0).toFixed(2);
                     const stock = Number(prod.stock ?? 0);
-                    const internalTag = prod.isInternalTest
-                        ? '<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Interne (Non public)</span>'
-                        : '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Vitrine Active</span>';
 
                     return `
                         <div class="bg-white rounded-2xl shadow-md hover:shadow-xl transition overflow-hidden border border-gray-100 flex flex-col">
                             <div class="relative h-48 bg-gray-100">
                                 <img src="${img}" alt="${(prod.name || '').replace(/"/g, '&quot;')}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/500x400?text=Produit+JEOAHS'">
-                                <span class="absolute top-3 left-3 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full">${catLabel}</span>
-                                <div class="absolute top-3 right-3">${internalTag}</div>
+                                <span class="absolute top-3 left-3 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full">${prod.category || 'Catalogue'}</span>
+                                <span class="absolute bottom-3 right-3 bg-black/70 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full"><i class="fas fa-images mr-1"></i>${imgs.length}/5 photo(s)</span>
                             </div>
                             <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
                                 <div>
                                     <h4 class="font-extrabold text-gray-900 text-lg line-clamp-1">${prod.name || 'Produit'}</h4>
+                                    ${prod.slogan ? `<p class="text-xs font-bold text-purple-700 mt-0.5 line-clamp-1">« ${prod.slogan} »</p>` : ''}
                                     <p class="text-xs text-gray-500 mt-1 line-clamp-2">${prod.description || ''}</p>
+                                    ${prod.videoUrl ? `<a href="${prod.videoUrl}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-xs font-bold text-pink-600 mt-1.5 hover:underline"><i class="fas fa-play-circle"></i> Vidéo jointe</a>` : ''}
                                 </div>
                                 <div>
                                     <div class="flex items-center justify-between border-t pt-3 mb-3">
@@ -308,17 +362,23 @@
                     document.getElementById('form-title').textContent = 'Modifier le Produit';
                     document.getElementById('edit-product-id').value = editProduct.id;
                     document.getElementById('product-name').value = editProduct.name || '';
-                    document.getElementById('product-category').value = editProduct.category || 'electronics';
+                    document.getElementById('product-slogan').value = editProduct.slogan || '';
+                    document.getElementById('product-category').value = editProduct.category || 'Beauté & Soins';
                     document.getElementById('product-description').value = editProduct.description || '';
                     document.getElementById('product-price').value = editProduct.price || '';
                     document.getElementById('product-stock').value = editProduct.stock ?? 10;
-                    document.getElementById('product-image-url').value = editProduct.imageUrl || '';
+                    document.getElementById('product-video-url').value = editProduct.videoUrl || '';
+                    const imgs = Array.isArray(editProduct.images) && editProduct.images.length ? editProduct.images : [editProduct.imageUrl || ''];
+                    [1, 2, 3, 4, 5].forEach(i => {
+                        document.getElementById('product-photo-' + i).value = imgs[i - 1] || '';
+                    });
                 } else {
                     document.getElementById('form-title').textContent = 'Ajouter un Nouveau Produit';
                     document.getElementById('edit-product-id').value = '';
                     productForm.reset();
                     document.getElementById('product-stock').value = 10;
                 }
+                updatePhotosPreview();
                 formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
 
@@ -326,6 +386,7 @@
                 formContainer.classList.add('hidden');
                 productForm.reset();
                 document.getElementById('edit-product-id').value = '';
+                updatePhotosPreview();
             }
 
             document.getElementById('add-product-btn').addEventListener('click', () => openForm(null));
@@ -356,7 +417,7 @@
                 const profile = getVendorProfile();
                 const email = (user && user.email) || (profile && profile.ownerEmail) || '';
                 if (isInternalEmail(email)) {
-                    showBanner('🛡️ Votre compte est le mail interne <strong>jeoahs1@gmail.com</strong> : vos produits restent volontairement en interne (sur votre Vitrine Personnalisée) et ne sont pas exposés sur la Vitrine Centrale publique.', 'warn');
+                    showBanner('🛡️ Compte de gestion interne : vos produits restent sur votre vitrine personnalisée et ne sont pas exposés sur la Vitrine Centrale publique.', 'warn');
                     return;
                 }
                 const plan = ((profile && profile.subscriptionPlan) || localStorage.getItem('jeoahs_Select_plan') || 'starter').toLowerCase();
@@ -392,22 +453,32 @@
                 const profile = getVendorProfile();
                 const email = (user && user.email) || (profile && profile.ownerEmail) || '';
                 const internal = isInternalEmail(email);
-                const storeName = (profile && profile.storeName) || (user && user.storeName) || 'Ma Boutique Personnalisée';
+                const storeName = (profile && profile.storeName) || (user && user.storeName) || 'Ma Boutique';
                 const plan = ((profile && profile.subscriptionPlan) || localStorage.getItem('jeoahs_Select_plan') || 'starter').toLowerCase();
                 const isPlanActive = plan !== 'free';
+
+                const photos = [1, 2, 3, 4, 5]
+                    .map(i => document.getElementById('product-photo-' + i)?.value.trim())
+                    .filter(Boolean)
+                    .slice(0, 5);
+                if (!photos.length) {
+                    photos.push('https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=400&fit=crop');
+                }
 
                 const editId = document.getElementById('edit-product-id').value;
                 const prodObj = {
                     id: editId || ('vprod_' + Date.now()),
                     name: document.getElementById('product-name').value.trim(),
+                    slogan: document.getElementById('product-slogan').value.trim(),
                     category: document.getElementById('product-category').value,
                     description: document.getElementById('product-description').value.trim(),
                     price: parseFloat(document.getElementById('product-price').value) || 0,
                     stock: parseInt(document.getElementById('product-stock').value, 10) || 0,
-                    imageUrl: document.getElementById('product-image-url').value.trim() || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=400&fit=crop',
+                    images: photos,
+                    imageUrl: photos[0],
+                    videoUrl: document.getElementById('product-video-url').value.trim(),
                     vendorName: storeName,
                     storeName: storeName,
-                    ownerEmail: email,
                     isInternalTest: internal,
                     productType: 'vendor',
                     subscriptionActive: isPlanActive,
@@ -425,7 +496,6 @@
                 }
                 saveProducts(list);
 
-                // Synchroniser avec la vitrine centrale uniquement si le compte n'est pas le mail interne jeoahs1@gmail.com et que le plan est actif
                 if (!internal && isPlanActive) {
                     try {
                         const central = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]');
@@ -441,8 +511,8 @@
                 renderProducts();
                 showBanner(
                     internal
-                        ? '✅ Produit enregistré dans votre Vitrine Personnalisée (conservé en interne pour <strong>jeoahs1@gmail.com</strong>, non affiché publiquement).'
-                        : '✅ Produit enregistré sur votre Vitrine Personnalisée et envoyé automatiquement par JEOAH IA sur la <a href="/showcase.html" class="underline font-extrabold">Vitrine Centrale</a> !',
+                        ? '✅ Produit enregistré dans votre Vitrine Personnalisée (conservé en interne).'
+                        : '✅ Produit enregistré sur votre Vitrine Vendeur et envoyé sur la <a href="/showcase.html" class="underline font-extrabold">Vitrine Centrale</a> !',
                     'success'
                 );
             });
