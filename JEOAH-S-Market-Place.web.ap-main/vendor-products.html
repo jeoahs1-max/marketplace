@@ -84,6 +84,9 @@
                 <button id="add-product-btn" type="button" class="px-5 py-2.5 bg-emerald-600 text-white font-bold rounded-xl shadow-md hover:bg-emerald-700 transition flex items-center gap-2">
                     <i class="fas fa-plus"></i> Ajouter un Nouveau Produit
                 </button>
+                <button type="button" onclick="window.syncStorefrontToCentral()" class="px-4 py-2.5 bg-purple-600 text-white font-bold rounded-xl shadow-md hover:bg-purple-700 transition text-sm flex items-center gap-1.5">
+                    <i class="fas fa-rocket"></i> Envoyer vers la Vitrine Centrale (JEOAH IA)
+                </button>
                 <a href="/vendor_product_submission.html" class="px-4 py-2.5 bg-indigo-50 text-indigo-700 font-semibold rounded-xl border border-indigo-200 hover:bg-indigo-100 transition text-sm">
                     <i class="fas fa-sliders-h mr-1"></i> Formulaire Avancé (Tailles / Livraison)
                 </a>
@@ -348,6 +351,41 @@
                 showBanner('Produit supprimé de votre catalogue.', 'success');
             };
 
+            window.syncStorefrontToCentral = function() {
+                const user = getAuthUser();
+                const profile = getVendorProfile();
+                const email = (user && user.email) || (profile && profile.ownerEmail) || '';
+                if (isInternalEmail(email)) {
+                    showBanner('🛡️ Votre compte est le mail interne <strong>jeoahs1@gmail.com</strong> : vos produits restent volontairement en interne (sur votre Vitrine Personnalisée) et ne sont pas exposés sur la Vitrine Centrale publique.', 'warn');
+                    return;
+                }
+                const plan = ((profile && profile.subscriptionPlan) || localStorage.getItem('jeoahs_Select_plan') || 'starter').toLowerCase();
+                if (plan === 'free') {
+                    showBanner('⚠️ Votre boutique est en Plan Gratuit (Free). <a href="/plans.html?role=vendeur" class="underline font-extrabold">Activez un Plan Starter, Pro ou Premium</a> pour que JEOAH IA envoie vos produits sur la Vitrine Centrale.', 'warn');
+                    return;
+                }
+                const list = getProducts();
+                if (!list.length) {
+                    showBanner('Ajoutez au moins un produit avant de l\'envoyer vers la Vitrine Centrale.', 'warn');
+                    return;
+                }
+                try {
+                    const central = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]');
+                    const arr = Array.isArray(central) ? central : [];
+                    list.forEach(item => {
+                        item.subscriptionActive = true;
+                        item.subscriptionPlan = plan;
+                        item.subscriptionExpiresAt = '2099-12-31T23:59:59.000Z';
+                        const idx = arr.findIndex(c => String(c.id) === String(item.id));
+                        if (idx >= 0) arr[idx] = item;
+                        else arr.unshift(item);
+                    });
+                    saveProducts(list);
+                    localStorage.setItem('jeoahs_central_products', JSON.stringify(arr));
+                    showBanner(`🚀 <strong>JEOAH IA a envoyé vos ${list.length} produit(s) directement sur la <a href="/showcase.html" class="underline">Vitrine Centrale</a> !</strong>`, 'success');
+                } catch (_) {}
+            };
+
             productForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 const user = getAuthUser();
@@ -355,6 +393,8 @@
                 const email = (user && user.email) || (profile && profile.ownerEmail) || '';
                 const internal = isInternalEmail(email);
                 const storeName = (profile && profile.storeName) || (user && user.storeName) || 'Ma Boutique Personnalisée';
+                const plan = ((profile && profile.subscriptionPlan) || localStorage.getItem('jeoahs_Select_plan') || 'starter').toLowerCase();
+                const isPlanActive = plan !== 'free';
 
                 const editId = document.getElementById('edit-product-id').value;
                 const prodObj = {
@@ -366,9 +406,13 @@
                     stock: parseInt(document.getElementById('product-stock').value, 10) || 0,
                     imageUrl: document.getElementById('product-image-url').value.trim() || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=400&fit=crop',
                     vendorName: storeName,
+                    storeName: storeName,
                     ownerEmail: email,
                     isInternalTest: internal,
                     productType: 'vendor',
+                    subscriptionActive: isPlanActive,
+                    subscriptionPlan: plan,
+                    subscriptionExpiresAt: '2099-12-31T23:59:59.000Z',
                     updatedAt: new Date().toISOString()
                 };
 
@@ -381,8 +425,8 @@
                 }
                 saveProducts(list);
 
-                // Synchroniser avec la vitrine centrale uniquement si le compte n'est pas le mail interne jeoahs1@gmail.com
-                if (!internal) {
+                // Synchroniser avec la vitrine centrale uniquement si le compte n'est pas le mail interne jeoahs1@gmail.com et que le plan est actif
+                if (!internal && isPlanActive) {
                     try {
                         const central = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]');
                         const arr = Array.isArray(central) ? central : [];
@@ -398,7 +442,7 @@
                 showBanner(
                     internal
                         ? '✅ Produit enregistré dans votre Vitrine Personnalisée (conservé en interne pour <strong>jeoahs1@gmail.com</strong>, non affiché publiquement).'
-                        : '✅ Produit enregistré et synchronisé avec votre Modèle de Vitrine Personnalisée et JEOAH IA !',
+                        : '✅ Produit enregistré sur votre Vitrine Personnalisée et envoyé automatiquement par JEOAH IA sur la <a href="/showcase.html" class="underline font-extrabold">Vitrine Centrale</a> !',
                     'success'
                 );
             });
@@ -407,7 +451,6 @@
             renderProducts();
         })();
     </script>
-    <script src="/public/footer.js" defer></script>
     <script src="/public/jeoah-loader.js" defer></script>
 </body>
 </html>

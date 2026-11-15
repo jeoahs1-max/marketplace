@@ -211,12 +211,89 @@
             window.location.href = '/vendor_dashboard.html';
         };
 
+        window.pushStorefrontToCentral = async function () {
+            const email = String(authUser?.email || '').trim().toLowerCase();
+            if (email === 'jeoahs1@gmail.com') {
+                alert("🛡️ Compte Interne (jeoahs1@gmail.com) : vos produits sont conservés en interne sur votre Vitrine Personnalisée et ne sont pas exposés publiquement sur la Vitrine Centrale.");
+                return;
+            }
+            if (!storeProducts.length) {
+                alert("Ajoutez d'abord un produit dans votre vitrine pour que JEOAH IA puisse l'envoyer sur la Vitrine Centrale.");
+                return;
+            }
+            const central = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]');
+            const arr = Array.isArray(central) ? central : [];
+            for (const p of storeProducts) {
+                p.subscriptionActive = true;
+                p.subscriptionPlan = p.subscriptionPlan || 'starter';
+                p.subscriptionExpiresAt = '2099-12-31T23:59:59.000Z';
+                p.storeName = storeData.name || p.storeName || 'Vitrine Vérifiée';
+                const idx = arr.findIndex(c => String(c.id) === String(p.id));
+                if (idx >= 0) arr[idx] = p;
+                else arr.unshift(p);
+                try {
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/products`, String(p.id)), p, { merge: true });
+                } catch (_) {}
+            }
+            localStorage.setItem('jeoahs_central_products', JSON.stringify(arr));
+            alert(`🚀 JEOAH IA a pris vos ${storeProducts.length} produit(s) de votre vitrine personnalisée et les a envoyés directement sur la Vitrine Centrale (/showcase.html) !`);
+        };
+
         window.showAdKitModal = function (prodId) {
             const prod = storeProducts.find(p => p.id === prodId);
             if (!prod) return;
-            const post = prod.adPostText || `🔥 Découvrez ${prod.name} au meilleur prix comparé sur ma vitrine JEOAH'S !`;
-            const script = prod.adVideoScript || `🎬 Présentez ${prod.name} en montrant la comparaison des prix (${(prod.offers || []).map(o => `${o.platform}: ${o.price}`).join(' vs ')}) sur votre vitrine.`;
-            alert(`📣 KIT PUBLICITAIRE JEOAH (${prod.name})\n\n--- TEXTE PUB RÉSEAUX SOCIAUX ---\n${post}\n\n--- SCRIPT VIDÉO PUB ---\n${script}`);
+            const shareUrl = location.href;
+            const slogan = prod.adSlogansText || `✨ "${prod.name} : L'excellence au meilleur prix sur ma vitrine JEOAH'S !"`;
+            const post = prod.adPostText || `🔥 Découvrez ${prod.name} sur ma vitrine personnalisée JEOAH'S ! Guide d'achat et paiement sécurisé : ${shareUrl}`;
+            const script = prod.adVideoScript || `🎬 [0-3s Accroche] Voici ${prod.name} !\n[3-10s Démonstration] Regardez ses avantages et la comparaison des offres sur ma vitrine.\n[10-15s Appel à l'action] Cliquez sur le lien de ma vitrine JEOAH'S pour finaliser votre achat !`;
+
+            let modal = document.getElementById('jeoah-social-hub-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'jeoah-social-hub-modal';
+                modal.className = 'fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4';
+                document.body.appendChild(modal);
+            }
+            const encText = encodeURIComponent(post);
+            const encUrl = encodeURIComponent(shareUrl);
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto border border-purple-200">
+                    <div class="flex items-center justify-between border-b pb-3">
+                        <div>
+                            <span class="text-[11px] font-extrabold uppercase tracking-wider text-purple-700 bg-purple-100 px-2.5 py-0.5 rounded-full">JEOAH IA · Hub Multi-Réseaux Synchronisé</span>
+                            <h3 class="text-lg font-extrabold text-slate-900 mt-1">${esc(prod.name)}</h3>
+                        </div>
+                        <button onclick="document.getElementById('jeoah-social-hub-modal').remove()" class="text-slate-400 hover:text-slate-700 text-xl font-bold">&times;</button>
+                    </div>
+                    <div class="space-y-3 text-xs">
+                        <div class="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                            <p class="font-extrabold text-amber-900 mb-1">🎯 1. Slogan d'accroche (différent du texte pub & vidéo)</p>
+                            <p class="text-amber-800 whitespace-pre-line">${esc(slogan)}</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-indigo-50 border border-indigo-200">
+                            <p class="font-extrabold text-indigo-900 mb-1">📝 2. Texte Pub Réseaux Écrits (Quora, LinkedIn, Facebook, X, Reddit, Threads)</p>
+                            <p class="text-indigo-800 whitespace-pre-line">${esc(post)}</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-pink-50 border border-pink-200">
+                            <p class="font-extrabold text-pink-900 mb-1">🎬 3. Script Vidéo (TikTok, Instagram Reels, YouTube Shorts, Snapchat, Twitch)</p>
+                            <p class="text-pink-800 whitespace-pre-line">${esc(script)}</p>
+                        </div>
+                    </div>
+                    <div class="pt-2 border-t">
+                        <p class="text-xs font-extrabold text-slate-800 mb-2">🔗 Diffuser sur vos réseaux connectés (selon votre cadence de quota 1 mois / 3 mois / 1 an) :</p>
+                        <div class="flex flex-wrap gap-2 text-xs font-bold">
+                            <a href="https://www.facebook.com/sharer/sharer.php?u=${encUrl}&quote=${encText}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700"><i class="fab fa-facebook-f mr-1"></i> Facebook</a>
+                            <a href="https://api.whatsapp.com/send?text=${encText}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"><i class="fab fa-whatsapp mr-1"></i> WhatsApp</a>
+                            <a href="https://t.me/share/url?url=${encUrl}&text=${encText}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-sky-500 text-white hover:bg-sky-600"><i class="fab fa-telegram mr-1"></i> Telegram</a>
+                            <a href="https://twitter.com/intent/tweet?text=${encText}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white hover:bg-slate-800"><i class="fab fa-x-twitter mr-1"></i> X / Twitter</a>
+                            <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encUrl}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-blue-800 text-white hover:bg-blue-900"><i class="fab fa-linkedin mr-1"></i> LinkedIn</a>
+                            <a href="https://www.reddit.com/submit?url=${encUrl}&title=${encText}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-orange-600 text-white hover:bg-orange-700"><i class="fab fa-reddit-alien mr-1"></i> Reddit</a>
+                            <a href="https://www.quora.com" target="_blank" rel="noopener" onclick="navigator.clipboard && navigator.clipboard.writeText(decodeURIComponent('${encText}'))" class="px-3 py-1.5 rounded-lg bg-red-700 text-white hover:bg-red-800"><i class="fab fa-quora mr-1"></i> Quora (Texte copié)</a>
+                            <a href="https://www.tiktok.com/upload" target="_blank" rel="noopener" onclick="navigator.clipboard && navigator.clipboard.writeText(decodeURIComponent('${encText}'))" class="px-3 py-1.5 rounded-lg bg-pink-600 text-white hover:bg-pink-700"><i class="fab fa-tiktok mr-1"></i> TikTok / Reels</a>
+                        </div>
+                    </div>
+                </div>
+            `;
         };
 
         function renderProductGrids() {
@@ -663,6 +740,10 @@
                     </div>
                     <div id="owner-product-action" class="pt-3 border-t border-purple-100 space-y-2.5">
                         <p class="text-xs font-extrabold text-purple-950">Gérer ma vitrine & mes produits</p>
+                        <button type="button" onclick="pushStorefrontToCentral()"
+                            class="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-2.5 text-xs font-extrabold text-white shadow hover:from-emerald-700 hover:to-teal-700 transition">
+                            <i class="fas fa-rocket"></i> Envoyer mes produits vers la Vitrine Centrale (JEOAH IA)
+                        </button>
                         <div class="flex flex-wrap gap-2">
                             <a id="add-product-link" href="/vendor-products.html"
                                 class="inline-flex items-center gap-1.5 rounded-lg bg-purple-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-purple-800">
