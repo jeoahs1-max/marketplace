@@ -17,7 +17,23 @@
             <p id="form-description" class="mt-2 text-sm text-slate-600">Retrouvez votre vitrine et votre espace
                 personnel.</p>
 
-            <form id="auth-form" class="mt-7 space-y-5">
+            <div id="active-session-box" class="hidden mt-4 rounded-xl border border-indigo-200 bg-indigo-50/80 p-4 space-y-3 text-xs">
+                <p id="active-session-text" class="font-bold text-indigo-950"></p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button type="button" onclick="enterRoleSpace('vendeur')" class="rounded-lg bg-emerald-600 px-3 py-2.5 font-extrabold text-white hover:bg-emerald-700 transition">
+                        🏪 Parcourir Espace Vendeur
+                    </button>
+                    <button type="button" onclick="enterRoleSpace('affilie')" class="rounded-lg bg-purple-700 px-3 py-2.5 font-extrabold text-white hover:bg-purple-800 transition">
+                        🔗 Parcourir Espace Affilié
+                    </button>
+                </div>
+                <div class="flex items-center justify-between pt-1 border-t border-indigo-200/60">
+                    <a href="/affiliate-storefront.html" class="font-bold text-indigo-700 hover:underline">Voir ma Vitrine</a>
+                    <button type="button" onclick="logoutCurrentSession()" class="font-bold text-red-600 hover:underline">Se déconnecter / Autre compte</button>
+                </div>
+            </div>
+
+            <form id="auth-form" class="mt-6 space-y-5">
                 <label class="block text-sm font-bold text-slate-700">Adresse e-mail
                     <input id="email" type="email" autocomplete="email" required
                         class="mt-2 w-full rounded-md border border-slate-300 px-3 py-2.5 font-normal focus:border-indigo-600 focus:outline-none">
@@ -31,12 +47,12 @@
                     <input id="password-confirm" type="password" autocomplete="new-password" minlength="6"
                         class="mt-2 w-full rounded-md border border-slate-300 px-3 py-2.5 font-normal focus:border-indigo-600 focus:outline-none">
                 </label>
-                <label id="role-field" class="hidden block text-sm font-bold text-slate-700">Je rejoins JEOAH'S comme
+                <label id="role-field" class="block text-sm font-bold text-slate-700">Accéder à mon espace en tant que
                     <select id="role"
-                        class="mt-2 w-full rounded-md border border-slate-300 px-3 py-2.5 font-normal focus:border-indigo-600 focus:outline-none">
-                        <option value="acheteur">Acheteur</option>
-                        <option value="vendeur">Vendeur</option>
-                        <option value="affilie">Affilié</option>
+                        class="mt-2 w-full rounded-md border border-slate-300 px-3 py-2.5 font-normal focus:border-indigo-600 focus:outline-none bg-white">
+                        <option value="vendeur">Vendeur (Boutique &amp; Produits)</option>
+                        <option value="affilie">Affilié (Vitrine &amp; Liens)</option>
+                        <option value="acheteur">Acheteur (Vitrine Centrale)</option>
                     </select>
                 </label>
                 <p id="auth-status" class="hidden rounded-md px-3 py-2 text-sm" role="status"></p>
@@ -94,8 +110,8 @@
         function setMode(register) {
             isRegistration = register;
             title.textContent = register ? 'Créer un compte' : 'Connexion';
-            description.textContent = register ? 'Configurez votre rôle une seule fois. Vos prochains accès iront directement à votre espace.' : 'Retrouvez votre vitrine et votre espace personnel.';
-            roleField.classList.toggle('hidden', !register);
+            description.textContent = register ? 'Configurez votre rôle et accédez immédiatement à votre espace.' : 'Choisissez l’espace à ouvrir (Vendeur ou Affilié) et connectez-vous.';
+            roleField.classList.remove('hidden');
             passwordConfirmField.classList.toggle('hidden', !register);
             document.getElementById('password-confirm').required = register;
             submitButton.textContent = register ? 'Créer mon compte' : 'Se connecter';
@@ -125,9 +141,9 @@
                 const targetRole = selectedPlanRole || (profile.role === 'vendeur' ? 'vendeur' : 'affilie');
                 return `/payment.html?plan=${encodeURIComponent(selectedPlan)}&role=${encodeURIComponent(targetRole)}`;
             }
-            if (profile.role === 'affilie') return profile.onboardingComplete ? '/affiliate-storefront.html' : '/affiliate_onboarding_step1.html';
+            if (profile.role === 'affilie') return profile.onboardingComplete ? '/affiliate-dashboard.html' : '/affiliate_onboarding_step1.html';
             if (profile.role === 'vendeur') return '/vendor_dashboard.html';
-            return '/index.html';
+            return '/showcase.html';
         }
 
         async function loadProfile(user) {
@@ -141,7 +157,22 @@
             try { return btoa(String(emailStr || '').trim().toLowerCase()) === 'amVvYWhzMUBnbWFpbC5jb20='; } catch (_) { return false; }
         }
 
-        async function continueToSpace(user) {
+        window.enterRoleSpace = async function (targetRole) {
+            document.getElementById('role').value = targetRole;
+            if (auth?.currentUser) {
+                await continueToSpace(auth.currentUser, true, targetRole);
+            }
+        };
+
+        window.logoutCurrentSession = async function () {
+            try { await auth?.signOut(); } catch (_) {}
+            localStorage.removeItem('jeoahs_auth_user');
+            localStorage.removeItem('jeoahs_user');
+            document.getElementById('active-session-box')?.classList.add('hidden');
+            setStatus('Session déconnectée. Vous pouvez vous connecter avec le compte de votre choix.', 'success');
+        };
+
+        async function continueToSpace(user, shouldRedirect = true, forcedRole = null) {
             let profile = await loadProfile(user);
             if (user.email && isInternalAdminAddr(user.email)) {
                 const subs = syncRoleSubscriptionsToLocal({}, true);
@@ -156,23 +187,46 @@
                     subscriptions: subs,
                     onboardingComplete: true
                 }));
-                location.href = '/admin.html';
+                if (shouldRedirect) location.href = '/admin.html';
                 return;
             }
+            const chosenRole = forcedRole || document.getElementById('role')?.value || selectedPlanRole || 'vendeur';
             if (!profile) {
-                setStatus('Compte reconnu, mais profil introuvable. Contactez le support pour restaurer votre accès.');
-                return;
+                profile = profileFor(user, chosenRole);
+                try { await setDoc(doc(db, 'profiles', user.uid), profile, { merge: true }); } catch (_) {}
             }
-            const normalizedRole = { seller: 'vendeur', vendor: 'vendeur', affiliate: 'affilie', buyer: 'acheteur' }[profile.role] || profile.role || 'acheteur';
-            if (profile.role !== normalizedRole) profile = { ...profile, role: normalizedRole };
+            let normalizedRole = { seller: 'vendeur', vendor: 'vendeur', affiliate: 'affilie', buyer: 'acheteur' }[profile.role] || profile.role || chosenRole;
             const isTester = testerEmails.has((user.email || '').toLowerCase()) || Boolean(profile.testAccount);
-            if (isTester && !profile.testAccount) {
-                profile = { ...profile, selectedPlan: 'tester', testAccount: true };
-                await setDoc(doc(db, 'profiles', user.uid), { selectedPlan: 'tester', testAccount: true, updatedAt: serverTimestamp() }, { merge: true });
+
+            if (forcedRole || shouldRedirect) {
+                if (chosenRole === 'vendeur' || chosenRole === 'affilie') {
+                    normalizedRole = chosenRole;
+                } else if (isTester && normalizedRole === 'acheteur') {
+                    normalizedRole = 'vendeur';
+                }
+            } else if (isTester && normalizedRole === 'acheteur') {
+                normalizedRole = 'vendeur';
             }
+
+            const rolesList = Array.from(new Set([...(Array.isArray(profile.roles) ? profile.roles : []), normalizedRole, ...(isTester ? ['vendeur', 'affilie'] : [])]));
+            profile = {
+                ...profile,
+                role: normalizedRole,
+                roles: rolesList,
+                ...(isTester ? { selectedPlan: 'tester', testAccount: true, onboardingComplete: true } : {})
+            };
+
+            try {
+                await setDoc(doc(db, 'profiles', user.uid), {
+                    role: profile.role,
+                    roles: rolesList,
+                    ...(isTester ? { selectedPlan: 'tester', testAccount: true } : {}),
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+            } catch (_) {}
+
             const subs = syncRoleSubscriptionsToLocal(profile, isTester);
             const identity = await saveAccountIdentity(user, profile);
-            const rolesList = Array.isArray(profile.roles) && profile.roles.length ? profile.roles : [profile.role];
             const authUserObj = {
                 uid: user.uid,
                 email: user.email || '',
@@ -187,7 +241,17 @@
             };
             localStorage.setItem('jeoahs_auth_user', JSON.stringify(authUserObj));
             localStorage.setItem('jeoahs_user', JSON.stringify(authUserObj));
-            location.href = destination(profile);
+
+            if (shouldRedirect) {
+                location.href = destination(profile);
+            } else {
+                const box = document.getElementById('active-session-box');
+                const txt = document.getElementById('active-session-text');
+                if (box && txt) {
+                    txt.textContent = `Connecté avec ${user.email} ${isTester ? '(Compte Testeur Actif)' : ''} — Choisissez le parcours à vérifier :`;
+                    box.classList.remove('hidden');
+                }
+            }
         }
 
         function createAccountIdentity(user) {
@@ -256,13 +320,14 @@
             googleButton.disabled = true;
             setStatus('Connexion Google en cours...', 'success');
             try {
+                const selectedRole = document.getElementById('role').value || 'vendeur';
                 const user = (await signInWithPopup(auth, new GoogleAuthProvider())).user;
                 let profile = await loadProfile(user);
                 if (!profile) {
-                    profile = profileFor(user, isRegistration ? document.getElementById('role').value : 'acheteur');
+                    profile = profileFor(user, selectedRole);
                     await setDoc(doc(db, 'profiles', user.uid), profile);
                 }
-                await continueToSpace(user);
+                await continueToSpace(user, true, selectedRole);
             } catch (error) {
                 if (error.code === 'auth/popup-blocked') {
                     setStatus('Ouverture de Google...', 'success');
@@ -306,8 +371,7 @@
                     return;
                 }
                 user = (await signInWithEmailAndPassword(auth, email, password)).user;
-                await continueToSpace(user);
-                setStatus('Votre profil doit être finalisé avant de continuer.');
+                await continueToSpace(user, true, document.getElementById('role').value);
             } catch (error) {
                 console.error('Erreur de connexion:', error);
                 setStatus(messageFor(error));
@@ -325,9 +389,9 @@
             db = getFirestore(app);
             await setPersistence(auth, browserLocalPersistence);
             const redirectResult = await getRedirectResult(auth);
-            if (redirectResult?.user) await continueToSpace(redirectResult.user);
+            if (redirectResult?.user) await continueToSpace(redirectResult.user, true, document.getElementById('role').value);
             onAuthStateChanged(auth, user => {
-                if (user && !submitting) continueToSpace(user).catch(() => setStatus('Votre session est active, mais le profil ne peut pas être chargé.'));
+                if (user && !submitting) continueToSpace(user, false).catch(() => setStatus('Votre session est active, mais le profil ne peut pas être chargé.'));
             });
         } catch (error) {
             setStatus('La connexion est temporairement indisponible.');
