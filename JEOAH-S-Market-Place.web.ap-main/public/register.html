@@ -468,7 +468,10 @@
                 showSuccess(`Inscription réussie en tant que ${finalRole.toUpperCase()}. Redirection...`, user.uid);
 
                 setTimeout(() => {
-                    window.location.href = 'profile_setup.html';
+                    if (finalRole === 'vendeur') window.location.href = '/vendor_onboarding.html';
+                    else if (finalRole === 'affilie') window.location.href = '/affiliate_onboarding_step1.html';
+                    else if (finalRole === 'acheteur') window.location.href = '/acheteur-social-setup.html';
+                    else window.location.href = '/profile_setup.html';
                 }, 1500);
 
             } catch (error) {

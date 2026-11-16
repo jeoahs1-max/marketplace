@@ -40,9 +40,21 @@
         });
 
         async function initFirebase() {
+            const savedStore = JSON.parse(localStorage.getItem('jeoahs_vendor_store') || 'null');
+            const savedProfile = JSON.parse(localStorage.getItem('jeoahs_vendor_profile') || 'null');
+            if (savedProfile || savedStore) {
+                vendorData = {
+                    ...DEFAULT_PROFILE,
+                    storeName: savedProfile?.storeName || savedStore?.vendorName || '',
+                    bio: savedProfile?.bio || savedStore?.description || DEFAULT_PROFILE.bio,
+                    profilePictureUrl: savedProfile?.profilePictureUrl || savedStore?.avatarUrl || DEFAULT_PROFILE.profilePictureUrl
+                };
+            }
+            updateUI();
+            document.getElementById('loading-indicator').classList.add('hidden');
+            document.getElementById('onboarding-content').classList.remove('hidden');
+
             if (Object.keys(firebaseConfig).length === 0) {
-                document.getElementById('loading-indicator').classList.add('hidden');
-                document.getElementById('onboarding-content').classList.remove('hidden');
                 return;
             }
 
@@ -68,8 +80,6 @@
                 }
                 userId = user.uid;
                 await loadExistingVendorData();
-                document.getElementById('loading-indicator').classList.add('hidden');
-                document.getElementById('onboarding-content').classList.remove('hidden');
             });
         }
 
@@ -143,6 +153,15 @@
             vendorData.bio = bio;
             vendorData.profilePictureUrl = pictureUrl;
             vendorData.isProfileComplete = true; // Marquer le profil comme complet
+            localStorage.setItem('jeoahs_vendor_profile', JSON.stringify(vendorData));
+            const authUser = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+            if (authUser) {
+                authUser.storeName = storeName;
+                authUser.onboardingComplete = true;
+                authUser.vendorOnboardingComplete = true;
+                localStorage.setItem('jeoahs_auth_user', JSON.stringify(authUser));
+                localStorage.setItem('jeoahs_user', JSON.stringify(authUser));
+            }
 
             if (userId && db) {
                 try {
@@ -159,19 +178,11 @@
                         // Ajouter le lien vers la page publique du vendeur
                         storeLink: `/vendor/${userId}`
                     }, { merge: true });
-
-                    window.location.href = 'vendor_dashboard.html'; // Rediriger vers le Tableau de Bord Vendeur
                 } catch (e) {
-                    console.error("Erreur d'enregistrement sur Firestore:", e);
-                    showCustomModal("Erreur", "Une erreur est survenue lors de l'enregistrement des données de la boutique. Veuillez réessayer.");
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = 'Terminer <i class="fas fa-check ml-2"></i>';
+                    console.warn("Enregistrement local conservé:", e);
                 }
-            } else {
-                // Mode Débogage sans Firebase
-                await new Promise(r => setTimeout(r, 1000));
-                window.location.href = 'vendor_dashboard.html';
             }
+            window.location.href = 'vendor_dashboard.html'; // Rediriger vers le Tableau de Bord Vendeur
         }
 
         // Fonction pour afficher une modale personnalisée (remplacement de alert())
@@ -272,7 +283,7 @@
 
                 <!-- Boutons de Navigation -->
                 <div class="flex justify-between pt-4">
-                    <a href="vendor_onboarding_step2.html"
+                    <a href="vendor-step-social.html"
                         class="py-3 px-6 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition duration-300 shadow-md flex items-center">
                         <i class="fas fa-arrow-left mr-2"></i> Précédent
                     </a>

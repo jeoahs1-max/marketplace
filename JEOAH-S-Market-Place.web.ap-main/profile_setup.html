@@ -1,11 +1,101 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <title>Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration du Profil - JEOAH'S</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/firebase-config.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fc; }
+        .card { background-color: white; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .btn-primary { background-color: #4f46e5; transition: background-color 0.3s; }
+        .btn-primary:hover { background-color: #4338ca; }
+        input:focus { border-color: #4f46e5; box-shadow: 0 0 0 1px #4f46e5; outline: none; }
+    </style>
 </head>
 <body>
-    <h1>Bonjour le monde!</h1>
-    <p>Si vous voyez cette page, le déploiement fonctionne.</p>
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="card w-full max-w-2xl p-6 sm:p-10">
+            <h1 class="text-3xl font-extrabold text-gray-900 mb-2 text-center">Finaliser votre Profil JEOAH'S</h1>
+            <p class="text-md text-gray-500 mb-8 text-center">C'est la dernière étape ! Ajoutez vos liens de profils sociaux pour augmenter votre crédibilité.</p>
 
-    <script src="/public/jeoah-loader.js" defer></script></body>
+            <form id="profile-setup-form" class="space-y-6">
+                <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Votre Rôle & Infos</h2>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-4 p-3 bg-white rounded-lg border border-indigo-200">
+                            <i class="fas fa-user-tag text-indigo-500 text-xl w-6"></i>
+                            <div class="flex-1">
+                                <label class="block text-sm font-medium text-gray-500">Rôle Principal (Inscrit)</label>
+                                <p id="user-role" class="font-bold text-indigo-600">Membre JEOAH'S</p>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="profile-bio" class="block text-sm font-medium text-gray-700">Petite Biographie (Optionnel)</label>
+                            <textarea id="profile-bio" rows="3" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Décrivez votre activité en quelques mots..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Vos Liens de Réseaux Sociaux <span class="text-sm text-gray-500">(Optionnel)</span></h2>
+                    <div id="social-links-container" class="space-y-4"></div>
+                </div>
+
+                <button type="submit" id="save-btn" class="w-full btn-primary text-white font-semibold py-3 rounded-lg shadow-md flex items-center justify-center">
+                    <span id="save-btn-text">Sauvegarder et Continuer</span>
+                </button>
+            </form>
+            <p id="message" class="hidden mt-6 p-3 rounded-lg text-sm font-medium text-center"></p>
+        </div>
+    </div>
+
+    <script>
+        const socialNetworks = [
+            { id: "tiktok", name: "TikTok", icon: "fa-brands fa-tiktok", color: "#000000", placeholder: "Lien de votre profil TikTok" },
+            { id: "reddit", name: "Reddit", icon: "fa-brands fa-reddit", color: "#FF4500", placeholder: "Lien de votre profil Reddit" },
+            { id: "telegram", name: "Telegram", icon: "fa-brands fa-telegram", color: "#2AABEE", placeholder: "Lien de votre profil Telegram" },
+            { id: "twitch", name: "Twitch", icon: "fa-brands fa-twitch", color: "#9146FF", placeholder: "Lien de votre profil Twitch" },
+            { id: "quora", name: "Quora", icon: "fa-brands fa-quora", color: "#B92B27", placeholder: "Lien de votre profil Quora" },
+            { id: "wechat", name: "WeChat", icon: "fa-brands fa-weixin", color: "#07af1d", placeholder: "Lien de votre profil WeChat" },
+            { id: "linkedin", name: "LinkedIn", icon: "fa-brands fa-linkedin", color: "#0A66C2", placeholder: "Lien de votre profil LinkedIn" },
+            { id: "facebook", name: "Facebook", icon: "fa-brands fa-facebook", color: "#1877F2", placeholder: "Lien de votre profil Facebook" },
+            { id: "instagram", name: "Instagram", icon: "fa-brands fa-instagram", color: "#E4405F", placeholder: "Lien de votre profil Instagram" }
+        ];
+
+        const container = document.getElementById('social-links-container');
+        socialNetworks.forEach(network => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center space-x-3';
+            div.innerHTML = `
+                <i class="${network.icon} text-2xl w-6 text-center" style="color: ${network.color};" aria-label="${network.name}"></i>
+                <input type="url" id="link-${network.id}" name="link-${network.id}" class="flex-1 p-3 border border-gray-300 rounded-lg text-sm" placeholder="${network.placeholder}">
+            `;
+            container.appendChild(div);
+        });
+
+        const authUser = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+        if (authUser?.role) {
+            document.getElementById('user-role').textContent = authUser.role.toUpperCase();
+        }
+
+        document.getElementById('profile-setup-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const socialLinks = {};
+            socialNetworks.forEach(n => {
+                const val = document.getElementById('link-' + n.id)?.value.trim();
+                if (val) socialLinks[n.id] = val;
+            });
+            localStorage.setItem('jeoahs_social_links', JSON.stringify(socialLinks));
+            const role = authUser?.role || 'acheteur';
+            if (role === 'vendeur') window.location.href = '/vendor_onboarding.html';
+            else if (role === 'affilie') window.location.href = '/affiliate_onboarding_step1.html';
+            else window.location.href = '/acheteur-social-setup.html';
+        });
+    </script>
+    <script src="/public/jeoah-loader.js" defer></script>
+</body>
 </html>

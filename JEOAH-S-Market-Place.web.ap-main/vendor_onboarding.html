@@ -1,5 +1,5 @@
-et lz p<!-- 
-    vendor_onboarding.html - Page d'Onboarding pour Vendeur (V2 - Logos Améliorés)
+<!-- 
+    vendor_onboarding.html - Page d'Onboarding pour Vendeur (Étape 1/3 - Fiche Vendeur & Liens Publics)
 -->
 <!DOCTYPE html>
 <html lang="fr">
@@ -120,8 +120,8 @@ et lz p<!--
                 shippingByVendor: true,
                 paymentViaJeoahs: true
             }));
-            displayMessage('Votre boutique est enregistrée. Vous pouvez maintenant ajouter vos produits.', 'success');
-            setTimeout(() => { window.location.href = 'vendor_product_submission.html'; }, 500);
+            displayMessage('Étape 1 enregistrée ! Passage à l’étape 2 (Réseaux sociaux boutique)...', 'success');
+            setTimeout(() => { window.location.href = 'vendor-step-social.html'; }, 500);
         }
 
         function displayMessage(message, type = 'success') {

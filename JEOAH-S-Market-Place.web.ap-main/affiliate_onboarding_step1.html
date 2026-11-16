@@ -46,9 +46,9 @@
                 window.location.href = '/public/auth.html';
                 return;
             }
-            if (account.role === 'affilie' && account.onboardingComplete) {
-                window.location.href = '/affiliate-storefront.html';
-                return;
+            const retest = new URLSearchParams(window.location.search).get('retest') === '1';
+            if (account.role === 'affilie' && account.onboardingComplete && !retest && !isRoleUpgrade) {
+                // Permettre quand même l'affichage si l'utilisateur ouvre explicitement l'étape 1
             }
             affiliateLinks = JSON.parse(localStorage.getItem('jeoahs_affiliate_links') || 'null') || initialMerchants.map(link => ({ ...link }));
             renderAffiliateLinks();

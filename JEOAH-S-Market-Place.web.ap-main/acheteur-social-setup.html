@@ -138,6 +138,13 @@
                     return;
                 }
                 localStorage.setItem('jeoahs_buyer_social_links', JSON.stringify(links));
+                const authUser = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+                if (authUser) {
+                    authUser.onboardingComplete = true;
+                    authUser.buyerOnboardingComplete = true;
+                    localStorage.setItem('jeoahs_auth_user', JSON.stringify(authUser));
+                    localStorage.setItem('jeoahs_user', JSON.stringify(authUser));
+                }
                 window.location.href = '/showcase.html';
             });
         });

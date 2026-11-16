@@ -59,14 +59,15 @@
         });
 
         async function initFirebase() {
+            const savedProfile = JSON.parse(localStorage.getItem('jeoahs_affiliate_profile') || 'null');
+            if (savedProfile) {
+                profileData = { ...DEFAULT_PROFILE, ...savedProfile };
+            }
+            updateUI();
+            document.getElementById('loading-indicator').classList.add('hidden');
+            document.getElementById('onboarding-content').classList.remove('hidden');
+
             if (Object.keys(firebaseConfig).length === 0) {
-                const savedProfile = JSON.parse(localStorage.getItem('jeoahs_affiliate_profile') || 'null');
-                if (savedProfile) {
-                    profileData = { ...DEFAULT_PROFILE, ...savedProfile };
-                }
-                updateUI();
-                document.getElementById('loading-indicator').classList.add('hidden');
-                document.getElementById('onboarding-content').classList.remove('hidden');
                 return;
             }
 
@@ -92,10 +93,7 @@
                 }
                 userId = user.uid;
                 await loadExistingProfile();
-                // NOUVEAU: Charger les paramètres d'affiliation
                 await loadAffiliateSettings();
-                document.getElementById('loading-indicator').classList.add('hidden');
-                document.getElementById('onboarding-content').classList.remove('hidden');
             });
         }
 
@@ -208,6 +206,13 @@
             profileData.profilePictureUrl = pictureUrl;
             profileData.isProfileComplete = true; // Marquer le profil comme complet
             localStorage.setItem('jeoahs_affiliate_profile', JSON.stringify(profileData));
+            const authUser = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+            if (authUser) {
+                authUser.onboardingComplete = true;
+                authUser.affiliateOnboardingComplete = true;
+                localStorage.setItem('jeoahs_auth_user', JSON.stringify(authUser));
+                localStorage.setItem('jeoahs_user', JSON.stringify(authUser));
+            }
 
             if (userId && db) {
                 try {
@@ -229,19 +234,12 @@
                         // Le lien de profil sera construit sur le dashboard: /affiliate/{userId}
                         userId: userId
                     }, { merge: true });
-
-                    window.location.href = 'affiliate-dashboard.html'; // Rediriger vers le Tableau de Bord
                 } catch (e) {
-                    console.error("Erreur d'enregistrement sur Firestore:", e);
-                    showCustomModal("Erreur Critique", "Une erreur est survenue lors de l'enregistrement du profil. Veuillez vérifier votre connexion.");
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = 'Terminer <i class="fas fa-check ml-2"></i>';
+                    console.warn("Enregistrement local conservé:", e);
                 }
-            } else {
-                localStorage.setItem('jeoahs_affiliate_profile', JSON.stringify(profileData));
-                localStorage.setItem('jeoahs_affiliate_onboarding_complete', 'true');
-                window.location.href = 'affiliate-dashboard.html';
             }
+            localStorage.setItem('jeoahs_affiliate_onboarding_complete', 'true');
+            window.location.href = 'affiliate-dashboard.html';
         }
 
         // Fonction pour afficher une modale personnalisée (remplacement de alert())
