@@ -421,6 +421,7 @@
         };
 
         const PAYPAL_CLIENT_ID = 'Aa3xVo2U58cHQjE16uhRjw1GmNtP2dGHDf1XhYf4s_ZzX034Am7KlLFm64sd1c6BAUrsryaGt0xwkTZz';
+        const PAYPAL_MERCHANT_ID = 'LV3TGGJUHA87J';
 
         function getCurrentPaymentAmountUsd() {
             if (mode === 'cart') {
@@ -478,7 +479,8 @@
                 if (document.getElementById('paypal-sdk-script')) return;
                 const script = document.createElement('script');
                 script.id = 'paypal-sdk-script';
-                script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture`;
+                script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture&merchant-id=${PAYPAL_MERCHANT_ID}`;
+                script.setAttribute('data-merchant-id', PAYPAL_MERCHANT_ID);
                 script.onload = () => {
                     renderPayPalSmartButtons();
                 };
@@ -513,6 +515,9 @@
                             amount: {
                                 currency_code: 'USD',
                                 value: currentAmt.toFixed(2)
+                            },
+                            payee: {
+                                merchant_id: PAYPAL_MERCHANT_ID
                             }
                         }]
                     });
