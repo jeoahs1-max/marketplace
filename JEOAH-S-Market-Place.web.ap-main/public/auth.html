@@ -159,7 +159,7 @@
                 return `/payment.html?plan=${encodeURIComponent(selectedPlan)}&role=${encodeURIComponent(targetRole)}`;
             }
             if (profile.role === 'affilie') {
-                return (isNewRegistration || !profile.onboardingComplete) ? '/affiliate_onboarding_step1.html' : '/affiliate-dashboard.html';
+                return (isNewRegistration || !profile.onboardingComplete) ? '/affiliate_onboarding_step1.html' : '/affiliate-storefront.html';
             }
             if (profile.role === 'vendeur') {
                 const hasVendorSetup = Boolean(localStorage.getItem('jeoahs_vendor_profile') || localStorage.getItem('jeoahs_vendor_store'));
@@ -216,7 +216,7 @@
             if (auth?.currentUser) {
                 await continueToSpace(auth.currentUser, true, targetRole);
             } else {
-                location.href = targetRole === 'affilie' ? '/affiliate-dashboard.html' : '/vendor_dashboard.html';
+                location.href = targetRole === 'affilie' ? '/affiliate-storefront.html' : '/vendor_dashboard.html';
             }
         };
 

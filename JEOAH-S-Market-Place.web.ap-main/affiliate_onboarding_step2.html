@@ -90,7 +90,16 @@
                 return;
             }
             localStorage.setItem('jeoahs_social_links', JSON.stringify(socialLinks));
-            window.location.href = 'affiliate_onboarding_step3.html';
+            localStorage.setItem('jeoahs_affiliate_onboarding_complete', 'true');
+            try {
+                const authUser = JSON.parse(localStorage.getItem('jeoahs_auth_user') || '{}');
+                authUser.onboardingComplete = true;
+                authUser.affiliateOnboardingComplete = true;
+                authUser.role = 'affilie';
+                localStorage.setItem('jeoahs_auth_user', JSON.stringify(authUser));
+                localStorage.setItem('jeoahs_user', JSON.stringify(authUser));
+            } catch (_) {}
+            window.location.href = 'affiliate-storefront.html';
         };
 
         function showMessage(title, message) {
@@ -133,8 +142,9 @@
                     <a href="affiliate_onboarding_step1.html"
                         class="px-5 py-3 text-gray-700 font-bold rounded-xl border border-gray-300 hover:bg-gray-50">Retour</a>
                     <button type="submit"
-                        class="px-6 py-3 bg-blue-700 text-white font-bold rounded-xl hover:bg-blue-800">Enregistrer et
-                        continuer <i class="fas fa-arrow-right ml-2"></i></button>
+                        class="px-6 py-3 bg-purple-700 text-white font-bold rounded-xl hover:bg-purple-800 transition shadow-md">
+                        Enregistrer et voir ma vitrine <i class="fas fa-store ml-2"></i>
+                    </button>
                 </div>
             </form>
         </div>

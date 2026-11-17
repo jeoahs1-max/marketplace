@@ -52,9 +52,13 @@
             if (n.includes('shopify')) {
                 return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="%2395BF47"/><path d="M26 13l-3-1-3 2v-1c0-.8-.7-1.5-1.5-1.5S17 12.2 17 13v1.5L14 16l3 13 11-2 2-14h-4z" fill="white"/></svg>`;
             }
-            const letter = (name || 'J').trim().slice(0, 1).toUpperCase() || 'J';
-            return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="%237c3aed"/><path d="M14 16c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/><rect x="11" y="16" width="18" height="15" rx="3" fill="white" fill-opacity="0.25"/><text x="20" y="27" fill="white" font-family="Arial,sans-serif" font-size="12" font-weight="bold" text-anchor="middle">${letter}</text></svg>`;
+            const letter = (name || '').trim().slice(0, 1).toUpperCase();
+            if (letter) {
+                return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="%232563eb"/><text x="20" y="26" fill="white" font-family="Arial,sans-serif" font-size="16" font-weight="bold" text-anchor="middle">${letter}</text></svg>`;
+            }
+            return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="%23f1f5f9" stroke="%23cbd5e1" stroke-width="1.5"/><path d="M14 16c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="%2364748b" stroke-width="2" fill="none" stroke-linecap="round"/><rect x="12" y="16" width="16" height="13" rx="2" fill="%2364748b"/></svg>`;
         }
+        window.getPlatformSvg = getPlatformSvg;
 
         const initialMerchants = [
             { name: "Amazon", base_link: "", icon_svg: getPlatformSvg("Amazon"), placeholder: "Votre ID de suivi Amazon (ex: jeoahs-20)", required: false },
@@ -137,13 +141,14 @@
 
             affiliateLinks.forEach((link, index) => {
                 const isRemovable = !link.required;
-                const logoSvg = link.icon_svg || getPlatformSvg(link.name);
+                const logoSvg = getPlatformSvg(link.name);
+                link.icon_svg = logoSvg;
                 const linkHtml = `
                     <div id="link-card-${index}" class="p-5 rounded-2xl border border-gray-200 bg-white shadow-lg transition hover:shadow-xl flex items-center space-x-4">
                         
                         <!-- LOGO SÉCURISÉ & DYNAMIQUE SANS IMAGE CASSÉE -->
                         <div class="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-200 shadow-sm overflow-hidden p-1.5">
-                             <img id="link-img-${index}" src="${logoSvg}" alt="${link.name || 'Logo'}" class="w-full h-full object-contain" onerror="this.onerror=null; this.src=getPlatformSvg('${link.name || 'J'}');"/>
+                             <img id="link-img-${index}" src="${logoSvg}" alt="${link.name || 'Plateforme'}" class="w-full h-full object-contain" onerror="this.onerror=null; if(window.getPlatformSvg){ this.src=window.getPlatformSvg('${link.name || ''}'); }"/>
                         </div>
 
                         <!-- Champs de Saisie -->

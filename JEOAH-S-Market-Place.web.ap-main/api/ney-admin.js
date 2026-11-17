@@ -6,17 +6,8 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 && !admin.apps.length) {
   admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 }
 
-let testerEmailsList = [];
-try {
-  const testersData = require('../config/testers.json');
-  testerEmailsList = (testersData.testers || []).map(t => (t.email || '').toLowerCase()).filter(Boolean);
-} catch (_) {}
-
 const allowedAdmins = new Set([
   'jeoahs1@gmail.com',
-  'jjeanlouis96@gmail.com',
-  'emelinejulien744@gmail.com',
-  ...testerEmailsList,
   ...(process.env.ADMIN_EMAILS || '').split(',').map(email => email.trim().toLowerCase()).filter(Boolean)
 ]);
 

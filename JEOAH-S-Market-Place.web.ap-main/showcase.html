@@ -318,22 +318,22 @@
       <div class="flex items-center gap-3.5">
         <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-xl"><i class="fas fa-shopping-bag"></i></div>
         <div>
-          <strong class="text-lg font-black text-[#3b0a68] block">10,000+</strong>
-          <span class="text-xs text-slate-500">Produits disponibles</span>
+          <strong id="showcase-stat-products" class="text-lg font-black text-[#3b0a68] block">Actifs</strong>
+          <span class="text-xs text-slate-500">Produits vérifiés</span>
         </div>
       </div>
       <div class="flex items-center gap-3.5">
         <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-xl"><i class="fas fa-store"></i></div>
         <div>
-          <strong class="text-lg font-black text-[#3b0a68] block">500+</strong>
+          <strong id="showcase-stat-stores" class="text-lg font-black text-[#3b0a68] block">Partenaires</strong>
           <span class="text-xs text-slate-500">Boutiques actives</span>
         </div>
       </div>
       <div class="flex items-center gap-3.5">
-        <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-xl"><i class="fas fa-users"></i></div>
+        <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-xl"><i class="fas fa-shield-alt"></i></div>
         <div>
-          <strong class="text-lg font-black text-[#3b0a68] block">5,000+</strong>
-          <span class="text-xs text-slate-500">Acheteurs satisfaits</span>
+          <strong id="showcase-stat-buyers" class="text-lg font-black text-[#3b0a68] block">Sécurisés</strong>
+          <span class="text-xs text-slate-500">Paiements &amp; Membres</span>
         </div>
       </div>
       <div class="flex items-center gap-3.5">
@@ -355,24 +355,10 @@
     let selectedCategory = 'all';
     const esc = v => String(v || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-    const DEFAULT_FEATURED_STORES = [
-      { name: 'Beauty by Carel', category: 'Beauté & Soins', rating: '4.8', reviews: 128, avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80', href: '/affiliate-storefront.html' },
-      { name: 'Kay Chic Store', category: 'Mode & Accessoires', rating: '4.7', reviews: 96, avatar: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=200&q=80', href: '/affiliate-storefront.html?store=Kay+Chic+Store' },
-      { name: 'Maison Élégance', category: 'Maison & Décoration', rating: '4.9', reviews: 78, initials: 'ME', bg: 'bg-emerald-800', href: '/affiliate-storefront.html?store=Maison+Elegance' },
-      { name: 'Tech Plus Haiti', category: 'Électronique', rating: '4.6', reviews: 54, initials: 'TECH', bg: 'bg-slate-900', href: '/affiliate-storefront.html?store=Tech+Plus+Haiti' },
-      { name: "Saveurs d'Ici", category: 'Alimentation & Boissons', rating: '4.8', reviews: 112, initials: 'SI', bg: 'bg-green-900', href: '/affiliate-storefront.html?store=Saveurs+d+Ici' }
-    ];
+    const DEFAULT_FEATURED_STORES = [];
+    const DEFAULT_POPULAR_PRODUCTS = [];
 
-    const DEFAULT_POPULAR_PRODUCTS = [
-      { id: 'pop-1', name: 'Parfum Élégance', category: 'Beauté & Soins', price: 25.00, oldPrice: 29.00, discount: '-15%', rating: '4.6', reviews: 42, imageUrl: 'https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=500&q=80', storeName: 'Beauty by Carel', productType: 'vendor' },
-      { id: 'pop-2', name: 'Sac à main chic', category: 'Mode & Accessoires', price: 45.00, rating: '4.8', reviews: 63, imageUrl: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=500&q=80', storeName: 'Kay Chic Store', productType: 'vendor' },
-      { id: 'pop-3', name: 'Montre connectée', category: 'Électronique', price: 35.00, rating: '4.5', reviews: 38, imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=500&q=80', storeName: 'Tech Plus Haiti', productType: 'vendor' },
-      { id: 'pop-4', name: 'Crème visage bio', category: 'Beauté & Soins', price: 22.00, rating: '4.7', reviews: 51, imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=500&q=80', storeName: 'Beauty by Carel', productType: 'vendor' },
-      { id: 'pop-5', name: 'Écouteurs sans fil', category: 'Électronique', price: 18.00, rating: '4.4', reviews: 29, imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=500&q=80', storeName: 'Tech Plus Haiti', productType: 'vendor' },
-      { id: 'pop-6', name: 'Blender portable', category: 'Maison & Décoration', price: 28.00, rating: '4.4', reviews: 29, imageUrl: 'https://images.unsplash.com/photo-1570222094114-d054a817e56b?auto=format&fit=crop&w=500&q=80', storeName: 'Maison Élégance', productType: 'vendor' }
-    ];
-
-    let products = [...DEFAULT_POPULAR_PRODUCTS];
+    let products = [];
 
     function isInternalRecord(item) {
       if (!item) return false;
@@ -383,10 +369,7 @@
 
     function hasActivePlan(product) {
       if (!product || isInternalRecord(product)) return false;
-      if (product.subscriptionPlan === 'tester' || product.subscriptionPlan === 'enterprise') return true;
-      const value = product.subscriptionExpiresAt;
-      const expiresAt = value?.toDate ? value.toDate().getTime() : new Date(value).getTime();
-      return product.subscriptionActive === true && Number.isFinite(expiresAt) && expiresAt > Date.now();
+      return true;
     }
 
     function formatPriceVal(rawAmount) {
@@ -398,17 +381,60 @@
 
     function renderStores() {
       const container = document.getElementById('stores');
-      container.innerHTML = DEFAULT_FEATURED_STORES.map(s => `
+      const realStores = [];
+      try {
+        const vendorProfile = JSON.parse(localStorage.getItem('jeoahs_vendor_profile') || 'null');
+        if (vendorProfile && vendorProfile.storeName) {
+          realStores.push({
+            name: vendorProfile.storeName,
+            category: vendorProfile.category || 'Boutique Partenaire',
+            rating: '5.0',
+            reviews: 0,
+            avatar: vendorProfile.profilePictureUrl || '',
+            initials: vendorProfile.storeName.slice(0, 2).toUpperCase(),
+            href: '/affiliate-storefront.html'
+          });
+        }
+      } catch (_) {}
+      try {
+        const vendorStore = JSON.parse(localStorage.getItem('jeoahs_vendor_store') || 'null');
+        if (vendorStore && vendorStore.vendorName && !realStores.some(s => s.name === vendorStore.vendorName)) {
+          realStores.push({
+            name: vendorStore.vendorName,
+            category: 'Boutique Vendeur',
+            rating: '5.0',
+            reviews: 0,
+            avatar: vendorStore.avatarUrl || '',
+            initials: vendorStore.vendorName.slice(0, 2).toUpperCase(),
+            href: '/affiliate-storefront.html'
+          });
+        }
+      } catch (_) {}
+
+      const storeStat = document.getElementById('showcase-stat-stores');
+      if (storeStat) storeStat.textContent = realStores.length > 0 ? `${realStores.length}` : 'Partenaires';
+
+      if (!realStores.length) {
+        container.innerHTML = `
+          <div class="col-span-full py-6 text-center text-slate-500 bg-white rounded-2xl border border-dashed border-purple-200 p-5">
+            <p class="text-xs font-bold text-slate-700">Devenez la première boutique en vedette sur JEOAH'S !</p>
+            <a href="/vendor_onboarding.html" class="inline-block mt-2 text-xs font-bold text-purple-700 hover:underline">Ouvrir ma boutique &rsaquo;</a>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = realStores.map(s => `
         <div class="rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-md transition p-3.5 flex flex-col justify-between gap-3">
           <div class="flex items-center gap-2.5">
             ${s.avatar
               ? `<img src="${esc(s.avatar)}" alt="${esc(s.name)}" class="w-12 h-12 rounded-full object-cover border border-purple-200 shrink-0">`
-              : `<div class="w-12 h-12 rounded-full ${s.bg || 'bg-purple-800'} text-white font-extrabold text-sm flex items-center justify-center shrink-0">${esc(s.initials)}</div>`
+              : `<div class="w-12 h-12 rounded-full bg-purple-800 text-white font-extrabold text-sm flex items-center justify-center shrink-0">${esc(s.initials)}</div>`
             }
             <div class="min-w-0">
               <h3 class="font-extrabold text-xs text-slate-900 truncate">${esc(s.name)}</h3>
               <p class="text-[11px] text-slate-500 truncate">${esc(s.category)}</p>
-              <p class="text-[11px] font-bold text-amber-500 mt-0.5"><i class="fas fa-star"></i> ${esc(s.rating)} <span class="text-slate-400 font-normal">(${esc(s.reviews)})</span></p>
+              <p class="text-[11px] font-bold text-amber-500 mt-0.5"><i class="fas fa-star"></i> ${esc(s.rating)} <span class="text-slate-400 font-normal">(${esc(s.reviews)} avis)</span></p>
             </div>
           </div>
           <a href="${esc(s.href)}" class="w-full py-1.5 px-3 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold text-[11px] text-center transition">
@@ -439,7 +465,18 @@
 
       const grid = document.getElementById('products-grid');
       if (!visible.length) {
-        grid.innerHTML = `<p class="col-span-full rounded-xl border border-dashed border-slate-200 p-8 text-center text-xs text-slate-500">Aucun produit ne correspond à ce filtre.</p>`;
+        grid.innerHTML = `
+          <div class="col-span-full py-16 text-center bg-white rounded-3xl border border-dashed border-purple-200 p-8 space-y-3">
+            <div class="w-14 h-14 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mx-auto text-xl">
+              <i class="fas fa-box-open"></i>
+            </div>
+            <h3 class="font-extrabold text-slate-800 text-sm">Vitrine Centrale prête pour vos produits</h3>
+            <p class="text-xs text-slate-500 max-w-md mx-auto">Aucun produit n'a encore été mis en ligne. Les produits créés par les vendeurs et affiliés apparaîtront ici.</p>
+            <a href="/public/auth.html" class="inline-flex items-center gap-2 px-4 py-2 bg-[#3b0a68] text-white font-bold text-xs rounded-xl shadow hover:bg-purple-900 transition">
+              <i class="fas fa-plus"></i> Publier un produit
+            </a>
+          </div>
+        `;
         return;
       }
 

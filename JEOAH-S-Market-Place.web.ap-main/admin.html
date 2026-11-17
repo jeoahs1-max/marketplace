@@ -48,12 +48,12 @@
             const localCentralProds = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]').filter(p => !isInternalTestItem(p));
             const localOrders = JSON.parse(localStorage.getItem('jeoahs_vendor_orders') || '[]').filter(o => !isInternalTestItem(o));
 
-            let productsCount = 248 + localVendorProds.length + localAffProds.length;
-            let centralProductsCount = 248 + localCentralProds.length;
-            let ordersCount = 342 + localOrders.length;
-            let totalSalesUsd = 28560.45 + localOrders.reduce((s, o) => s + Number(o.total || 0), 0);
-            let usersCount = 1248;
-            let activeStoresCount = 12;
+            let productsCount = localVendorProds.length + localAffProds.length;
+            let centralProductsCount = localCentralProds.length;
+            let ordersCount = localOrders.length;
+            let totalSalesUsd = localOrders.reduce((s, o) => s + Number(o.total || 0), 0);
+            let usersCount = 0;
+            let activeStoresCount = 0;
 
             if (db) {
                 try {
@@ -64,20 +64,24 @@
                     ]);
                     if (prodSnap) {
                         const publicProds = prodSnap.docs.map(d => d.data()).filter(d => !isInternalTestItem(d));
-                        centralProductsCount = Math.max(centralProductsCount, 248 + publicProds.length);
-                        productsCount = Math.max(productsCount, 248 + publicProds.length);
+                        centralProductsCount = Math.max(centralProductsCount, publicProds.length);
+                        productsCount = Math.max(productsCount, publicProds.length);
                     }
                     if (profSnap) {
-                        usersCount = Math.max(usersCount, 1248 + profSnap.docs.map(d => d.data()).filter(d => !isInternalTestItem(d)).length);
+                        const publicProfiles = profSnap.docs.map(d => d.data()).filter(d => !isInternalTestItem(d));
+                        usersCount = Math.max(usersCount, publicProfiles.length);
+                        activeStoresCount = publicProfiles.filter(p => (p.role === 'vendeur' || p.role === 'affilie') && p.storeName).length;
                     }
                     if (orderSnap && !orderSnap.empty) {
                         const publicOrders = orderSnap.docs.map(d => d.data()).filter(d => !isInternalTestItem(d));
-                        ordersCount = Math.max(ordersCount, 342 + publicOrders.length);
+                        ordersCount = Math.max(ordersCount, publicOrders.length);
+                        const publicOrdersTotal = publicOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+                        totalSalesUsd = Math.max(totalSalesUsd, publicOrdersTotal);
                     }
                 } catch (_) {}
             }
 
-            const commissionsUsd = +(6245.30 + (totalSalesUsd - 28560.45) * 0.03).toFixed(2);
+            const commissionsUsd = +(totalSalesUsd * 0.03).toFixed(2);
             window.__jeoahsLiveStats = {
                 productsCount,
                 centralProductsCount,
@@ -86,9 +90,20 @@
                 commissionsUsd,
                 usersCount,
                 activeStoresCount,
-                pendingWithdrawalsCount: window.__jeoahsLiveStats.pendingWithdrawalsCount || 0,
+                pendingWithdrawalsCount: window.__jeoahsLiveStats?.pendingWithdrawalsCount || 0,
                 updatedAt: new Date().toISOString()
             };
+
+            const elSales = document.getElementById('admin-kpi-sales');
+            if (elSales) elSales.textContent = `$${totalSalesUsd.toFixed(2)}`;
+            const elOrders = document.getElementById('admin-kpi-orders');
+            if (elOrders) elOrders.textContent = String(ordersCount);
+            const elUsers = document.getElementById('admin-kpi-users');
+            if (elUsers) elUsers.textContent = String(usersCount);
+            const elStores = document.getElementById('admin-kpi-stores');
+            if (elStores) elStores.textContent = String(activeStoresCount);
+            const elCommissions = document.getElementById('admin-kpi-commissions');
+            if (elCommissions) elCommissions.textContent = `$${commissionsUsd.toFixed(2)}`;
         }
 
         loadRealPlatformStats();
@@ -350,10 +365,10 @@
                         <span class="text-xs text-slate-500 font-semibold">Ventes totales</span>
                     </div>
                     <div class="flex items-baseline justify-between gap-1">
-                        <strong id="admin-kpi-sales" class="text-xl font-extrabold text-slate-900">$28,560.45</strong>
-                        <span class="text-[11px] font-bold text-emerald-600">↑ 18.6%</span>
+                        <strong id="admin-kpi-sales" class="text-xl font-extrabold text-slate-900">$0.00</strong>
+                        <span class="text-[11px] font-bold text-emerald-600">En direct</span>
                     </div>
-                    <p class="text-[10px] text-slate-400">vs 5 août - 11 août 2026</p>
+                    <p class="text-[10px] text-slate-400">Transactions réelles</p>
                 </div>
 
                 <div class="admin-stat-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
@@ -362,10 +377,10 @@
                         <span class="text-xs text-slate-500 font-semibold">Commandes</span>
                     </div>
                     <div class="flex items-baseline justify-between gap-1">
-                        <strong id="admin-kpi-orders" class="text-xl font-extrabold text-slate-900">342</strong>
-                        <span class="text-[11px] font-bold text-emerald-600">↑ 12.4%</span>
+                        <strong id="admin-kpi-orders" class="text-xl font-extrabold text-slate-900">0</strong>
+                        <span class="text-[11px] font-bold text-emerald-600">En direct</span>
                     </div>
-                    <p class="text-[10px] text-slate-400">vs 5 août - 11 août 2026</p>
+                    <p class="text-[10px] text-slate-400">Commandes réelles</p>
                 </div>
 
                 <div class="admin-stat-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
@@ -374,10 +389,10 @@
                         <span class="text-xs text-slate-500 font-semibold">Utilisateurs</span>
                     </div>
                     <div class="flex items-baseline justify-between gap-1">
-                        <strong id="admin-kpi-users" class="text-xl font-extrabold text-slate-900">1,248</strong>
-                        <span class="text-[11px] font-bold text-emerald-600">↑ 15.7%</span>
+                        <strong id="admin-kpi-users" class="text-xl font-extrabold text-slate-900">0</strong>
+                        <span class="text-[11px] font-bold text-emerald-600">En direct</span>
                     </div>
-                    <p class="text-[10px] text-slate-400">vs 5 août - 11 août 2026</p>
+                    <p class="text-[10px] text-slate-400">Comptes enregistrés</p>
                 </div>
 
                 <div class="admin-stat-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
@@ -386,10 +401,10 @@
                         <span class="text-xs text-slate-500 font-semibold">Vitrines actives</span>
                     </div>
                     <div class="flex items-baseline justify-between gap-1">
-                        <strong id="admin-kpi-stores" class="text-xl font-extrabold text-slate-900">12</strong>
-                        <span class="text-[11px] font-bold text-emerald-600">↑ 9.1%</span>
+                        <strong id="admin-kpi-stores" class="text-xl font-extrabold text-slate-900">0</strong>
+                        <span class="text-[11px] font-bold text-emerald-600">En direct</span>
                     </div>
-                    <p class="text-[10px] text-slate-400">vs 5 août - 11 août 2026</p>
+                    <p class="text-[10px] text-slate-400">Vitrines publiées</p>
                 </div>
 
                 <div class="admin-stat-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
@@ -398,10 +413,10 @@
                         <span class="text-xs text-slate-500 font-semibold">Commissions</span>
                     </div>
                     <div class="flex items-baseline justify-between gap-1">
-                        <strong id="admin-kpi-commissions" class="text-xl font-extrabold text-slate-900">$6,245.30</strong>
-                        <span class="text-[11px] font-bold text-emerald-600">↑ 14.3%</span>
+                        <strong id="admin-kpi-commissions" class="text-xl font-extrabold text-slate-900">$0.00</strong>
+                        <span class="text-[11px] font-bold text-emerald-600">En direct</span>
                     </div>
-                    <p class="text-[10px] text-slate-400">vs 5 août - 11 août 2026</p>
+                    <p class="text-[10px] text-slate-400">Revenus plateforme (3%)</p>
                 </div>
 
             </div>
