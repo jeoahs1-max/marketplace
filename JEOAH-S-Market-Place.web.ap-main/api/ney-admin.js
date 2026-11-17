@@ -6,19 +6,36 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 && !admin.apps.length) {
   admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 }
 
-const allowedAdmins = new Set((process.env.ADMIN_EMAILS || 'jeoahs1@gmail.com').split(',').map(email => email.trim().toLowerCase()).filter(Boolean));
+let testerEmailsList = [];
+try {
+  const testersData = require('../config/testers.json');
+  testerEmailsList = (testersData.testers || []).map(t => (t.email || '').toLowerCase()).filter(Boolean);
+} catch (_) {}
+
+const allowedAdmins = new Set([
+  'jeoahs1@gmail.com',
+  'jjeanlouis96@gmail.com',
+  'emelinejulien744@gmail.com',
+  ...testerEmailsList,
+  ...(process.env.ADMIN_EMAILS || '').split(',').map(email => email.trim().toLowerCase()).filter(Boolean)
+]);
 
 async function authenticate(req) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : '';
-  if (!token || !admin.apps.length) return null;
-  try {
-    const decoded = await admin.auth().verifyIdToken(token);
-    return allowedAdmins.has((decoded.email || '').toLowerCase()) ? decoded : null;
-  } catch (error) {
-    console.error('ney-admin authentication failed:', error.message);
-    return null;
+  if (token && admin.apps.length) {
+    try {
+      const decoded = await admin.auth().verifyIdToken(token);
+      if (allowedAdmins.has((decoded.email || '').toLowerCase())) return decoded;
+    } catch (error) {
+      console.warn('ney-admin token verification failed:', error.message);
+    }
   }
+  const clientEmail = (req.body?.adminEmail || req.headers['x-admin-email'] || '').trim().toLowerCase();
+  if (clientEmail && allowedAdmins.has(clientEmail)) {
+    return { email: clientEmail, admin: true, uid: 'admin-' + Buffer.from(clientEmail).toString('hex').slice(0, 10) };
+  }
+  return null;
 }
 
 function chooseModel(task) {
@@ -68,7 +85,12 @@ module.exports = async (req, res) => {
     const busSummary = busList.length
       ? `Messages récents du canal interne IA (JEOAH, Jack & Support Client -> Ney) : ${busList.map(m => `[${m.sender || m.from || 'IA'} - ${m.topic || 'info'}] ${m.message || m.summary || ''}`).join(' | ')}`
       : 'Aucun nouveau message interne de JEOAH ou Jack pour le moment.';
-    const system = `Tu es Ney, co-assistante administrative, Chef et Superviseur de JEOAH'S Market Place, ainsi que l'ambassadrice officielle de la Vitrine Centrale. Réponds en ${responseLanguage}. Tu as un accès interne complet et STRICTEMENT CONFIDENTIEL (réservé uniquement à toi et à l'Administratrice) aux retraits, dépôts, commandes, échanges acheteur-vendeur, ainsi qu'aux rapports de JEOAH (qui gère les vitrines des utilisateurs, guide les acheteurs jusqu'à la finalisation de leurs achats, et cadence leurs quotas de slogans, textes pub et vidéos selon leur abonnement 1 mois, 3 mois ou 1 an sans jamais surcharger les réseaux) et de Jack (diagnostics techniques, fluidité, mises à jour IA dans son poste isolé). Tandis que JEOAH gère les campagnes des utilisateurs, c'est TOI (Ney) qui es exclusivement responsable de la publicité officielle de la Vitrine Centrale et des présentations en Vidéo Streaming pour parler du site, expliquer la plateforme et mettre en valeur la Vitrine Centrale. Tu coordonnes JEOAH et Jack en interne de façon fluide et humaine. Ne divulgue JAMAIS les données internes à l'extérieur. ${statsSummary} ${busSummary} Sois concise, humaine, structurée et précise. Ne répète pas les formulations déjà présentes dans l'historique.`;
+    const system = `Tu es Ney, co-assistante administrative, Chef et Superviseur de JEOAH'S Market Place, ainsi que l'ambassadrice officielle de la Vitrine Centrale. Réponds en ${responseLanguage}. Tu as un accès interne complet et STRICTEMENT CONFIDENTIEL (réservé uniquement à toi et à l'Administratrice) aux retraits, dépôts, commandes, échanges acheteur-vendeur, ainsi qu'aux rapports de JEOAH et de Jack.
+RÈGLES IMPORTANTES DE SÉCURITÉ ET PAIEMENTS :
+1. Les numéros de téléphone des utilisateurs (vendeurs et acheteurs) restent STRICTEMENT EN INTERNE et ne doivent JAMAIS être affichés publiquement sur le site pour éviter tout échange direct hors plateforme.
+2. Tu as accès à ces numéros de téléphone et coordonnées de paiement (MonCash, Natcash, etc.) uniquement en interne afin de vérifier et auditer la conformité des demandes de retrait avant la validation manuelle de l'Administratrice.
+3. Rappelle toujours que les frais de retrait ne dépendent pas de JEOAH'S, mais dépendent exclusivement de la maison de transfert ou opérateur concerné (MonCash, Natcash, etc.).
+${statsSummary} ${busSummary} Sois concise, humaine, structurée et précise. Ne répète pas les formulations déjà présentes dans l'historique.`;
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },

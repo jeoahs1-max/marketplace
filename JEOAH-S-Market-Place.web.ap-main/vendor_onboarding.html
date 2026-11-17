@@ -56,6 +56,34 @@
             document.getElementById('page-description').value = savedStore?.description || '';
             document.getElementById('loading-indicator').classList.add('hidden');
             document.getElementById('form-container').classList.remove('hidden');
+
+            function handleVendorAvatarFile(file) {
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    if (typeof ev.target?.result === 'string') {
+                        const dataUrl = ev.target.result;
+                        document.getElementById('vendor-avatar').value = dataUrl;
+                        const previewBox = document.getElementById('vendor-avatar-preview-box');
+                        const previewImg = document.getElementById('vendor-avatar-preview');
+                        if (previewBox && previewImg) {
+                            previewImg.src = dataUrl;
+                            previewBox.classList.remove('hidden');
+                        }
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+            document.getElementById('vendor-avatar-file')?.addEventListener('change', e => {
+                const f = e.target.files?.[0];
+                if (f) handleVendorAvatarFile(f);
+                e.target.value = '';
+            });
+            document.getElementById('vendor-avatar-camera')?.addEventListener('change', e => {
+                const f = e.target.files?.[0];
+                if (f) handleVendorAvatarFile(f);
+                e.target.value = '';
+            });
         }
 
         function renderSocialInputs(existingLinks = {}) {
@@ -100,8 +128,8 @@
                 displayMessage('Le nom public et le téléphone sont obligatoires pour que l’acheteur puisse vous contacter.', 'error');
                 return;
             }
-            if (avatarUrl && !/^https?:\/\//i.test(avatarUrl)) {
-                displayMessage('L’URL de la photo doit commencer par http:// ou https://.', 'error');
+            if (avatarUrl && !/^https?:\/\/|^data:image\//i.test(avatarUrl)) {
+                displayMessage('La photo doit être une image importée, prise avec la caméra ou une URL commençant par http:// ou https://.', 'error');
                 return;
             }
             const description = document.getElementById('page-description').value.trim();
@@ -179,10 +207,23 @@
                             class="block w-full px-4 py-3 border border-gray-200 bg-gray-100 rounded-xl text-gray-500">
                     </div>
                     <div class="mt-4">
-                        <label for="vendor-avatar" class="block text-sm font-semibold text-gray-800 mb-2">Photo ou
-                            avatar (URL, facultatif)</label>
-                        <input type="url" id="vendor-avatar" placeholder="https://.../ma-photo.jpg"
+                        <label for="vendor-avatar" class="block text-sm font-semibold text-gray-800 mb-2">Photo ou logo de votre boutique</label>
+                        <div class="flex flex-wrap items-center gap-2 mb-2">
+                            <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200 transition">
+                                <i class="fas fa-folder-open"></i> Télécharger photo / logo
+                                <input type="file" id="vendor-avatar-file" accept="image/*" class="hidden">
+                            </label>
+                            <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs rounded-xl border border-emerald-200 transition">
+                                <i class="fas fa-camera"></i> Prendre une photo (Caméra)
+                                <input type="file" id="vendor-avatar-camera" accept="image/*" capture="environment" class="hidden">
+                            </label>
+                        </div>
+                        <input type="url" id="vendor-avatar" placeholder="https://... ou photo sélectionnée ci-dessus"
                             class="block w-full px-4 py-3 border border-gray-300 rounded-xl">
+                        <div id="vendor-avatar-preview-box" class="hidden mt-2 flex items-center gap-3">
+                            <img id="vendor-avatar-preview" src="" alt="Aperçu Logo" class="w-14 h-14 rounded-xl object-cover border border-indigo-200 shadow-sm">
+                            <span class="text-xs text-indigo-700 font-semibold">Photo prête pour votre vitrine vendeur</span>
+                        </div>
                     </div>
                 </div>
                 <div>

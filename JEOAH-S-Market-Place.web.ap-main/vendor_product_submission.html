@@ -43,20 +43,142 @@
             return { active: validTime, plan: validTime ? saved.plan : 'free', expiresAt: validTime ? saved.expiresAt : null };
         }
 
+        let currentVendorPhotos = [];
+        let currentVendorVideo = '';
+
+        function renderVendorMediaPreviews() {
+            const container = document.getElementById('vendor-photos-grid');
+            if (!container) return;
+            container.innerHTML = '';
+
+            currentVendorPhotos.forEach((src, idx) => {
+                const card = document.createElement('div');
+                card.className = 'relative group w-24 h-24 rounded-2xl border-2 border-indigo-200 overflow-hidden shadow-sm bg-white shrink-0';
+                card.innerHTML = `
+                    <img src="${src}" alt="Photo ${idx + 1}" class="w-full h-full object-cover">
+                    <button type="button" onclick="removeVendorPhoto(${idx})" title="Supprimer cette photo"
+                        class="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow transition">
+                        ✕
+                    </button>
+                    <span class="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">#${idx + 1}</span>
+                `;
+                container.appendChild(card);
+            });
+
+            const countEl = document.getElementById('vendor-photos-count');
+            if (countEl) countEl.textContent = `${currentVendorPhotos.length} / 5 photos`;
+
+            const addBox = document.getElementById('vendor-photos-add-actions');
+            if (addBox) {
+                if (currentVendorPhotos.length >= 5) addBox.classList.add('hidden');
+                else addBox.classList.remove('hidden');
+            }
+
+            // Sync hidden inputs for backward compatibility
+            for (let i = 1; i <= 5; i++) {
+                const inp = document.getElementById('product-image-url-' + i);
+                if (inp) inp.value = currentVendorPhotos[i - 1] || '';
+            }
+
+            // Video preview
+            const videoPreviewBox = document.getElementById('vendor-video-preview-box');
+            const videoEl = document.getElementById('vendor-video-preview-player');
+            const videoInput = document.getElementById('product-video-url');
+            if (currentVendorVideo) {
+                if (videoPreviewBox) videoPreviewBox.classList.remove('hidden');
+                if (videoEl) videoEl.src = currentVendorVideo;
+                if (videoInput) videoInput.value = currentVendorVideo;
+            } else {
+                if (videoPreviewBox) videoPreviewBox.classList.add('hidden');
+                if (videoEl) videoEl.src = '';
+            }
+        }
+
+        window.removeVendorPhoto = function(idx) {
+            currentVendorPhotos.splice(idx, 1);
+            renderVendorMediaPreviews();
+        };
+
+        window.removeVendorVideo = function() {
+            currentVendorVideo = '';
+            const videoInput = document.getElementById('product-video-url');
+            if (videoInput) videoInput.value = '';
+            renderVendorMediaPreviews();
+        };
+
+        function addPhotoFiles(fileList) {
+            const files = Array.from(fileList || []).slice(0, 5 - currentVendorPhotos.length);
+            if (!files.length) return;
+            let loaded = 0;
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    if (typeof ev.target?.result === 'string' && currentVendorPhotos.length < 5) {
+                        currentVendorPhotos.push(ev.target.result);
+                    }
+                    loaded++;
+                    if (loaded === files.length) renderVendorMediaPreviews();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function setVideoFile(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                if (typeof ev.target?.result === 'string') {
+                    currentVendorVideo = ev.target.result;
+                    renderVendorMediaPreviews();
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             initFirebase();
             document.getElementById('product-form').addEventListener('submit', handleProductSubmission);
-            document.getElementById('product-photos-upload')?.addEventListener('change', (e) => {
-                const files = Array.from(e.target.files || []).slice(0, 5);
-                files.forEach((file, idx) => {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                        const input = document.getElementById('product-image-url-' + (idx + 1));
-                        if (input && typeof ev.target?.result === 'string') input.value = ev.target.result;
-                    };
-                    reader.readAsDataURL(file);
-                });
+
+            // Handlers photos
+            document.getElementById('product-photos-file')?.addEventListener('change', (e) => {
+                addPhotoFiles(e.target.files);
+                e.target.value = '';
             });
+            document.getElementById('product-photos-camera')?.addEventListener('change', (e) => {
+                addPhotoFiles(e.target.files);
+                e.target.value = '';
+            });
+            document.getElementById('product-add-url-btn')?.addEventListener('click', () => {
+                const urlInp = document.getElementById('product-manual-url');
+                const val = (urlInp?.value || '').trim();
+                if (val && currentVendorPhotos.length < 5) {
+                    currentVendorPhotos.push(val);
+                    if (urlInp) urlInp.value = '';
+                    renderVendorMediaPreviews();
+                }
+            });
+
+            // Handlers vidéo
+            document.getElementById('product-video-file')?.addEventListener('change', (e) => {
+                const file = e.target.files?.[0];
+                if (file) setVideoFile(file);
+                e.target.value = '';
+            });
+            document.getElementById('product-video-camera')?.addEventListener('change', (e) => {
+                const file = e.target.files?.[0];
+                if (file) setVideoFile(file);
+                e.target.value = '';
+            });
+            document.getElementById('product-video-url')?.addEventListener('input', (e) => {
+                const val = (e.target.value || '').trim();
+                if (val && !val.startsWith('data:')) {
+                    currentVendorVideo = val;
+                    const videoPreviewBox = document.getElementById('vendor-video-preview-box');
+                    if (videoPreviewBox) videoPreviewBox.classList.remove('hidden');
+                }
+            });
+
+            renderVendorMediaPreviews();
         });
 
         async function initFirebase() {
@@ -106,12 +228,11 @@
             const description = document.getElementById('product-description').value.trim();
             const price = parseFloat(document.getElementById('product-price').value);
             const stock = parseInt(document.getElementById('product-stock').value, 10);
-            const videoUrl = document.getElementById('product-video-url').value.trim();
+            const videoUrl = currentVendorVideo || document.getElementById('product-video-url').value.trim();
 
-            const photos = [1, 2, 3, 4, 5]
-                .map(i => document.getElementById('product-image-url-' + i)?.value.trim())
-                .filter(Boolean)
-                .slice(0, 5);
+            const photos = currentVendorPhotos.length
+                ? currentVendorPhotos.slice(0, 5)
+                : [1, 2, 3, 4, 5].map(i => document.getElementById('product-image-url-' + i)?.value.trim()).filter(Boolean).slice(0, 5);
             const imageUrl = photos[0] || `https://placehold.co/600x600/5B21B6/ffffff?text=${encodeURIComponent(name.slice(0, 12))}`;
             if (!photos.length) photos.push(imageUrl);
 
@@ -214,10 +335,9 @@
             document.getElementById('product-video-url').value = product.videoUrl || '';
 
             const imgs = Array.isArray(product.images) && product.images.length ? product.images : [product.imageUrl || ''];
-            [1, 2, 3, 4, 5].forEach(i => {
-                const el = document.getElementById('product-image-url-' + i);
-                if (el) el.value = (imgs[i - 1] && !imgs[i - 1].includes('placehold.co')) ? imgs[i - 1] : '';
-            });
+            currentVendorPhotos = imgs.filter(url => url && !url.includes('placehold.co')).slice(0, 5);
+            currentVendorVideo = product.videoUrl || '';
+            renderVendorMediaPreviews();
 
             window.scrollTo(0, 0);
         };
@@ -228,6 +348,9 @@
             document.getElementById('submit-button').textContent = 'Ajouter le Produit';
             document.getElementById('cancel-edit-button').classList.add('hidden');
             document.getElementById('product-form').reset();
+            currentVendorPhotos = [];
+            currentVendorVideo = '';
+            renderVendorMediaPreviews();
         };
 
         function renderProductList() {
@@ -360,26 +483,72 @@
                         </div>
                     </div>
 
-                    <div class="p-4 rounded-xl bg-blue-50/60 border border-blue-100 space-y-3">
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <label class="block text-sm font-bold text-gray-800">Photos du Produit (1 à 5 photos max) (*)</label>
-                            <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold">
-                                <i class="fas fa-upload"></i> Sélectionner 1 à 5 photos
-                                <input type="file" id="product-photos-upload" accept="image/*" multiple class="hidden">
-                            </label>
+                    <!-- 2. MÉDIAS DU PRODUIT (Photos 1 à 5 + Caméra directe + Vidéo) -->
+                    <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                            <div>
+                                <h3 class="text-sm font-extrabold text-slate-800">Photos du Produit (1 à 5 photos) (*)</h3>
+                                <p class="text-xs text-slate-500">Téléchargez vos photos ou prenez-les en direct avec votre caméra</p>
+                            </div>
+                            <span id="vendor-photos-count" class="text-xs font-bold bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full">0 / 5 photos</span>
                         </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-5 gap-2">
-                            <input type="text" id="product-image-url-1" placeholder="Photo 1 (principale) *">
-                            <input type="text" id="product-image-url-2" placeholder="Photo 2 (optionnel)">
-                            <input type="text" id="product-image-url-3" placeholder="Photo 3 (optionnel)">
-                            <input type="text" id="product-image-url-4" placeholder="Photo 4 (optionnel)">
-                            <input type="text" id="product-image-url-5" placeholder="Photo 5 (optionnel)">
-                        </div>
-                    </div>
 
-                    <div>
-                        <label for="product-video-url" class="block text-sm font-medium text-gray-700 mb-1">Vidéo du Produit (si nécessaire / facultatif)</label>
-                        <input type="url" id="product-video-url" placeholder="https://...">
+                        <!-- Grille de prévisualisation des photos avec suppression directe -->
+                        <div id="vendor-photos-grid" class="flex flex-wrap gap-3"></div>
+
+                        <!-- Actions d'ajout de photos -->
+                        <div id="vendor-photos-add-actions" class="space-y-3 pt-2">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <label class="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition">
+                                    <i class="fas fa-folder-open"></i> Télécharger photo(s)
+                                    <input type="file" id="product-photos-file" accept="image/*" multiple class="hidden">
+                                </label>
+                                <label class="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition">
+                                    <i class="fas fa-camera"></i> Prendre une photo (Caméra)
+                                    <input type="file" id="product-photos-camera" accept="image/*" capture="environment" class="hidden">
+                                </label>
+                            </div>
+
+                            <div class="flex gap-2 items-center text-xs">
+                                <input type="url" id="product-manual-url" placeholder="Ou coller une URL d'image (https://...)" class="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-xs">
+                                <button type="button" id="product-add-url-btn" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl transition">Ajouter URL</button>
+                            </div>
+                        </div>
+
+                        <!-- Champs masqués de compatibilité -->
+                        <div class="hidden">
+                            <input type="text" id="product-image-url-1">
+                            <input type="text" id="product-image-url-2">
+                            <input type="text" id="product-image-url-3">
+                            <input type="text" id="product-image-url-4">
+                            <input type="text" id="product-image-url-5">
+                        </div>
+
+                        <!-- VIDÉO DU PRODUIT -->
+                        <div class="pt-4 border-t border-slate-200 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-sm font-bold text-slate-800">Vidéo du Produit (Optionnel)</label>
+                                <span class="text-[11px] text-slate-500">Fichier, caméra ou lien YouTube / TikTok</span>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-3">
+                                <label class="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 text-xs font-bold rounded-xl transition">
+                                    <i class="fas fa-video"></i> Télécharger une vidéo
+                                    <input type="file" id="product-video-file" accept="video/*" class="hidden">
+                                </label>
+                                <label class="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-xs font-bold rounded-xl transition">
+                                    <i class="fas fa-video-slash"></i> Enregistrer avec la caméra
+                                    <input type="file" id="product-video-camera" accept="video/*" capture="environment" class="hidden">
+                                </label>
+                            </div>
+
+                            <input type="url" id="product-video-url" placeholder="Lien vidéo optionnel (https://...)" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs">
+
+                            <div id="vendor-video-preview-box" class="hidden relative rounded-2xl overflow-hidden border border-slate-300 bg-black">
+                                <video id="vendor-video-preview-player" controls class="w-full max-h-56 object-contain"></video>
+                                <button type="button" onclick="removeVendorVideo()" class="absolute top-2 right-2 bg-red-600 text-white rounded-full px-2.5 py-1 text-xs font-bold shadow hover:bg-red-700">Supprimer la vidéo</button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="flex space-x-3 pt-4">

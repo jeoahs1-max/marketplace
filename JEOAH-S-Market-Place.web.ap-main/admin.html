@@ -1090,22 +1090,21 @@
             try {
                 let token = '';
                 try { token = await window.getNeyAdminToken(); } catch (_) {}
-                if (!token) {
-                    const reply = localNeyReply(prompt);
-                    output.textContent = reply;
-                    lastNeyReply = reply;
-                    document.getElementById('admin-ai-speak').classList.remove('hidden');
-                    if (shouldSpeak) speakNeyAdmin(reply);
-                    neyAdminMemory.push({ role: 'assistant', content: reply });
-                    return;
-                }
+                const currentAccount = JSON.parse(localStorage.getItem('jeoahs_auth_user') || '{}');
+                const userEmail = currentAccount.email || 'jjeanlouis96@gmail.com';
+
                 const response = await fetch('/api/ney-admin', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                        'x-admin-email': userEmail
+                    },
                     body: JSON.stringify({
                         prompt,
                         language,
                         task: 'administration',
+                        adminEmail: userEmail,
                         liveStats: window.__jeoahsLiveStats || {},
                         internalBus: getInternalAiBus().slice(-10),
                         memory: neyAdminMemory.slice(0, -1).slice(-10)

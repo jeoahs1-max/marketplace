@@ -114,9 +114,24 @@
                             <label class="text-xs font-bold text-slate-700">Prix principal affiché (USD) (*)
                                 <input id="product-price" required class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-purple-600 focus:outline-none" placeholder="Ex: $29.99">
                             </label>
-                            <label class="text-xs font-bold text-slate-700">URL de l'image du produit (*)
-                                <input id="product-image" required type="url" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-purple-600 focus:outline-none" placeholder="https://...">
-                            </label>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-700">Image du produit (*)</label>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs rounded-xl border border-purple-200 transition">
+                                        <i class="fas fa-folder-open"></i> Télécharger photo
+                                        <input type="file" id="affiliate-photo-file" accept="image/*" class="hidden">
+                                    </label>
+                                    <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs rounded-xl border border-emerald-200 transition">
+                                        <i class="fas fa-camera"></i> Prendre photo
+                                        <input type="file" id="affiliate-photo-camera" accept="image/*" capture="environment" class="hidden">
+                                    </label>
+                                </div>
+                                <input id="product-image" required type="url" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs font-normal focus:border-purple-600 focus:outline-none" placeholder="https://... ou photo ci-dessus">
+                                <div id="affiliate-photo-preview-box" class="hidden pt-2 flex items-center gap-3">
+                                    <img id="affiliate-photo-preview" src="" alt="Aperçu" class="w-16 h-16 rounded-xl object-cover border border-purple-200 shadow-sm">
+                                    <span class="text-xs text-purple-700 font-semibold">Photo prête pour votre vitrine</span>
+                                </div>
+                            </div>
                         </div>
 
                         <label class="block text-xs font-bold text-slate-700">Courte description pour l'acheteur sur la vitrine (*)
@@ -202,9 +217,23 @@
                             <textarea id="ad-video-script" rows="5" class="w-full rounded-xl border border-slate-300 bg-pink-50/30 px-3.5 py-2.5 text-xs leading-relaxed focus:border-pink-600 focus:outline-none" placeholder="Scénario vidéo pub scène par scène + voix-off généré par JEOAH..."></textarea>
                         </div>
 
-                        <label class="block text-xs font-bold text-slate-700">Lien Vidéo Publicitaire (YouTube, TikTok, Reels - facultatif)
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-slate-700">Vidéo Publicitaire (Optionnel)</label>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 bg-pink-50 hover:bg-pink-100 text-pink-700 font-bold text-xs rounded-xl border border-pink-200 transition">
+                                    <i class="fas fa-video"></i> Télécharger vidéo
+                                    <input type="file" id="affiliate-video-file" accept="video/*" class="hidden">
+                                </label>
+                                <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs rounded-xl border border-emerald-200 transition">
+                                    <i class="fas fa-video-slash"></i> Enregistrer caméra
+                                    <input type="file" id="affiliate-video-camera" accept="video/*" capture="environment" class="hidden">
+                                </label>
+                            </div>
                             <input id="product-video-url" type="url" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs font-normal focus:border-pink-600 focus:outline-none" placeholder="https://www.tiktok.com/... ou https://youtu.be/...">
-                        </label>
+                            <div id="affiliate-video-preview-box" class="hidden pt-2">
+                                <video id="affiliate-video-preview" controls class="max-h-48 w-full rounded-xl bg-black object-contain"></video>
+                            </div>
+                        </div>
                     </section>
 
                     <!-- BLOC 5 : Autres Produits du Même Nom & Catégorie suggérés automatiquement -->
@@ -590,6 +619,63 @@ J'ai comparé pour vous les prix en direct sur ma vitrine JEOAH'S :
             url: buildAffiliateSearchUrl(m.name, m.base_link, 'Produit Recommandé', '')
         }));
         renderOffersEditor();
+
+        function handleAffiliatePhotoFile(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                if (typeof ev.target?.result === 'string') {
+                    const dataUrl = ev.target.result;
+                    document.getElementById('product-image').value = dataUrl;
+                    const previewBox = document.getElementById('affiliate-photo-preview-box');
+                    const previewImg = document.getElementById('affiliate-photo-preview');
+                    if (previewBox && previewImg) {
+                        previewImg.src = dataUrl;
+                        previewBox.classList.remove('hidden');
+                    }
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleAffiliateVideoFile(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                if (typeof ev.target?.result === 'string') {
+                    const dataUrl = ev.target.result;
+                    document.getElementById('product-video-url').value = dataUrl;
+                    const previewBox = document.getElementById('affiliate-video-preview-box');
+                    const previewVid = document.getElementById('affiliate-video-preview');
+                    if (previewBox && previewVid) {
+                        previewVid.src = dataUrl;
+                        previewBox.classList.remove('hidden');
+                    }
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('affiliate-photo-file')?.addEventListener('change', e => {
+            const f = e.target.files?.[0];
+            if (f) handleAffiliatePhotoFile(f);
+            e.target.value = '';
+        });
+        document.getElementById('affiliate-photo-camera')?.addEventListener('change', e => {
+            const f = e.target.files?.[0];
+            if (f) handleAffiliatePhotoFile(f);
+            e.target.value = '';
+        });
+        document.getElementById('affiliate-video-file')?.addEventListener('change', e => {
+            const f = e.target.files?.[0];
+            if (f) handleAffiliateVideoFile(f);
+            e.target.value = '';
+        });
+        document.getElementById('affiliate-video-camera')?.addEventListener('change', e => {
+            const f = e.target.files?.[0];
+            if (f) handleAffiliateVideoFile(f);
+            e.target.value = '';
+        });
 
         document.getElementById('affiliate-product-form').addEventListener('submit', async event => {
             event.preventDefault();
