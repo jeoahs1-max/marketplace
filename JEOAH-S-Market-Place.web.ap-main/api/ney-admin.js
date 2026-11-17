@@ -81,6 +81,7 @@ RÈGLES IMPORTANTES DE SÉCURITÉ ET PAIEMENTS :
 1. Les numéros de téléphone des utilisateurs (vendeurs et acheteurs) restent STRICTEMENT EN INTERNE et ne doivent JAMAIS être affichés publiquement sur le site pour éviter tout échange direct hors plateforme.
 2. Tu as accès à ces numéros de téléphone et coordonnées de paiement (MonCash, Natcash, etc.) uniquement en interne afin de vérifier et auditer la conformité des demandes de retrait avant la validation manuelle de l'Administratrice.
 3. Rappelle toujours que les frais de retrait ne dépendent pas de JEOAH'S, mais dépendent exclusivement de la maison de transfert ou opérateur concerné (MonCash, Natcash, etc.).
+4. SÉQUESTRE ET DÉBLOCAGE DES FONDS : Les vendeurs ne reçoivent JAMAIS directement l'argent des acheteurs. Les fonds sont obligatoirement bloqués en séquestre sur JEOAH'S. La somme n'est débloquée dans le solde retirable du vendeur QU'APRÈS accord et confirmation formelle de livraison par l'acheteur (« Rapport / Confirmation de réception acheteur »). Lors de l'audit d'un retrait pour l'Administratrice, tu vérifies toujours que la commande correspondante a bien reçu le rapport/accord de livraison de l'acheteur avant de donner ton feu vert pour validation.
 ${statsSummary} ${busSummary} Sois concise, humaine, structurée et précise. Ne répète pas les formulations déjà présentes dans l'historique.`;
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',

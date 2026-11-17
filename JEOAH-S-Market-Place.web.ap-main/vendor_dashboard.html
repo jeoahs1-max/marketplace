@@ -119,7 +119,16 @@
             const localOrders = JSON.parse(localStorage.getItem('jeoahs_vendor_orders') || '[]');
             const localProducts = JSON.parse(localStorage.getItem('jeoahs_vendor_products') || '[]');
             const grossRevenue = localOrders.reduce((total, order) => total + Number(order.total || 0), 0);
-            const platformFees = grossRevenue * 0.03;
+
+            // SÉCURITÉ SÉQUESTRE JEOAH'S :
+            // Les fonds ne sont libérés dans le solde vendeur qu'APRÈS accord et confirmation de livraison par l'acheteur
+            const confirmedOrders = localOrders.filter(order => order.status === 'delivered' && (order.buyerConfirmed === true || order.buyerDeliveredConfirmed === true));
+            const releasedRevenue = confirmedOrders.reduce((total, order) => total + Number(order.total || 0), 0);
+            const availableWithdrawal = Math.max(0, releasedRevenue * 0.97);
+
+            const escrowOrders = localOrders.filter(order => !(order.status === 'delivered' && (order.buyerConfirmed === true || order.buyerDeliveredConfirmed === true)));
+            const escrowRevenue = escrowOrders.reduce((total, order) => total + Number(order.total || 0), 0);
+
             const pendingOrders = localOrders.filter(order => !['delivered', 'cancelled'].includes(order.status));
             const lateOrders = localOrders.filter(order => order.status === 'late');
             const lowStock = localProducts.filter(product => Number(product.stock) <= 5).length;
@@ -129,7 +138,10 @@
             document.getElementById('stock-alert').textContent = `${lowStock} produit${lowStock === 1 ? '' : 's'}`;
             document.getElementById('unshipped-orders').textContent = `${pendingOrders.length} commande${pendingOrders.length === 1 ? '' : 's'}`;
             document.getElementById('clicks-total').textContent = localStorage.getItem('jeoahs_vendor_clicks') || '0';
-            document.getElementById('available-balance').textContent = formatCurrency(Math.max(0, grossRevenue - platformFees));
+            
+            const escrowEl = document.getElementById('escrow-balance');
+            if (escrowEl) escrowEl.textContent = formatCurrency(escrowRevenue);
+            document.getElementById('available-balance').textContent = formatCurrency(availableWithdrawal);
             document.getElementById('late-delivery-count').textContent = String(lateOrders.length);
             document.getElementById('late-delivery-status').textContent = lateOrders.length >= 3 ? 'Compte à vérifier' : `${3 - lateOrders.length} retard avant examen`;
 
@@ -142,19 +154,46 @@
                 container.innerHTML = '<p class="text-sm text-gray-500">Aucune commande à suivre pour le moment.</p>';
                 return;
             }
-            container.innerHTML = orders.slice(-8).reverse().map(order => `
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 py-3">
+            container.innerHTML = orders.slice(-8).reverse().map(order => {
+                const isBuyerConfirmed = order.buyerConfirmed === true || order.buyerDeliveredConfirmed === true;
+                return `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 py-3.5">
                     <div>
-                        <p class="font-bold text-gray-800">Commande ${order.id || 'sans numéro'}</p>
-                        <p class="text-sm text-gray-500">${order.customerName || 'Client'} · ${formatCurrency(Number(order.total || 0))}</p>
+                        <div class="flex items-center gap-2">
+                            <p class="font-bold text-gray-800">Commande ${order.id || 'sans numéro'}</p>
+                            ${isBuyerConfirmed
+                                ? '<span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-emerald-100 text-emerald-800"><i class="fas fa-check-double mr-1"></i>Accord acheteur reçu (Fonds libérés)</span>'
+                                : '<span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-amber-100 text-amber-800"><i class="fas fa-lock mr-1"></i>En séquestre (Attente confirmation acheteur)</span>'
+                            }
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">${order.customerName || 'Client'} · Total: <strong>${formatCurrency(Number(order.total || 0))}</strong> ${order.paymentMethod ? `· Payé via ${order.paymentMethod.toUpperCase()}` : ''}</p>
+                        ${order.buyerConfirmedAt ? `<p class="text-[11px] text-emerald-700 mt-0.5"><i class="fas fa-calendar-check mr-1"></i>Rapport de livraison validé le ${new Date(order.buyerConfirmedAt).toLocaleDateString('fr-FR')}</p>` : ''}
                     </div>
-                    <div class="flex items-center gap-3">
-                        <span class="text-sm font-semibold ${order.status === 'late' ? 'text-red-600' : 'text-blue-700'}">${formatOrderStatus(order.status)}</span>
-                        <button type="button" onclick="updateOrderStatus('${String(order.id || '').replace(/'/g, '')}')" class="px-3 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">Mettre à jour</button>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-semibold px-2 py-1 rounded bg-slate-100 ${order.status === 'late' ? 'text-red-600' : 'text-blue-700'}">${formatOrderStatus(order.status)}</span>
+                        <button type="button" onclick="updateOrderStatus('${String(order.id || '').replace(/'/g, '')}')" class="px-2.5 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition" title="Changer l'état d'expédition">Expédition</button>
+                        ${!isBuyerConfirmed ? `
+                            <button type="button" onclick="confirmBuyerDelivery('${String(order.id || '').replace(/'/g, '')}')" class="px-2.5 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition" title="Valider le rapport de livraison acheteur">
+                                <i class="fas fa-check mr-1"></i>Accord acheteur
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
+
+        window.confirmBuyerDelivery = function (orderId) {
+            const orders = JSON.parse(localStorage.getItem('jeoahs_vendor_orders') || '[]');
+            const order = orders.find(item => item.id === orderId);
+            if (!order) return;
+            order.status = 'delivered';
+            order.buyerConfirmed = true;
+            order.buyerDeliveredConfirmed = true;
+            order.buyerConfirmedAt = new Date().toISOString();
+            localStorage.setItem('jeoahs_vendor_orders', JSON.stringify(orders));
+            updateUI(vendorData);
+        };
 
         function formatOrderStatus(status) {
             return ({ pending: 'À préparer', shipped: 'Expédiée', delivered: 'Livrée', late: 'En retard', cancelled: 'Annulée' })[status] || 'À confirmer';
@@ -426,9 +465,15 @@
                             <p class="text-sm text-gray-500">Clics produits</p>
                             <p id="clicks-total" class="text-2xl font-extrabold text-gray-900 mt-1">0</p>
                         </div>
+                        <div class="stat-card border-l-4 border-amber-500">
+                            <p class="text-sm text-gray-500">En Séquestre</p>
+                            <p id="escrow-balance" class="text-2xl font-extrabold text-amber-600 mt-1">0,00 €</p>
+                            <span class="text-[10px] text-amber-700 block mt-0.5">En cours / attente accord acheteur</span>
+                        </div>
                         <div class="stat-card border-l-4 border-emerald-500">
-                            <p class="text-sm text-gray-500">Solde vendeur</p>
-                            <p id="available-balance" class="text-2xl font-extrabold text-gray-900 mt-1">0,00 €</p>
+                            <p class="text-sm text-gray-500">Solde débloqué</p>
+                            <p id="available-balance" class="text-2xl font-extrabold text-emerald-700 mt-1">0,00 €</p>
+                            <span class="text-[10px] text-emerald-700 block mt-0.5">Livraison validée acheteur (retirable)</span>
                         </div>
                         <div class="stat-card border-l-4 border-orange-500">
                             <p class="text-sm text-gray-500">Retards livraison</p>
@@ -436,7 +481,7 @@
                         </div>
                         <a href="vendor-setup.html#payouts" class="stat-card border-l-4 border-violet-500 block hover:bg-violet-50/40 transition">
                             <p class="text-sm text-gray-500">Retraits</p>
-                            <p id="payout-config-status" class="text-xl font-extrabold text-violet-700 mt-1">À configurer →</p>
+                            <p id="payout-config-status" class="text-xl font-extrabold text-violet-700 mt-1">Gérer retraits →</p>
                         </a>
                     </div>
                     <div class="mt-4 rounded-xl border border-orange-200 bg-orange-50 p-4">
