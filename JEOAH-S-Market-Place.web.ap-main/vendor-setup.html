@@ -111,7 +111,7 @@
                         <i class="fas fa-wallet text-emerald-600 mr-1.5"></i> 2. Configuration de vos Retraits Vendeur
                     </h2>
                     <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 leading-relaxed">
-                        <i class="fas fa-info-circle mr-1 text-amber-700"></i> <strong>Note importante :</strong> Les frais de retrait ne dépendent pas de JEOAH'S, mais exclusivement de la maison de transfert ou opérateur concerné (MonCash, Natcash, Wise, PayPal, etc.). Vos numéros de compte sont strictement audités en interne par Ney avant validation de l'Administrateur.
+                        <i class="fas fa-info-circle mr-1 text-amber-700"></i> <strong>Note importante :</strong> Les frais de retrait ne dépendent pas de JEOAH'S, mais exclusivement de la maison de transfert ou opérateur concerné (MonCash, Natcash, Western Union, CAM Transfert, Unitransfert, Wise, PayPal, etc.). Vos coordonnées de retrait sont strictement auditées en interne par Ney avant validation manuelle de l'Administrateur.
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -119,14 +119,17 @@
                             <select id="payoutMethod" class="mt-1 block w-full p-3 border border-slate-300 rounded-xl text-sm bg-white focus:border-indigo-600 focus:outline-none">
                                 <option value="NatCash">NatCash (Natcom)</option>
                                 <option value="MonCash">MonCash (Digicel)</option>
+                                <option value="Western Union">Western Union</option>
+                                <option value="CAM Transfert">CAM Transfert</option>
+                                <option value="Unitransfert">Unitransfert</option>
                                 <option value="Wise">Wise International</option>
                                 <option value="PayPal">PayPal</option>
-                                <option value="Stripe">Virement Bancaire / Stripe</option>
+                                <option value="Virement Bancaire">Virement Bancaire / Stripe</option>
                             </select>
                         </div>
                         <div>
-                            <label for="payoutAccount" class="block text-xs font-bold text-slate-700">Numéro ou Compte de retrait (Natcash / MonCash / Email)</label>
-                            <input id="payoutAccount" type="text" placeholder="Ex. 4317-9773 ou e-mail PayPal/Wise"
+                            <label for="payoutAccount" class="block text-xs font-bold text-slate-700">Numéro ou Coordonnées de retrait (Tél / Pièce / Email / Compte)</label>
+                            <input id="payoutAccount" type="text" placeholder="Ex. 4317-9773, Nom complet + Pièce (Western/CAM/Unitransfert), ou e-mail"
                                 class="mt-1 block w-full p-3 border border-slate-300 rounded-xl text-sm focus:border-indigo-600 focus:outline-none">
                         </div>
                     </div>

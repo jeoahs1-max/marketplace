@@ -1,43 +1,10 @@
 {
-  "version": 2,
-  "builds": [
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
     {
-      "src": "api/*.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "public/**/*",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "*.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "styles.min.css",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "firebase-config.js",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "service-worker.js",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-        {
-      "src": "/api/([a-zA-Z0-9_-]+)",
-      "dest": "/api/$1.js"
-    },
-    {
-      "src": "/$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "(.*)",
-      "dest": "/$1"
+      "source": "/api/([a-zA-Z0-9_-]+)",
+      "destination": "/api/$1.js"
     }
   ]
 }

@@ -1,0 +1,18 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/api/([a-zA-Z0-9_-]+)",
+      "destination": "/JEOAH-S-Market-Place.web.ap-main/api/$1.js"
+    },
+    {
+      "source": "/",
+      "destination": "/JEOAH-S-Market-Place.web.ap-main/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/JEOAH-S-Market-Place.web.ap-main/$1"
+    }
+  ]
+}
