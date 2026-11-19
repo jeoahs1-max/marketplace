@@ -67,9 +67,9 @@
                 <label id="role-field" class="block text-sm font-bold text-slate-700">Accéder à mon espace en tant que
                     <select id="role"
                         class="mt-2 w-full rounded-md border border-slate-300 px-3 py-2.5 font-normal focus:border-indigo-600 focus:outline-none bg-white">
-                        <option value="vendeur">Vendeur (Boutique &amp; Produits)</option>
-                        <option value="affilie">Affilié (Vitrine &amp; Liens)</option>
-                        <option value="acheteur">Acheteur (Vitrine Centrale)</option>
+                        <option value="vendeur">Vendeur</option>
+                        <option value="affilie">Affilié</option>
+                        <option value="acheteur">Acheteur</option>
                     </select>
                 </label>
                 <p id="auth-status" class="hidden rounded-md px-3 py-2 text-sm" role="status"></p>
@@ -173,10 +173,20 @@
         }
 
         async function loadProfile(user) {
-            const profileSnapshot = await getDoc(doc(db, 'profiles', user.uid));
-            if (profileSnapshot.exists()) return profileSnapshot.data();
-            const legacySnapshot = await getDoc(doc(db, 'artifacts/jeoahs1-max-03326376-49b27/public/data/users', user.uid));
-            return legacySnapshot.exists() ? legacySnapshot.data() : null;
+            if (!db || !user?.uid) return null;
+            try {
+                const profileSnapshot = await getDoc(doc(db, 'profiles', user.uid));
+                if (profileSnapshot.exists()) return profileSnapshot.data();
+            } catch (e) {
+                console.warn('Lecture profil Firestore ignorée:', e?.code || e?.message);
+            }
+            try {
+                const legacySnapshot = await getDoc(doc(db, 'artifacts/jeoahs1-max-03326376-49b27/public/data/users', user.uid));
+                if (legacySnapshot.exists()) return legacySnapshot.data();
+            } catch (e) {
+                console.warn('Lecture profil legacy Firestore ignorée:', e?.code || e?.message);
+            }
+            return null;
         }
 
         function isInternalAdminAddr(emailStr) {
@@ -342,12 +352,16 @@
         async function saveAccountIdentity(user, profile) {
             const identity = profile.accountCode && profile.referralLink ? { code: profile.accountCode, link: profile.referralLink } : createAccountIdentity(user);
             if (!profile.accountCode || !profile.referralLink || (referralCode && !profile.referredByCode)) {
-                await setDoc(doc(db, 'profiles', user.uid), {
-                    accountCode: identity.code,
-                    referralLink: identity.link,
-                    ...(referralCode && !profile.referredByCode ? { referredByCode: referralCode } : {}),
-                    updatedAt: serverTimestamp()
-                }, { merge: true });
+                try {
+                    await setDoc(doc(db, 'profiles', user.uid), {
+                        accountCode: identity.code,
+                        referralLink: identity.link,
+                        ...(referralCode && !profile.referredByCode ? { referredByCode: referralCode } : {}),
+                        updatedAt: serverTimestamp()
+                    }, { merge: true });
+                } catch (e) {
+                    console.warn('Sauvegarde identité Firestore ignorée:', e?.code || e?.message);
+                }
             }
             return identity;
         }
@@ -379,7 +393,7 @@
                 let profile = await loadProfile(user);
                 if (!profile) {
                     profile = profileFor(user, selectedRole);
-                    await setDoc(doc(db, 'profiles', user.uid), profile);
+                    try { await setDoc(doc(db, 'profiles', user.uid), profile, { merge: true }); } catch (_) {}
                 }
                 await continueToSpace(user, true, selectedRole);
             } catch (error) {
@@ -415,7 +429,7 @@
                     const role = document.getElementById('role').value;
                     const profile = profileFor(user, role);
                     const identity = createAccountIdentity(user);
-                    await setDoc(doc(db, 'profiles', user.uid), profile);
+                    try { await setDoc(doc(db, 'profiles', user.uid), profile, { merge: true }); } catch (_) {}
                     const subs = syncRoleSubscriptionsToLocal(profile, Boolean(profile.testAccount));
                     const authUserObj = { uid: user.uid, email, role, roles: [role], onboardingComplete: profile.onboardingComplete, accountCode: identity.code, referralLink: identity.link, testAccount: Boolean(profile.testAccount), selectedPlan: profile.selectedPlan, subscriptions: subs };
                     localStorage.setItem('jeoahs_auth_user', JSON.stringify(authUserObj));
