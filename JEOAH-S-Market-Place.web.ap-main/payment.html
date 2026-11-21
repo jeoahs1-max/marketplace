@@ -83,7 +83,7 @@
                 <!-- Choix du moyen de paiement -->
                 <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 id="i18n-step2-title" class="text-base font-extrabold text-slate-900">2. Choisissez votre moyen de paiement</h2>
-                    <div class="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                    <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
                         <button type="button" id="method-card" onclick="selectMethod('card')" class="cursor-pointer rounded-xl border-2 border-indigo-600 bg-indigo-50/70 p-3 text-center font-bold text-xs text-indigo-950 transition">
                             <i class="fas fa-credit-card block text-xl mb-1 text-indigo-600"></i>
                             <span id="i18n-method-card">Carte / Stripe</span>
@@ -95,6 +95,10 @@
                         <button type="button" id="method-wise" onclick="selectMethod('wise')" class="cursor-pointer rounded-xl border-2 border-slate-200 bg-white p-3 text-center font-bold text-xs text-slate-700 hover:border-emerald-500 transition">
                             <i class="fas fa-globe block text-xl mb-1 text-emerald-600"></i>
                             Wise
+                        </button>
+                        <button type="button" id="method-payoneer" onclick="selectMethod('payoneer')" class="cursor-pointer rounded-xl border-2 border-slate-200 bg-white p-3 text-center font-bold text-xs text-slate-700 hover:border-orange-500 transition">
+                            <i class="fas fa-building-columns block text-xl mb-1 text-orange-600"></i>
+                            Payoneer
                         </button>
                         <button type="button" id="method-moncash" onclick="selectMethod('moncash')" class="cursor-pointer rounded-xl border-2 border-slate-200 bg-white p-3 text-center font-bold text-xs text-slate-700 hover:border-red-400 transition">
                             <i class="fas fa-mobile-screen-button block text-xl mb-1 text-red-600"></i>
@@ -193,6 +197,32 @@
                             </label>
                             <label class="block text-xs font-bold text-slate-700"><span>Numéro / ID de transaction Wise</span>
                                 <input id="wise-ref" type="text" maxlength="40" placeholder="Ex. ID de transfert Wise" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-indigo-600 focus:outline-none">
+                            </label>
+                        </div>
+
+                        <!-- Champs Payoneer Business International -->
+                        <div id="fields-payoneer" class="hidden space-y-4">
+                            <div class="rounded-xl bg-orange-50 border border-orange-200 p-4 text-xs text-orange-950 space-y-1.5">
+                                <strong class="text-sm font-extrabold flex items-center gap-2 text-orange-900">
+                                    <i class="fas fa-building-columns text-orange-600 text-lg"></i> Paiement International Payoneer Business :
+                                </strong>
+                                <p class="text-orange-800">Envoyez votre paiement USD via Payoneer (ou virement bancaire US) vers notre compte officiel JEOAH'S Market Place LLC, puis indiquez votre référence ci-dessous.</p>
+                            </div>
+                            <div class="rounded-lg bg-white/90 border border-orange-200 p-3 space-y-1.5 text-xs text-slate-900">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-semibold text-slate-600">Compte Payoneer officiel :</span>
+                                    <strong class="font-extrabold text-orange-700 select-all">jeoahs1@gmail.com</strong>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="font-semibold text-slate-600">Bénéficiaire officiel :</span>
+                                    <strong class="font-extrabold text-slate-900">JEOAH'S Market Place LLC</strong>
+                                </div>
+                            </div>
+                            <label class="block text-xs font-bold text-slate-700"><span>Votre adresse e-mail Payoneer émettrice</span>
+                                <input id="payoneer-email" type="email" placeholder="votre.email@exemple.com" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-indigo-600 focus:outline-none">
+                            </label>
+                            <label class="block text-xs font-bold text-slate-700"><span>ID / Référence de paiement Payoneer</span>
+                                <input id="payoneer-ref" type="text" maxlength="40" placeholder="Ex. Payment ID Payoneer" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-indigo-600 focus:outline-none">
                             </label>
                         </div>
 
@@ -329,12 +359,15 @@
             </div>
 
             <!-- Actions -->
-            <div class="mt-6 flex flex-col sm:flex-row gap-3 no-print">
+            <div class="mt-6 flex flex-col sm:flex-row gap-2.5 no-print">
+                <button type="button" onclick="downloadBuyerReceiptFile()" class="flex-1 flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-xs font-bold text-white hover:bg-emerald-700 transition shadow-sm">
+                    <i class="fas fa-download"></i> Télécharger le reçu
+                </button>
                 <button type="button" onclick="window.print()" class="flex-1 flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-bold text-white hover:bg-slate-800 transition shadow-sm">
-                    <i class="fas fa-print"></i> Imprimer / Enregistrer le reçu
+                    <i class="fas fa-print"></i> Imprimer / PDF
                 </button>
                 <button type="button" onclick="window.location.href='/showcase.html'" class="flex-1 flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-xs font-bold text-white hover:bg-indigo-700 transition shadow-sm">
-                    <i class="fas fa-bag-shopping"></i> Continuer mes achats
+                    <i class="fas fa-bag-shopping"></i> Continuer
                 </button>
             </div>
         </div>
@@ -546,7 +579,7 @@
 
         window.selectMethod = function (method) {
             selectedMethod = method;
-            ['card', 'paypal', 'wise', 'moncash', 'natcash'].forEach(m => {
+            ['card', 'paypal', 'wise', 'payoneer', 'moncash', 'natcash'].forEach(m => {
                 const btn = document.getElementById(`method-${m}`);
                 if (!btn) return;
                 if (m === method) {
@@ -558,11 +591,14 @@
             const isCard = method === 'card';
             const isPayPal = method === 'paypal';
             const isWise = method === 'wise';
+            const isPayoneer = method === 'payoneer';
             const isMobile = method === 'moncash' || method === 'natcash';
 
             document.getElementById('fields-card').classList.toggle('hidden', !isCard);
             document.getElementById('fields-paypal').classList.toggle('hidden', !isPayPal);
             document.getElementById('fields-wise').classList.toggle('hidden', !isWise);
+            const payoneerBox = document.getElementById('fields-payoneer');
+            if (payoneerBox) payoneerBox.classList.toggle('hidden', !isPayoneer);
             document.getElementById('fields-mobile').classList.toggle('hidden', !isMobile);
 
             document.getElementById('card-holder').required = isCard;
@@ -764,7 +800,7 @@
                     items: cart,
                     total: +(subtotal * 1.03).toFixed(2),
                     paymentMethod: provider,
-                    transactionRef: transactionRef || (provider === 'wise' ? document.getElementById('wise-ref')?.value : document.getElementById('mobile-pin')?.value) || '',
+                    transactionRef: transactionRef || (provider === 'wise' ? document.getElementById('wise-ref')?.value : provider === 'payoneer' ? document.getElementById('payoneer-ref')?.value : document.getElementById('mobile-pin')?.value) || '',
                     status: 'paid',
                     escrowProtected: true,
                     createdAt: new Date().toISOString()
@@ -773,6 +809,23 @@
                 vendorOrders.push(orderObj);
                 localStorage.setItem('jeoahs_vendor_orders', JSON.stringify(vendorOrders));
                 localStorage.setItem('jeoahs_cart', '[]');
+
+                // Notification SMS/WhatsApp automatique non-bloquante (Twilio)
+                try {
+                    const buyerPhone = document.getElementById('mobile-phone')?.value || '';
+                    fetch('/api/twilio-notify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            event: 'order_paid',
+                            orderId: orderObj.id,
+                            total: orderObj.total,
+                            provider,
+                            customerName: orderObj.customerName,
+                            phone: buyerPhone
+                        })
+                    }).catch(() => {});
+                } catch (_) {}
 
                 const fs = await getOptionalFirestore();
                 const appId = 'jeoahs1-max-03326376-49b27';
@@ -881,6 +934,29 @@
                 window.location.href = targetRole === 'vendeur' ? '/vendor_dashboard.html' : '/affiliate-storefront.html';
             }, 1400);
         }
+
+        window.downloadBuyerReceiptFile = function () {
+            const orderId = document.getElementById('receipt-order-id')?.textContent || 'CMD';
+            const date = document.getElementById('receipt-date')?.textContent || '';
+            const customer = document.getElementById('receipt-customer')?.textContent || '';
+            const method = document.getElementById('receipt-method')?.textContent || '';
+            const tx = document.getElementById('receipt-tx')?.textContent || '';
+            const subtotal = document.getElementById('receipt-subtotal')?.textContent || '';
+            const fee = document.getElementById('receipt-fee')?.textContent || '';
+            const total = document.getElementById('receipt-total')?.textContent || '';
+            const itemsHtml = document.getElementById('receipt-items-list')?.innerHTML || '';
+
+            const htmlDoc = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Reçu JEOAH'S - ${orderId}</title><style>body{font-family:Arial,sans-serif;max-width:600px;margin:30px auto;padding:24px;color:#0f172a;border:1px solid #cbd5e1;border-radius:16px}h1{font-size:20px;margin:0}p{font-size:13px;color:#475569}.row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #f1f5f9}.total{font-size:16px;font-weight:bold;color:#047857;border-top:2px solid #cbd5e1;padding-top:10px;margin-top:8px}.box{background:#eef2ff;border:1px solid #c7d2fe;padding:12px;border-radius:10px;margin-top:16px;font-size:12px;color:#312e81}</style></head><body><h1>JEOAH'S Market Place — Reçu Officiel</h1><p>Paiement sécurisé en séquestre (Escrow)</p><div class="row"><span>N° Commande</span><strong>${orderId}</strong></div><div class="row"><span>Date</span><span>${date}</span></div><div class="row"><span>Client</span><span>${customer}</span></div><div class="row"><span>Mode de paiement</span><strong>${method}</strong></div><div class="row"><span>Réf. Transaction</span><span>${tx}</span></div><h3>Articles</h3><div>${itemsHtml}</div><div class="row"><span>Sous-total</span><span>${subtotal}</span></div><div class="row"><span>Protection Séquestre (3%)</span><span>${fee}</span></div><div class="row total"><span>Total Réglé</span><span>${total}</span></div><div class="box"><strong>Garantie Séquestre JEOAH'S :</strong> Votre paiement est protégé et ne sera libéré au vendeur qu'après votre confirmation de livraison.</div></body></html>`;
+            const blob = new Blob([htmlDoc], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Recu-JEOAHS-${orderId}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
 
         document.getElementById('payment-form').addEventListener('submit', async (e) => {
             e.preventDefault();
