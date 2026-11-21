@@ -159,7 +159,8 @@
                 return `/payment.html?plan=${encodeURIComponent(selectedPlan)}&role=${encodeURIComponent(targetRole)}`;
             }
             if (profile.role === 'affilie') {
-                return (isNewRegistration || !profile.onboardingComplete) ? '/affiliate_onboarding_step1.html' : '/affiliate-storefront.html';
+                const hasAffSetup = Boolean(localStorage.getItem('jeoahs_affiliate_onboarding_complete') || localStorage.getItem('jeoahs_affiliate_onboarding_done') || localStorage.getItem('jeoahs_affiliate_links'));
+                return (isNewRegistration || (!profile.onboardingComplete && !hasAffSetup)) ? '/affiliate_onboarding_step1.html' : '/affiliate-storefront.html';
             }
             if (profile.role === 'vendeur') {
                 const hasVendorSetup = Boolean(localStorage.getItem('jeoahs_vendor_profile') || localStorage.getItem('jeoahs_vendor_store'));

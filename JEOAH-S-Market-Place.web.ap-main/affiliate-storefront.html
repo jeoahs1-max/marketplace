@@ -82,17 +82,17 @@
         const DEFAULT_STORE_PRODUCTS = [];
 
         let storeData = {
-            name: requestedStoreName || 'Beauty by Carel',
-            bio: 'Produits de beauté et soins naturels pour votre bien-être.',
-            aboutDetails: 'Beauty by Carel vous propose des produits naturels, faits avec amour, pour prendre soin de votre peau et de votre corps. Qualité, efficacité et bien-être au naturel 🌿',
-            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-            heroImage: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80',
-            role: 'vendeur',
-            category: 'Beauté & Soins',
-            location: 'Port-au-Prince, Haiti',
+            name: requestedStoreName || (authUser?.email ? authUser.email.split('@')[0] : 'Ma Vitrine JEOAH\'S'),
+            bio: 'Bienvenue sur ma vitrine officielle JEOAH\'S Market Place.',
+            aboutDetails: 'Découvrez ma sélection d\'articles vérifiés et recommandés sur JEOAH\'S Market Place.',
+            avatar: '/public/assets/logo.png',
+            heroImage: '/public/assets/logo.png',
+            role: (authUser?.role === 'vendeur') ? 'vendeur' : 'affilie',
+            category: 'Boutique & Sélection',
+            location: 'Haïti / International',
             responseTime: 'Répond en général en quelques heures',
             hours: 'Lun - Sam : 8h00 - 20h00',
-            phone: '+509 3700-0000',
+            phone: '',
             socialLinks: {}
         };
 
@@ -139,7 +139,20 @@
             renderProductGrids();
         };
 
-        // Modale de personnalisation complète de la vitrine par le vendeur
+        window.switchBetweenVendorAndAffiliate = function (targetRole) {
+            const acc = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+            if (!acc) {
+                window.location.href = '/public/auth.html';
+                return;
+            }
+            acc.role = targetRole;
+            acc.roles = Array.from(new Set([...(acc.roles || []), 'vendeur', 'affilie']));
+            localStorage.setItem('jeoahs_auth_user', JSON.stringify(acc));
+            localStorage.setItem('jeoahs_user', JSON.stringify(acc));
+            window.location.href = targetRole === 'vendeur' ? '/vendor_dashboard.html' : '/affiliate-storefront.html';
+        };
+
+        // Modale de personnalisation complète de la vitrine (avec upload direct de photo/logo)
         window.openStoreCustomizeModal = function () {
             let modal = document.getElementById('store-customize-modal');
             if (!modal) {
@@ -148,11 +161,12 @@
                 modal.className = 'fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4';
                 document.body.appendChild(modal);
             }
+            const isAff = (storeData.role || authUser?.role) !== 'vendeur';
             modal.innerHTML = `
                 <div class="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto border border-purple-200">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                         <div>
-                            <span class="text-[11px] font-extrabold uppercase tracking-wider text-purple-700 bg-purple-100 px-2.5 py-0.5 rounded-full">Espace Vendeur</span>
+                            <span class="text-[11px] font-extrabold uppercase tracking-wider text-purple-700 bg-purple-100 px-2.5 py-0.5 rounded-full">${isAff ? 'Espace Affilié' : 'Espace Vendeur'}</span>
                             <h3 class="text-lg font-extrabold text-slate-900 mt-1">Personnaliser ma page Vitrine</h3>
                         </div>
                         <button type="button" onclick="document.getElementById('store-customize-modal').remove()" class="text-slate-400 hover:text-slate-700 text-2xl font-bold leading-none">&times;</button>
@@ -187,13 +201,15 @@
                             </div>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                                <label class="block font-bold text-slate-700 mb-1">Photo de profil / Logo (URL)</label>
-                                <input id="cust-store-avatar" type="url" value="${esc(storeData.avatar)}" placeholder="https://..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-slate-800">
+                            <div class="rounded-xl border border-purple-200 bg-purple-50/40 p-3 space-y-2">
+                                <label class="block font-bold text-slate-700">Photo de profil / Logo</label>
+                                <input id="cust-avatar-file" type="file" accept="image/*" class="block w-full text-[11px] text-slate-700 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-purple-700 file:text-white hover:file:bg-purple-800 cursor-pointer">
+                                <input id="cust-store-avatar" type="text" value="${esc(storeData.avatar)}" placeholder="Ou collez une URL d'image..." class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-[11px] text-slate-800 bg-white">
                             </div>
-                            <div>
-                                <label class="block font-bold text-slate-700 mb-1">Image produit vedette bannière (URL)</label>
-                                <input id="cust-store-hero" type="url" value="${esc(storeData.heroImage)}" placeholder="https://..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-slate-800">
+                            <div class="rounded-xl border border-pink-200 bg-pink-50/40 p-3 space-y-2">
+                                <label class="block font-bold text-slate-700">Image bannière vedette</label>
+                                <input id="cust-hero-file" type="file" accept="image/*" class="block w-full text-[11px] text-slate-700 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-pink-600 file:text-white hover:file:bg-pink-700 cursor-pointer">
+                                <input id="cust-store-hero" type="text" value="${esc(storeData.heroImage)}" placeholder="Ou collez une URL d'image..." class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-[11px] text-slate-800 bg-white">
                             </div>
                         </div>
                         <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -203,6 +219,26 @@
                     </form>
                 </div>
             `;
+            document.getElementById('cust-avatar-file')?.addEventListener('change', (ev) => {
+                const file = ev.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const input = document.getElementById('cust-store-avatar');
+                    if (input) input.value = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
+            document.getElementById('cust-hero-file')?.addEventListener('change', (ev) => {
+                const file = ev.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const input = document.getElementById('cust-store-hero');
+                    if (input) input.value = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
             document.getElementById('store-customize-form').addEventListener('submit', async (ev) => {
                 ev.preventDefault();
                 storeData.name = document.getElementById('cust-store-name').value.trim() || storeData.name;
@@ -496,18 +532,46 @@
             document.getElementById('store-breadcrumb-name').textContent = storeData.name;
             document.getElementById('store-bio-display').textContent = storeData.bio;
             document.getElementById('store-about-text').textContent = storeData.aboutDetails || storeData.bio;
-            document.getElementById('store-location-display').textContent = storeData.location || 'Port-au-Prince, Haiti';
+            document.getElementById('store-location-display').textContent = storeData.location || 'Haïti / International';
             document.getElementById('store-response-time-display').textContent = storeData.responseTime || 'Répond en général en quelques heures';
-            document.getElementById('store-category-display').textContent = storeData.category || 'Beauté & Soins';
+            document.getElementById('store-category-display').textContent = storeData.category || 'Boutique & Sélection';
             document.getElementById('store-hours-display').textContent = storeData.hours || 'Lun - Sam : 8h00 - 20h00';
 
-            if (storeData.avatar && storeData.avatar.startsWith('http')) {
+            const activeRole = authUser?.role || storeData.role || 'affilie';
+            const isAff = activeRole !== 'vendeur';
+            const roleBadge = document.getElementById('store-role-badge-text');
+            if (roleBadge) roleBadge.textContent = isAff ? 'Affilié vérifié' : 'Vendeur vérifié';
+            const contactText = document.getElementById('store-contact-btn-text');
+            if (contactText) contactText.textContent = isAff ? "Contacter l'affilié" : 'Contacter le vendeur';
+
+            if (storeData.avatar && (storeData.avatar.startsWith('http') || storeData.avatar.startsWith('data:image/') || storeData.avatar.startsWith('/'))) {
                 document.getElementById('store-avatar-img').src = storeData.avatar;
             }
-            if (storeData.heroImage && storeData.heroImage.startsWith('http')) {
+            if (storeData.heroImage && (storeData.heroImage.startsWith('http') || storeData.heroImage.startsWith('data:image/') || storeData.heroImage.startsWith('/'))) {
                 const heroImgEl = document.getElementById('store-hero-showcase-img');
                 if (heroImgEl) heroImgEl.src = storeData.heroImage;
             }
+
+            // Compteurs 100 % réels (zéro chiffre fictif)
+            const realNotifs = JSON.parse(localStorage.getItem('jeoahs_notifications') || '[]').length;
+            const realFavs = JSON.parse(localStorage.getItem('jeoahs_favorites') || '[]').length;
+            const realCart = JSON.parse(localStorage.getItem('jeoahs_cart') || '[]').reduce((s, i) => s + Number(i.quantity || 1), 0);
+            const realOrders = JSON.parse(localStorage.getItem('jeoahs_vendor_orders') || '[]').length;
+            const realReviews = JSON.parse(localStorage.getItem('jeoahs_vendor_reviews') || '[]');
+            const avgRating = realReviews.length ? (realReviews.reduce((s, r) => s + Number(r.rating || 0), 0) / realReviews.length).toFixed(1) : '0.0';
+
+            const notifEl = document.getElementById('nav-notif-count');
+            const favEl = document.getElementById('nav-fav-count');
+            const cartEl = document.getElementById('nav-cart-count');
+            const salesEl = document.getElementById('store-sales-stat');
+            const ratingEl = document.getElementById('store-rating-stat');
+            const ratingCountEl = document.getElementById('store-rating-count');
+            if (notifEl) notifEl.textContent = String(realNotifs);
+            if (favEl) favEl.textContent = String(realFavs);
+            if (cartEl) cartEl.textContent = String(realCart);
+            if (salesEl) salesEl.textContent = String(realOrders);
+            if (ratingEl) ratingEl.innerHTML = `<i class="fas fa-star text-amber-400 text-sm"></i> ${avgRating}`;
+            if (ratingCountEl) ratingCountEl.textContent = `(${realReviews.length} avis)`;
         }
 
         async function loadStorefront() {
@@ -601,7 +665,8 @@
     <header class="sticky top-0 z-40 bg-white border-b border-slate-200/80 shadow-sm">
         <div class="max-w-[1360px] mx-auto px-4 sm:px-8 py-3 flex items-center justify-between gap-4">
             <!-- Logo Gauche -->
-            <a href="/index.html" class="flex items-center gap-2 shrink-0">
+            <a href="/index.html" class="flex items-center gap-2.5 shrink-0">
+                <img src="/public/assets/logo.png" alt="JEOAH'S" class="w-10 h-10 rounded-xl object-cover shadow-sm border border-purple-200">
                 <div class="leading-none">
                     <span class="font-black text-2xl tracking-tight text-[#3b0a68] block">JEOAH'S</span>
                     <span class="text-[10px] font-extrabold text-purple-800 block tracking-widest uppercase">MARKET PLACE</span>
@@ -623,7 +688,7 @@
                     <i class="fas fa-home text-purple-700"></i> Accueil
                 </a>
                 <a href="/showcase.html" class="hidden sm:flex items-center gap-1.5 hover:text-purple-700 transition">
-                    <i class="fas fa-th-large text-purple-700"></i> Catégories
+                    <i class="fas fa-th-large text-purple-700"></i> Vitrine Centrale
                 </a>
                 <a href="/contact.html" class="hidden lg:flex items-center gap-1.5 hover:text-purple-700 transition">
                     <i class="far fa-comment-dots text-purple-700"></i> Messages
@@ -631,18 +696,18 @@
                 <a href="#all-products-section" class="relative flex items-center gap-1.5 hover:text-purple-700 transition">
                     <i class="far fa-bell text-purple-700 text-sm"></i>
                     <span class="hidden xl:inline">Notifications</span>
-                    <span class="bg-pink-600 text-white text-[9px] font-extrabold px-1.5 rounded-full">3</span>
+                    <span id="nav-notif-count" class="bg-pink-600 text-white text-[9px] font-extrabold px-1.5 rounded-full">0</span>
                 </a>
                 <a href="#featured-products-grid" class="relative flex items-center gap-1 hover:text-purple-700 transition">
                     <i class="far fa-heart text-purple-700 text-sm"></i>
-                    <span class="bg-pink-600 text-white text-[9px] font-extrabold px-1.5 rounded-full">5</span>
+                    <span id="nav-fav-count" class="bg-pink-600 text-white text-[9px] font-extrabold px-1.5 rounded-full">0</span>
                 </a>
                 <a href="/panier.html" class="flex items-center gap-1 hover:text-purple-700 transition" title="Panier">
                     <i class="fas fa-shopping-cart text-purple-700 text-sm"></i>
-                    <span>2</span>
+                    <span id="nav-cart-count">0</span>
                 </a>
                 <a href="/public/auth.html" class="flex items-center gap-2 pl-2 border-l border-slate-200">
-                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"
+                    <img src="/public/assets/logo.png"
                         alt="Profil" class="w-7 h-7 rounded-full object-cover border border-purple-300">
                     <span class="hidden md:inline text-xs font-bold text-slate-800">Mon Compte <i class="fas fa-chevron-down text-[9px] text-slate-400"></i></span>
                 </a>
@@ -652,36 +717,42 @@
 
     <main class="max-w-[1360px] mx-auto px-4 sm:px-8 py-5 flex-1 w-full space-y-6">
 
-        <!-- Fil d'Ariane + Boutons rapides Vendeur -->
+        <!-- Fil d'Ariane + Boutons rapides + Bascule Double Rôle -->
         <div class="flex flex-wrap items-center justify-between gap-3">
             <nav class="flex text-xs font-semibold text-slate-500 gap-2 items-center">
                 <a href="/index.html" class="hover:text-purple-700">Accueil</a>
                 <span>›</span>
                 <a href="/showcase.html" class="hover:text-purple-700">Boutiques</a>
                 <span>›</span>
-                <span id="store-breadcrumb-name" class="text-slate-900 font-bold">Beauty by Carel</span>
+                <span id="store-breadcrumb-name" class="text-slate-900 font-bold">Ma Vitrine JEOAH'S</span>
             </nav>
             <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="switchBetweenVendorAndAffiliate('vendeur')" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition">
+                    <i class="fas fa-repeat"></i> Passer à mon Espace Vendeur
+                </button>
+                <a href="/affiliate-dashboard.html" class="px-3 py-1.5 rounded-xl bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-bold text-xs flex items-center gap-1.5 transition">
+                    <i class="fas fa-chart-line"></i> Tableau de bord Affilié
+                </a>
                 <button type="button" onclick="openStoreCustomizeModal()" class="px-3 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold text-xs flex items-center gap-1.5 transition">
                     <i class="fas fa-paint-brush"></i> Personnaliser ma vitrine
                 </button>
                 <a href="/vendor-products.html" class="px-3 py-1.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition">
-                    <i class="fas fa-plus-circle"></i> Ajouter / Gérer mes produits (1-5 photos, slogan, vidéo)
+                    <i class="fas fa-plus-circle"></i> Ajouter / Gérer mes produits
                 </a>
             </div>
         </div>
 
-        <!-- BANNIÈRE HERO DE LA BOUTIQUE (Conforme à 100% à l'Image 2) -->
+        <!-- BANNIÈRE HERO DE LA BOUTIQUE -->
         <div class="store-hero-banner p-6 sm:p-8 text-white shadow-xl grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
 
-            <!-- Colonne Gauche : Avatar + Infos Vendeur (6 cols) -->
+            <!-- Colonne Gauche : Avatar + Infos -->
             <div class="lg:col-span-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 z-10">
                 <div class="relative shrink-0">
                     <img id="store-avatar-img"
-                        src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80"
-                        alt="Avatar Boutique"
-                        class="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-white/90 object-cover shadow-2xl">
-                    <button type="button" onclick="openStoreCustomizeModal()" title="Modifier la photo et la vitrine"
+                        src="/public/assets/logo.png"
+                        alt="Logo Boutique"
+                        class="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-white/90 object-cover shadow-2xl bg-white">
+                    <button type="button" onclick="openStoreCustomizeModal()" title="Importer ma photo ou mon logo"
                         class="absolute bottom-1 right-1 bg-white text-purple-800 w-9 h-9 rounded-full shadow-lg flex items-center justify-center hover:bg-purple-50 transition">
                         <i class="fas fa-camera text-sm"></i>
                     </button>
@@ -690,22 +761,22 @@
                 <div class="space-y-2">
                     <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-bold">
                         <i class="fas fa-check-circle text-white"></i>
-                        <span id="store-role-badge-text">Vendeur vérifié</span>
+                        <span id="store-role-badge-text">Affilié vérifié</span>
                     </div>
                     <h1 id="store-name-display" class="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-                        Beauty by Carel
+                        Ma Vitrine JEOAH'S
                     </h1>
                     <p id="store-bio-display" class="text-sm text-purple-100 leading-relaxed">
-                        Produits de beauté et soins naturels pour votre bien-être.
+                        Bienvenue sur ma vitrine officielle JEOAH'S Market Place.
                     </p>
                     <div class="space-y-1 text-xs text-purple-100 pt-0.5">
-                        <p class="flex items-center gap-2"><i class="fas fa-map-marker-alt text-pink-200 w-3.5 text-center"></i> <span id="store-location-display">Port-au-Prince, Haiti</span></p>
+                        <p class="flex items-center gap-2"><i class="fas fa-map-marker-alt text-pink-200 w-3.5 text-center"></i> <span id="store-location-display">Haïti / International</span></p>
                         <p class="flex items-center gap-2"><i class="far fa-clock text-pink-200 w-3.5 text-center"></i> <span id="store-response-time-display">Répond en général en quelques heures</span></p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2.5 pt-2">
-                        <a href="/contact.html"
+                        <a href="/contact.html" id="store-contact-btn"
                             class="px-5 py-2.5 bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold rounded-full shadow-md transition flex items-center gap-2">
-                            <i class="fas fa-comment-dots"></i> Contacter le vendeur
+                            <i class="fas fa-comment-dots"></i> <span id="store-contact-btn-text">Contacter l'affilié</span>
                         </a>
                         <button id="follow-store-btn" type="button" onclick="followStore()"
                             class="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/40 text-white text-xs font-bold rounded-full backdrop-blur-md transition flex items-center gap-2">
@@ -719,30 +790,30 @@
                 </div>
             </div>
 
-            <!-- Colonne Centrale : Photo Mise en valeur des produits (3 cols) -->
+            <!-- Colonne Centrale : Photo / Logo Vitrine (3 cols) -->
             <div class="lg:col-span-3 flex justify-center z-10">
                 <img id="store-hero-showcase-img"
-                    src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80"
-                    alt="Produits de la boutique"
-                    class="h-44 sm:h-52 w-auto object-cover rounded-2xl shadow-2xl border-2 border-white/25">
+                    src="/public/assets/logo.png"
+                    alt="Vitrine JEOAH'S"
+                    class="h-44 sm:h-52 w-auto object-contain rounded-2xl shadow-2xl border-2 border-white/25 bg-white/95 p-3">
             </div>
 
-            <!-- Colonne Droite : Carte Statistiques Blanche (3 cols) -->
+            <!-- Colonne Droite : Carte Statistiques Réelles (3 cols) -->
             <div class="lg:col-span-3 flex justify-end z-10">
                 <div class="bg-white text-slate-900 p-5 rounded-2xl shadow-2xl w-full max-w-[230px] space-y-2.5">
                     <div class="pb-2 border-b border-slate-100">
-                        <strong class="text-xl font-black text-slate-900 block leading-none">100%</strong>
-                        <span class="text-[11px] text-slate-500">Service vérifié</span>
+                        <strong id="store-verified-stat" class="text-xl font-black text-slate-900 block leading-none">Actif</strong>
+                        <span class="text-[11px] text-slate-500">Statut boutique</span>
                     </div>
                     <div class="pb-2 border-b border-slate-100">
                         <strong id="store-sales-stat" class="text-xl font-black text-slate-900 block leading-none">0</strong>
-                        <span class="text-[11px] text-slate-500">Ventes</span>
+                        <span class="text-[11px] text-slate-500">Ventes réelles</span>
                     </div>
                     <div class="pb-2 border-b border-slate-100">
                         <strong id="store-rating-stat" class="text-base font-black text-slate-900 flex items-center gap-1 leading-none">
-                            <i class="fas fa-star text-amber-400 text-sm"></i> 5.0
+                            <i class="fas fa-star text-amber-400 text-sm"></i> 0.0
                         </strong>
-                        <span class="text-[11px] text-slate-500">(Nouveau)</span>
+                        <span id="store-rating-count" class="text-[11px] text-slate-500">(0 avis)</span>
                     </div>
                     <div class="flex items-center gap-2 pt-0.5">
                         <div class="w-7 h-7 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center text-xs">
@@ -750,7 +821,7 @@
                         </div>
                         <div>
                             <span class="text-[10px] text-slate-400 block leading-none">Membre depuis</span>
-                            <strong class="text-xs font-extrabold text-slate-800">2024</strong>
+                            <strong id="store-member-year" class="text-xs font-extrabold text-slate-800">2026</strong>
                         </div>
                     </div>
                 </div>

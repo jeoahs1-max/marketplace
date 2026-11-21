@@ -35,11 +35,9 @@
   <!-- En-tête principal -->
   <header class="sticky top-0 z-40 bg-white border-b border-purple-100 shadow-sm">
     <div class="max-w-[1400px] mx-auto px-4 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
-      <!-- Logo -->
+      <!-- Logo Officiel JEOAH'S -->
       <a href="/index.html" class="flex items-center gap-2.5 shrink-0">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-pink-600 flex items-center justify-center text-white shadow-md">
-          <i class="fas fa-shopping-bag text-lg"></i>
-        </div>
+        <img src="/public/assets/logo.png" alt="JEOAH'S Market Place" class="w-11 h-11 rounded-xl object-cover shadow-md border border-purple-200">
         <div class="leading-none">
           <span class="text-2xl font-black tracking-tight text-[#3b0a68] block">JEOAH'S</span>
           <span class="text-[10px] font-extrabold tracking-widest text-purple-700 uppercase">MARKET PLACE</span>
@@ -74,20 +72,20 @@
         <a href="/contact.html" class="relative flex items-center gap-1.5 hover:text-purple-700 transition">
           <i class="far fa-comment-dots text-lg text-purple-800"></i>
           <span class="hidden xl:inline">Messages</span>
-          <span class=" -top-1.5 -right-2 bg-pink-600 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">3</span>
+          <span id="msg-badge-count" class=" -top-1.5 -right-2 bg-pink-600 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">0</span>
         </a>
         <a href="#products" class="relative flex items-center gap-1.5 hover:text-purple-700 transition">
           <i class="far fa-heart text-lg text-purple-800"></i>
           <span class="hidden xl:inline">Favoris</span>
-          <span class="bg-pink-600 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">8</span>
+          <span id="fav-badge-count" class="bg-pink-600 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">0</span>
         </a>
         <a href="/panier.html" class="relative flex items-center gap-1.5 hover:text-purple-700 transition">
           <i class="fas fa-shopping-cart text-lg text-purple-800"></i>
           <span class="hidden xl:inline">Panier</span>
-          <span id="cart-badge-count" class="bg-pink-600 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">2</span>
+          <span id="cart-badge-count" class="bg-pink-600 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">0</span>
         </a>
         <a href="/public/auth.html" class="flex items-center gap-2 pl-2 border-l border-purple-100 hover:text-purple-700">
-          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80" alt="Profil" class="w-8 h-8 rounded-full object-cover border border-purple-300">
+          <img src="/public/assets/logo.png" alt="Profil JEOAH'S" class="w-8 h-8 rounded-full object-cover border border-purple-300 bg-white">
           <span class="hidden sm:inline font-bold text-slate-800">Mon Compte <i class="fas fa-chevron-down text-[10px] ml-0.5 text-slate-400"></i></span>
         </a>
       </nav>
@@ -139,10 +137,10 @@
               </p>
             </div>
 
-            <!-- Image Centrale -->
+            <!-- Logo Officiel JEOAH'S au Centre -->
             <div class="lg:col-span-4 flex justify-center">
-              <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80" alt="Shopping sur JEOAH'S"
-                class="h-52 sm:h-60 w-auto object-cover rounded-2xl shadow-2xl border-2 border-white/20">
+              <img src="/public/assets/logo.png" alt="Logo Officiel JEOAH'S Market Place"
+                class="h-52 sm:h-60 w-52 sm:w-60 object-contain rounded-3xl shadow-2xl border-2 border-white/25 bg-white/95 p-4">
             </div>
 
             <!-- Carte Frais de service 3% Droite -->

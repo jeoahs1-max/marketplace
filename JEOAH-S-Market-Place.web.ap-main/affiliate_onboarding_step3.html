@@ -203,7 +203,7 @@
 
             profileData.username = username;
             profileData.bio = bio;
-            profileData.profilePictureUrl = pictureUrl;
+            profileData.profilePictureUrl = pictureUrl || profileData.profilePictureUrl;
             profileData.isProfileComplete = true; // Marquer le profil comme complet
             localStorage.setItem('jeoahs_affiliate_profile', JSON.stringify(profileData));
             const authUser = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');

@@ -147,7 +147,7 @@
                                     </div>
                                     <div class="flex items-center justify-between pt-1 border-t border-amber-100">
                                         <span id="i18n-beneficiary-name-lbl" class="font-semibold text-slate-600">Nom du bénéficiaire :</span>
-                                        <strong class="text-sm font-extrabold text-slate-900">Jasmine Jean-Louis</strong>
+                                        <strong class="text-sm font-extrabold text-slate-900">JEOAH'S Market Place LLC</strong>
                                     </div>
                                 </div>
                                 <div class="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-[11px] font-bold text-red-800 flex items-start gap-2">
@@ -185,11 +185,11 @@
                             <div class="rounded-lg bg-white/90 border border-emerald-200 p-3 space-y-1.5 text-xs text-slate-900">
                                 <div class="flex items-center justify-between">
                                     <span class="font-semibold text-slate-600">Compte Wise officiel :</span>
-                                    <strong class="font-extrabold text-emerald-700 select-all">jeoahs1@gmail.com</strong>
+                                    <strong class="font-extrabold text-emerald-700 select-all">support@jeoahs.com</strong>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="font-semibold text-slate-600">Bénéficiaire officiel :</span>
-                                    <strong class="font-extrabold text-slate-900">Jasmine Jean-Louis (JEOAH'S)</strong>
+                                    <strong class="font-extrabold text-slate-900">JEOAH'S Market Place LLC</strong>
                                 </div>
                             </div>
                             <label class="block text-xs font-bold text-slate-700"><span>Votre adresse e-mail Wise émettrice</span>
@@ -211,7 +211,7 @@
                             <div class="rounded-lg bg-white/90 border border-orange-200 p-3 space-y-1.5 text-xs text-slate-900">
                                 <div class="flex items-center justify-between">
                                     <span class="font-semibold text-slate-600">Compte Payoneer officiel :</span>
-                                    <strong class="font-extrabold text-orange-700 select-all">jeoahs1@gmail.com</strong>
+                                    <strong class="font-extrabold text-orange-700 select-all">support@jeoahs.com</strong>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="font-semibold text-slate-600">Bénéficiaire officiel :</span>
@@ -381,10 +381,15 @@
         let selectedMethod = 'card';
 
         const PLANS = {
-            starter: { name: 'Starter', price: 9.99, quota: 25 },
-            pro: { name: 'Pro', price: 19.99, quota: 100 },
-            premium: { name: 'Premium', price: 39.99, quota: 500 },
-            enterprise: { name: 'Entreprise', price: 99.00, quota: 2000 }
+            free: { name: 'Free', price: 0, quota: 5, texts: 0, videos: 0, durationLabel: 'Illimitée (Espace privé)', days: 30 },
+            week: { name: '1 Semaine', price: 4.99, quota: 15, texts: 3, videos: 1, durationLabel: '7 jours (1 semaine)', days: 7 },
+            month: { name: '1 Mois', price: 9.99, quota: 50, texts: 10, videos: 5, durationLabel: '30 jours (1 mois)', days: 30 },
+            starter: { name: '1 Mois', price: 9.99, quota: 50, texts: 10, videos: 5, durationLabel: '30 jours (1 mois)', days: 30 },
+            quarter: { name: '3 Mois', price: 24.99, quota: 150, texts: 30, videos: 15, durationLabel: '90 jours (3 mois)', days: 90 },
+            pro: { name: '3 Mois', price: 24.99, quota: 150, texts: 30, videos: 15, durationLabel: '90 jours (3 mois)', days: 90 },
+            year: { name: '1 An', price: 79.99, quota: 1000, texts: 120, videos: 60, durationLabel: '365 jours (1 an)', days: 365 },
+            premium: { name: '1 An', price: 79.99, quota: 1000, texts: 120, videos: 60, durationLabel: '365 jours (1 an)', days: 365 },
+            enterprise: { name: 'Entreprise', price: 99.00, quota: 2000, texts: 200, videos: 100, durationLabel: 'Sur mesure', days: 365 }
         };
 
         const PAY_I18N = {
@@ -544,22 +549,40 @@
         window.setPaymentRole = function (role) {
             const t = PAY_I18N[getPayLang()];
             targetRole = role === 'vendeur' ? 'vendeur' : 'affilie';
+            const chosen = PLANS[planCode] || PLANS.month;
             const btnAff = document.getElementById('pay-role-affilie');
             const btnVen = document.getElementById('pay-role-vendeur');
             const badgeAff = document.getElementById('badge-role-affilie');
             const badgeVen = document.getElementById('badge-role-vendeur');
+            const p1 = document.getElementById('i18n-perk-1');
+            const p2 = document.getElementById('i18n-perk-2');
+            const p3 = document.getElementById('i18n-perk-3');
+            const p4 = document.getElementById('i18n-perk-4');
+            const sumType = document.getElementById('summary-type');
+
+            if (sumType && mode !== 'cart') {
+                sumType.textContent = `Abonnement ${chosen.name} (${chosen.durationLabel})`;
+            }
             if (targetRole === 'affilie') {
                 btnAff.className = 'cursor-pointer rounded-xl border-2 border-indigo-600 bg-indigo-50 p-3.5 text-left transition';
                 btnVen.className = 'cursor-pointer rounded-xl border-2 border-slate-200 bg-white p-3.5 text-left transition';
                 badgeAff.classList.remove('hidden');
                 badgeVen.classList.add('hidden');
-                document.getElementById('summary-role').textContent = t.roleAffSum;
+                document.getElementById('summary-role').textContent = 'Affilié';
+                if (p1) p1.textContent = 'Publication directe de vos sélections sur la Vitrine Centrale et votre vitrine affilié';
+                if (p2) p2.textContent = `Quotas Studio Pub IA JEOAH : ${chosen.texts} textes pub & ${chosen.videos} scripts vidéo cadencés`;
+                if (p3) p3.textContent = 'Comparateur automatique multi-marchands (Amazon, Temu, Shein, AliExpress, Walmart, eBay)';
+                if (p4) p4.textContent = `Durée du plan : ${chosen.durationLabel}`;
             } else {
                 btnVen.className = 'cursor-pointer rounded-xl border-2 border-indigo-600 bg-indigo-50 p-3.5 text-left transition';
                 btnAff.className = 'cursor-pointer rounded-xl border-2 border-slate-200 bg-white p-3.5 text-left transition';
                 badgeVen.classList.remove('hidden');
                 badgeAff.classList.add('hidden');
-                document.getElementById('summary-role').textContent = t.roleVenSum;
+                document.getElementById('summary-role').textContent = 'Vendeur';
+                if (p1) p1.textContent = 'Publication directe de vos produits sur la Vitrine Centrale';
+                if (p2) p2.textContent = `Quotas Studio Pub IA JEOAH : ${chosen.texts} textes pub & ${chosen.videos} scripts vidéo cadencés`;
+                if (p3) p3.textContent = 'Gestion de boutique, stocks et commandes protégées en séquestre (Escrow)';
+                if (p4) p4.textContent = `Durée du plan : ${chosen.durationLabel}`;
             }
         };
 
