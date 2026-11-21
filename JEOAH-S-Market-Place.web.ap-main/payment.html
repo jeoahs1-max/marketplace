@@ -83,16 +83,16 @@
                 <!-- Choix du moyen de paiement -->
                 <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 id="i18n-step2-title" class="text-base font-extrabold text-slate-900">2. Choisissez votre moyen de paiement</h2>
-                    <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+                    <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                         <button type="button" id="method-card" onclick="selectMethod('card')" class="cursor-pointer rounded-xl border-2 border-indigo-600 bg-indigo-50/70 p-3 text-center font-bold text-xs text-indigo-950 transition">
                             <i class="fas fa-credit-card block text-xl mb-1 text-indigo-600"></i>
-                            <span id="i18n-method-card">Carte / Stripe</span>
+                            <span id="i18n-method-card">Carte Bancaire</span>
                         </button>
-                        <button type="button" id="method-paypal" onclick="selectMethod('paypal')" class="cursor-pointer rounded-xl border-2 border-slate-200 bg-white p-3 text-center font-bold text-xs text-slate-700 hover:border-sky-500 transition">
+                        <button type="button" id="method-paypal" onclick="selectMethod('paypal')" class="hidden cursor-pointer rounded-xl border-2 border-slate-200 bg-white p-3 text-center font-bold text-xs text-slate-700 hover:border-sky-500 transition">
                             <i class="fab fa-paypal block text-xl mb-1 text-sky-600"></i>
                             PayPal
                         </button>
-                        <button type="button" id="method-wise" onclick="selectMethod('wise')" class="cursor-pointer rounded-xl border-2 border-slate-200 bg-white p-3 text-center font-bold text-xs text-slate-700 hover:border-emerald-500 transition">
+                        <button type="button" id="method-wise" onclick="selectMethod('wise')" class="hidden cursor-pointer rounded-xl border-2 border-slate-200 bg-white p-3 text-center font-bold text-xs text-slate-700 hover:border-emerald-500 transition">
                             <i class="fas fa-globe block text-xl mb-1 text-emerald-600"></i>
                             Wise
                         </button>
@@ -162,6 +162,21 @@
                                     <i class="fas fa-triangle-exclamation mt-0.5 text-red-600"></i>
                                     <span id="i18n-mobile-fee-warn">Important : Veuillez obligatoirement ajouter les frais de retrait au montant total envoyé.</span>
                                 </div>
+                                <!-- Calculateur automatique JEOAH (Montant HTG + Frais de retrait MonCash/NatCash) -->
+                                <div class="rounded-xl bg-indigo-950 text-white p-3.5 space-y-1.5 text-xs shadow-inner">
+                                    <div class="flex items-center justify-between text-indigo-200">
+                                        <span>Montant de base (en HTG) :</span>
+                                        <strong id="mobile-base-htg">0 HTG</strong>
+                                    </div>
+                                    <div class="flex items-center justify-between text-amber-300">
+                                        <span>Frais de retrait agent MonCash / NatCash (3 %) :</span>
+                                        <strong id="mobile-cashout-htg">+ 0 HTG</strong>
+                                    </div>
+                                    <div class="flex items-center justify-between border-t border-indigo-800 pt-2 text-sm font-extrabold text-emerald-300">
+                                        <span>TOTAL EXACT À ENVOYER :</span>
+                                        <strong id="mobile-exact-total-htg" class="text-base">0 HTG</strong>
+                                    </div>
+                                </div>
                             </div>
                             <label class="block text-xs font-bold text-slate-700"><span id="i18n-mobile-phone">Votre numéro de téléphone émetteur (Haïti / International)</span>
                                 <input id="mobile-phone" type="tel" placeholder="+509 3700-0000" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-indigo-600 focus:outline-none">
@@ -169,6 +184,14 @@
                             <label class="block text-xs font-bold text-slate-700"><span id="i18n-mobile-pin">Numéro / Référence de transaction (reçu par SMS)</span>
                                 <input id="mobile-pin" type="text" maxlength="30" placeholder="Ex. Trans ID / Réf. MonCash ou NatCash" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-normal focus:border-indigo-600 focus:outline-none">
                             </label>
+                            <div class="rounded-xl border-2 border-dashed border-indigo-300 bg-indigo-50/40 p-3.5 space-y-2">
+                                <label class="block text-xs font-extrabold text-indigo-950">
+                                    <i class="fas fa-camera mr-1 text-indigo-600"></i> Capture d'écran du dépôt MonCash / NatCash (Obligatoire pour JEOAH &amp; Ney) *
+                                </label>
+                                <p class="text-[11px] text-slate-600">Importez la capture d'écran confirmant le dépôt + frais de retrait inclus. JEOAH la transmet directement à Ney pour activer votre commande/abonnement.</p>
+                                <input id="mobile-proof-file" type="file" accept="image/*" class="block w-full text-xs text-slate-700 file:mr-3 file:py-2 file:px-3.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
+                                <img id="mobile-proof-preview" src="" alt="Aperçu capture dépôt" class="hidden mt-2 max-h-40 rounded-xl border border-slate-200 shadow-sm object-contain">
+                            </div>
                         </div>
 
                         <!-- Bouton Officiel PayPal Smart Checkout -->
@@ -646,8 +669,44 @@
 
             if (isMobile) {
                 document.getElementById('mobile-provider-title').textContent = method === 'moncash' ? 'Paiement Mobile MonCash (Digicel) :' : 'Paiement Mobile NatCash (Natcom) :';
+                updateMobileFeeBreakdown();
             }
         };
+
+        let uploadedMobileProofDataUrl = '';
+        const mobileProofInput = document.getElementById('mobile-proof-file');
+        if (mobileProofInput) {
+            mobileProofInput.addEventListener('change', (ev) => {
+                const file = ev.target.files?.[0];
+                if (!file) { uploadedMobileProofDataUrl = ''; return; }
+                const reader = new FileReader();
+                reader.onload = () => {
+                    uploadedMobileProofDataUrl = reader.result;
+                    const prev = document.getElementById('mobile-proof-preview');
+                    if (prev) {
+                        prev.src = uploadedMobileProofDataUrl;
+                        prev.classList.remove('hidden');
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function updateMobileFeeBreakdown() {
+            const usdAmount = getCurrentPaymentAmountUsd();
+            const htgRate = 131;
+            const baseHtg = Math.ceil(usdAmount * htgRate);
+            const cashoutFeeHtg = Math.max(25, Math.ceil(baseHtg * 0.03));
+            const exactTotalHtg = baseHtg + cashoutFeeHtg;
+
+            const baseEl = document.getElementById('mobile-base-htg');
+            const feeEl = document.getElementById('mobile-cashout-htg');
+            const totalEl = document.getElementById('mobile-exact-total-htg');
+            if (baseEl) baseEl.textContent = `${baseHtg.toLocaleString('fr-FR')} HTG`;
+            if (feeEl) feeEl.textContent = `+ ${cashoutFeeHtg.toLocaleString('fr-FR')} HTG`;
+            if (totalEl) totalEl.textContent = `${exactTotalHtg.toLocaleString('fr-FR')} HTG`;
+            return { baseHtg, cashoutFeeHtg, exactTotalHtg };
+        }
 
         function initPayPalButton() {
             const container = document.getElementById('paypal-button-container');
@@ -1011,6 +1070,43 @@
 
         document.getElementById('payment-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (selectedMethod === 'moncash' || selectedMethod === 'natcash') {
+                const feedback = document.getElementById('payment-feedback');
+                if (!uploadedMobileProofDataUrl) {
+                    if (feedback) {
+                        feedback.className = 'rounded-xl bg-red-50 border border-red-200 p-4 text-xs font-bold text-red-800';
+                        feedback.textContent = '⚠️ Veuillez obligatoirement importer la capture d\'écran de votre dépôt MonCash / NatCash (avec frais de retrait inclus) afin que JEOAH et Ney puissent le vérifier.';
+                        feedback.classList.remove('hidden');
+                    }
+                    document.getElementById('mobile-proof-file')?.focus();
+                    return;
+                }
+                const htgInfo = updateMobileFeeBreakdown();
+                const txRef = document.getElementById('mobile-pin')?.value?.trim() || 'SANS-REF';
+                const senderPhone = document.getElementById('mobile-phone')?.value?.trim() || '';
+                const proofs = JSON.parse(localStorage.getItem('jeoahs_payment_proofs') || '[]');
+                proofs.unshift({
+                    provider: selectedMethod.toUpperCase(),
+                    senderPhone,
+                    txRef,
+                    expectedTotalHtg: htgInfo.exactTotalHtg,
+                    cashoutFeeHtg: htgInfo.cashoutFeeHtg,
+                    proofImage: uploadedMobileProofDataUrl,
+                    status: 'pending_ney_verification',
+                    createdAt: new Date().toISOString()
+                });
+                localStorage.setItem('jeoahs_payment_proofs', JSON.stringify(proofs.slice(0, 20)));
+                try {
+                    const bus = JSON.parse(localStorage.getItem('jeoahs_internal_ai_bus') || '[]');
+                    bus.push({
+                        from: 'JEOAH Paiement',
+                        to: 'Ney (Audit Séquestre)',
+                        summary: `Preuve ${selectedMethod.toUpperCase()} reçue (${htgInfo.exactTotalHtg} HTG dont ${htgInfo.cashoutFeeHtg} HTG frais retrait · Réf: ${txRef} · Tél: ${senderPhone}). Capture transmise pour validation en mode passif.`,
+                        createdAt: new Date().toISOString()
+                    });
+                    localStorage.setItem('jeoahs_internal_ai_bus', JSON.stringify(bus.slice(-50)));
+                } catch (_) {}
+            }
             await finalizePaymentSuccess(selectedMethod);
         });
     </script>
