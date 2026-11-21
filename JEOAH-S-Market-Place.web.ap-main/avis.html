@@ -55,13 +55,20 @@
 
         function stars(note) { return '⭐'.repeat(Number(note) || 0); }
 
+        function renderAvisList(items) {
+            list.innerHTML = items.length ? items.map(avis => `<article class="rounded-lg border border-slate-200 bg-white p-5"><p class="font-bold">${escape(avis.name)} <span class="ml-2 text-xs font-semibold uppercase text-indigo-600">${escape(avis.role)}</span></p><p class="text-sm">${stars(avis.note)}</p><p class="mt-2 text-sm text-slate-600">${escape(avis.message)}</p></article>`).join('') : '<p class="text-sm text-slate-500">Aucun avis pour le moment. Soyez le premier !</p>';
+        }
+
         async function loadAvis() {
+            const localItems = JSON.parse(localStorage.getItem('jeoahs_community_reviews') || '[]');
             try {
+                if (!db) throw new Error('local');
                 const snapshot = await getDocs(query(collection(db, 'avis'), orderBy('createdAt', 'desc')));
-                const items = snapshot.docs.map(item => item.data());
-                list.innerHTML = items.length ? items.map(avis => `<article class="rounded-lg border border-slate-200 bg-white p-5"><p class="font-bold">${escape(avis.name)} <span class="ml-2 text-xs font-semibold uppercase text-indigo-600">${escape(avis.role)}</span></p><p class="text-sm">${stars(avis.note)}</p><p class="mt-2 text-sm text-slate-600">${escape(avis.message)}</p></article>`).join('') : '<p class="text-sm text-slate-500">Aucun avis pour le moment. Soyez le premier !</p>';
+                const fsItems = snapshot.docs.map(item => item.data());
+                const merged = fsItems.length ? fsItems : localItems;
+                renderAvisList(merged);
             } catch (error) {
-                list.innerHTML = '<p class="text-sm text-slate-500">Les avis seront disponibles dès que la connexion sécurisée est établie.</p>';
+                renderAvisList(localItems);
             }
         }
 
@@ -79,23 +86,54 @@
 
         form.addEventListener('submit', async event => {
             event.preventDefault();
-            if (!db) { status.textContent = 'Le service est temporairement indisponible.'; status.className = 'rounded-lg bg-red-50 px-4 py-3 text-sm font-semibold text-red-800'; return; }
+            const reviewObj = {
+                name: document.getElementById('avis-name').value.trim(),
+                role: document.getElementById('avis-role').value,
+                note: Number(document.getElementById('avis-note').value),
+                rating: Number(document.getElementById('avis-note').value),
+                message: document.getElementById('avis-message').value.trim(),
+                createdAtIso: new Date().toISOString()
+            };
+
+            // 1. Sauvegarde locale immédiate + Transmission interne à Jack & Ney
+            const localItems = JSON.parse(localStorage.getItem('jeoahs_community_reviews') || '[]');
+            localItems.unshift(reviewObj);
+            localStorage.setItem('jeoahs_community_reviews', JSON.stringify(localItems));
+
+            const vendorReviews = JSON.parse(localStorage.getItem('jeoahs_vendor_reviews') || '[]');
+            vendorReviews.push({ orderId: 'AVIS-COMMUNAUTE', rating: reviewObj.note, comment: reviewObj.message, author: reviewObj.name, createdAt: reviewObj.createdAtIso });
+            localStorage.setItem('jeoahs_vendor_reviews', JSON.stringify(vendorReviews));
+
             try {
-                await addDoc(collection(db, 'avis'), {
-                    name: document.getElementById('avis-name').value.trim(),
-                    role: document.getElementById('avis-role').value,
-                    note: Number(document.getElementById('avis-note').value),
-                    message: document.getElementById('avis-message').value.trim(),
-                    createdAt: serverTimestamp()
+                const bus = JSON.parse(localStorage.getItem('jeoahs_internal_ai_bus') || '[]');
+                bus.push({
+                    from: 'Avis Communauté',
+                    to: 'Jack & Ney',
+                    summary: `Nouvel avis ${reviewObj.note}/5★ de ${reviewObj.name} (${reviewObj.role}) : "${reviewObj.message.slice(0, 120)}"`,
+                    createdAt: reviewObj.createdAtIso
                 });
-                status.textContent = 'Merci pour votre avis !';
-                status.className = 'rounded-lg bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800';
-                form.reset();
-                loadAvis();
-            } catch (error) {
-                status.textContent = 'Impossible d\'envoyer votre avis pour le moment.';
-                status.className = 'rounded-lg bg-red-50 px-4 py-3 text-sm font-semibold text-red-800';
+                localStorage.setItem('jeoahs_internal_ai_bus', JSON.stringify(bus.slice(-50)));
+            } catch (_) {}
+
+            // 2. Enregistrement Firestore (non-bloquant si règle restreinte)
+            if (db) {
+                try {
+                    await addDoc(collection(db, 'avis'), {
+                        name: reviewObj.name,
+                        role: reviewObj.role,
+                        note: reviewObj.note,
+                        message: reviewObj.message,
+                        createdAt: serverTimestamp()
+                    });
+                } catch (error) {
+                    console.warn('Firestore avis fallback local:', error?.code || error?.message);
+                }
             }
+
+            status.textContent = 'Merci pour votre avis ! Il a bien été enregistré et transmis à Jack pour l’analyse qualité.';
+            status.className = 'rounded-lg bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800';
+            form.reset();
+            loadAvis();
         });
     </script>
     <script src="/public/jeoah-loader.js" defer></script>

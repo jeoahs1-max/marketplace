@@ -147,7 +147,7 @@
                                     </div>
                                     <div class="flex items-center justify-between pt-1 border-t border-amber-100">
                                         <span id="i18n-beneficiary-name-lbl" class="font-semibold text-slate-600">Nom du bénéficiaire :</span>
-                                        <strong class="text-sm font-extrabold text-slate-900">JEOAH'S Market Place LLC</strong>
+                                        <strong class="text-sm font-extrabold text-slate-900">Jasmine Jean-Louis</strong>
                                     </div>
                                 </div>
                                 <div class="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-[11px] font-bold text-red-800 flex items-start gap-2">
@@ -381,14 +381,15 @@
         let selectedMethod = 'card';
 
         const PLANS = {
-            free: { name: 'Free', price: 0, quota: 5, texts: 0, videos: 0, durationLabel: 'Illimitée (Espace privé)', days: 30 },
-            week: { name: '1 Semaine', price: 4.99, quota: 15, texts: 3, videos: 1, durationLabel: '7 jours (1 semaine)', days: 7 },
-            month: { name: '1 Mois', price: 9.99, quota: 50, texts: 10, videos: 5, durationLabel: '30 jours (1 mois)', days: 30 },
-            starter: { name: '1 Mois', price: 9.99, quota: 50, texts: 10, videos: 5, durationLabel: '30 jours (1 mois)', days: 30 },
-            quarter: { name: '3 Mois', price: 24.99, quota: 150, texts: 30, videos: 15, durationLabel: '90 jours (3 mois)', days: 90 },
-            pro: { name: '3 Mois', price: 24.99, quota: 150, texts: 30, videos: 15, durationLabel: '90 jours (3 mois)', days: 90 },
-            year: { name: '1 An', price: 79.99, quota: 1000, texts: 120, videos: 60, durationLabel: '365 jours (1 an)', days: 365 },
-            premium: { name: '1 An', price: 79.99, quota: 1000, texts: 120, videos: 60, durationLabel: '365 jours (1 an)', days: 365 },
+            free: { name: 'Free', price: 0, quota: 5, texts: 0, videos: 0, durationLabel: 'Gratuit (Espace privé)', days: 30 },
+            starter: { name: 'Starter (1 Semaine)', price: 9.99, quota: 25, texts: 10, videos: 3, durationLabel: '7 jours (1 semaine)', days: 7 },
+            week: { name: 'Starter (1 Semaine)', price: 9.99, quota: 25, texts: 10, videos: 3, durationLabel: '7 jours (1 semaine)', days: 7 },
+            pro: { name: 'Pro (1 Mois)', price: 19.99, quota: 100, texts: 30, videos: 5, durationLabel: '30 jours (1 mois)', days: 30 },
+            month: { name: 'Pro (1 Mois)', price: 19.99, quota: 100, texts: 30, videos: 5, durationLabel: '30 jours (1 mois)', days: 30 },
+            premium: { name: 'Premium (3 Mois)', price: 55.00, quota: 500, texts: 50, videos: 10, durationLabel: '90 jours (3 mois)', days: 90 },
+            quarter: { name: 'Premium (3 Mois)', price: 55.00, quota: 500, texts: 50, videos: 10, durationLabel: '90 jours (3 mois)', days: 90 },
+            annual: { name: 'Annuel (1 An)', price: 99.00, quota: 1000, texts: 50, videos: 10, durationLabel: '365 jours (1 an)', days: 365 },
+            year: { name: 'Annuel (1 An)', price: 99.00, quota: 1000, texts: 50, videos: 10, durationLabel: '365 jours (1 an)', days: 365 },
             enterprise: { name: 'Entreprise', price: 99.00, quota: 2000, texts: 200, videos: 100, durationLabel: 'Sur mesure', days: 365 }
         };
 
