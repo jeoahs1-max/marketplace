@@ -528,14 +528,27 @@
       messages.scrollTop = messages.scrollHeight;
 
       try {
+        const freshUser = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null') || authUser || {};
+        const userEmail = String(freshUser.email || '').trim().toLowerCase();
+        const testerList = [
+          'ff1986fredlin11@gmail.com', 'fleuricotamy@gmail.com',
+          'stephaniejeancharles95@gmail.com', 'physiotherapeutejoseph@gmail.com',
+          'vernetloveson509@gmail.com', 'jeanlouislynseykeren@gmail.com',
+          'ramecey30@gmail.com', 'jeanlouisardyyy@gmail.com',
+          'jjeanlouis96@gmail.com', 'emelinejulien744@gmail.com',
+          'jeoahs1@gmail.com'
+        ];
+        const isOfficialFree = Boolean(freshUser.testAccount || freshUser.selectedPlan === 'tester' || testerList.includes(userEmail));
         const res = await fetch('/api/jeoah', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             prompt,
             language: currentLang,
-            role: currentRole,
-            plan: userPlan,
+            role: freshUser.role || currentRole,
+            plan: isOfficialFree ? 'tester' : userPlan,
+            email: userEmail,
+            isTester: isOfficialFree,
             memory: memory.slice(0, -1).slice(-8)
           })
         });

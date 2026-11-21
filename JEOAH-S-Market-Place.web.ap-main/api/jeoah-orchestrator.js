@@ -1,8 +1,16 @@
 const admin = require('firebase-admin');
 const fetch = require('node-fetch');
 const MARKETPLACE_APP_ID = 'jeoahs1-max-03326376-49b27';
-const MARKETPLACE_PAID_PLANS = new Set(['starter', 'pro', 'premium', 'enterprise']);
+const MARKETPLACE_PAID_PLANS = new Set(['starter', 'pro', 'premium', 'enterprise', 'tester']);
 const allowedAdmins = new Set((process.env.ADMIN_EMAILS || 'jeoahs1@gmail.com').split(',').map(email => email.trim().toLowerCase()).filter(Boolean));
+const OFFICIAL_TESTERS = new Set([
+  'ff1986fredlin11@gmail.com', 'fleuricotamy@gmail.com',
+  'stephaniejeancharles95@gmail.com', 'physiotherapeutejoseph@gmail.com',
+  'vernetloveson509@gmail.com', 'jeanlouislynseykeren@gmail.com',
+  'ramecey30@gmail.com', 'jeanlouisardyyy@gmail.com',
+  'jjeanlouis96@gmail.com', 'emelinejulien744@gmail.com',
+  'jeoahs1@gmail.com'
+]);
 
 function toDate(value) {
   if (!value) return null;
@@ -42,24 +50,28 @@ async function isAuthorizedAdmin(req) {
 
 function normalizeUserProfile(raw = {}) {
   const role = String(raw.role || 'visiteur').toLowerCase();
-  const plan = String(raw.selectedPlan || raw.plan || raw.subscription?.planId || 'free').toLowerCase();
-  const expiresAt = toDate(raw.expiresAt || raw.subscription?.expiresAt);
-  const marketplaceEnabled = raw.marketplaceEnabled !== false &&
+  const email = String(raw.email || '').trim().toLowerCase();
+  const isPrivilegedFree = Boolean(raw.testAccount) || OFFICIAL_TESTERS.has(email) || allowedAdmins.has(email);
+  const plan = isPrivilegedFree ? 'tester' : String(raw.selectedPlan || raw.plan || raw.subscription?.planId || 'free').toLowerCase();
+  const expiresAt = isPrivilegedFree ? new Date('2099-12-31T23:59:59.000Z') : toDate(raw.expiresAt || raw.subscription?.expiresAt);
+  const marketplaceEnabled = isPrivilegedFree || (
+    raw.marketplaceEnabled !== false &&
     MARKETPLACE_PAID_PLANS.has(plan) &&
     expiresAt !== null &&
     expiresAt > new Date() &&
-    (!raw.subscriptionStatus || raw.subscriptionStatus === 'active');
+    (!raw.subscriptionStatus || raw.subscriptionStatus === 'active')
+  );
   const policy = {
     canUseSite: true,
     canSelfPublishOnSocial: true,
     canAutoPublishCentral: marketplaceEnabled,
     aiSimpleText: true,
-    aiPromoText: false,
-    aiVideo: false,
-    aiPostPublication: false,
+    aiPromoText: isPrivilegedFree || marketplaceEnabled,
+    aiVideo: isPrivilegedFree || marketplaceEnabled,
+    aiPostPublication: isPrivilegedFree,
     autoPostingEnabled: false
   };
-  return { role, plan, expiresAt, marketplaceEnabled, policy };
+  return { role, plan, expiresAt, marketplaceEnabled, isPrivilegedFree, policy };
 }
 
 function buildSimpleProductCopy({ productName = 'Produit', category = 'Divers', features = [] } = {}) {
