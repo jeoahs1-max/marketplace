@@ -152,9 +152,9 @@
             if (!isPremium) userSubscriptionStatus.isPremium = false;
 
             if (isPremium) {
-                // Afficher le générateur NEY Avancé
+                // Afficher le générateur JEOAH Avancé
                 document.getElementById('premium-badge').classList.remove('hidden');
-                document.getElementById('generator-title').textContent = 'Générateur NEY Avancé (Multi-Sites)';
+                document.getElementById('generator-title').textContent = 'Générateur JEOAH Avancé (Multi-Sites)';
                 document.getElementById('premium-features-locked').classList.add('hidden');
                 document.getElementById('premium-features-unlocked').classList.remove('hidden');
                 generatorContainer.classList.remove('border-red-400');
@@ -162,14 +162,14 @@
                 document.getElementById('subscription-link-text').textContent = 'Gérer mon Abonnement';
 
             } else {
-                // Afficher le générateur de base avec blocage NEY
+                // Afficher le générateur de base avec blocage JEOAH
                 document.getElementById('premium-badge').classList.add('hidden');
                 document.getElementById('generator-title').textContent = 'Générateur de Liens Standard';
                 document.getElementById('premium-features-unlocked').classList.add('hidden');
                 document.getElementById('premium-features-locked').classList.remove('hidden');
                 generatorContainer.classList.remove('border-green-400');
                 generatorContainer.classList.add('border-red-400');
-                document.getElementById('subscription-link-text').textContent = 'Débloquer NEY Premium';
+                document.getElementById('subscription-link-text').textContent = 'Débloquer JEOAH Studio';
             }
 
             // JEOAH'S ne reçoit pas les ventes ni les commissions des plateformes partenaires.
@@ -203,24 +203,68 @@
                 .map(link => ({ name: link.name.trim(), id: link.base_link.trim() }));
         }
 
+        function detectPlatformName(urlStr) {
+            const u = String(urlStr || '').toLowerCase();
+            if (u.includes('amazon.') || u.includes('amzn.') || u.includes('a.co')) return 'Amazon';
+            if (u.includes('temu.')) return 'Temu';
+            if (u.includes('shein.')) return 'Shein';
+            if (u.includes('aliexpress.') || u.includes('ali.')) return 'AliExpress';
+            if (u.includes('walmart.')) return 'Walmart';
+            if (u.includes('ebay.')) return 'eBay';
+            if (u.includes('tiktok.')) return 'TikTok Shop';
+            if (u.includes('shopify.')) return 'Shopify';
+            try { return new URL(urlStr).hostname.replace(/^www\./, ''); } catch (_) { return 'Partenaire'; }
+        }
+
+        window.handleProductImageUpload = function (inputEl) {
+            const file = inputEl?.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    let w = img.width, h = img.height, max = 640;
+                    if (w > max || h > max) {
+                        if (w > h) { h = Math.round(h * (max / w)); w = max; }
+                        else { w = Math.round(w * (max / h)); h = max; }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    const compressed = canvas.toDataURL('image/jpeg', 0.8);
+                    const imgInput = document.getElementById('product-image-input');
+                    if (imgInput) imgInput.value = compressed;
+                    const status = document.getElementById('metadata-status');
+                    if (status) {
+                        status.textContent = '✅ Photo du produit importée et prête pour votre vitrine !';
+                        status.className = 'mt-2 text-sm font-semibold text-emerald-700';
+                    }
+                };
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
         let metadataRequestId = 0;
+        let pendingGeneratedProduct = null;
+
         window.loadProductMetadata = async function () {
             const input = document.getElementById('product-url-input');
             const status = document.getElementById('metadata-status');
             const inputUrl = input.value.trim();
             if (!inputUrl) return;
             const requestId = ++metadataRequestId;
-            status.textContent = 'Ney recherche les informations disponibles...';
-            status.className = 'mt-2 text-sm text-blue-700';
+            const detectedPlatform = detectPlatformName(inputUrl);
+            status.textContent = `JEOAH analyse votre lien ${detectedPlatform} et prépare ses propositions...`;
+            status.className = 'mt-2 text-sm font-semibold text-indigo-700';
             try {
                 const response = await fetch('/api/product-metadata.js', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url: inputUrl })
                 });
-                const metadata = await response.json();
+                const metadata = await response.json().catch(() => ({}));
                 if (requestId !== metadataRequestId) return;
-                if (!response.ok) throw new Error(metadata.error || 'Informations indisponibles');
 
                 const fields = [
                     ['product-name-input', metadata.name],
@@ -230,28 +274,43 @@
                 ];
                 fields.forEach(([id, value]) => {
                     const field = document.getElementById(id);
-                    if (value && !field.value.trim()) field.value = value;
+                    if (value && field && !field.value.trim()) field.value = value;
                 });
-                if (metadata.name && !document.getElementById('product-hook-input').value.trim()) {
-                    document.getElementById('product-hook-input').value = `A decouvrir : ${metadata.name}`;
+
+                const finalName = document.getElementById('product-name-input').value.trim() || `Offre ${detectedPlatform}`;
+                if (!document.getElementById('product-hook-input').value.trim()) {
+                    document.getElementById('product-hook-input').value = `🔥 Coup de cœur ${detectedPlatform} : ${finalName}`;
                 }
-                status.textContent = metadata.name ? 'Informations récupérées. Vérifiez-les avant publication.' : 'Aucune fiche automatique trouvée pour ce lien.';
-                status.className = 'mt-2 text-sm text-green-700';
+                if (!document.getElementById('product-description-input').value.trim()) {
+                    document.getElementById('product-description-input').value = `Sélectionné par JEOAH sur ${detectedPlatform} : ${finalName}. Cliquez pour découvrir le meilleur prix et commander en toute confiance.`;
+                }
+
+                const hasImg = Boolean(document.getElementById('product-image-input').value.trim());
+                status.innerHTML = hasImg
+                    ? `✅ <strong>Proposition de JEOAH prête (${detectedPlatform}) !</strong> Vérifiez les champs puis cliquez sur <strong>« Générer le Lien »</strong>.`
+                    : `💡 <strong>JEOAH a préparé le titre et le slogan (${detectedPlatform}) !</strong> ${detectedPlatform} bloque l'image automatique : importez la photo juste à droite avec le bouton <strong>« Importer une photo »</strong> puis cliquez sur <strong>« Générer le Lien »</strong>.`;
+                status.className = hasImg ? 'mt-2 text-sm text-emerald-700' : 'mt-2 text-sm text-amber-800';
             } catch (error) {
-                status.textContent = 'Informations non disponibles automatiquement. Vous pouvez les compléter manuellement.';
-                status.className = 'mt-2 text-sm text-amber-700';
+                const finalName = document.getElementById('product-name-input').value.trim() || `Sélection ${detectedPlatform}`;
+                if (!document.getElementById('product-hook-input').value.trim()) {
+                    document.getElementById('product-hook-input').value = `🔥 Offre ${detectedPlatform} recommandée : ${finalName}`;
+                }
+                if (!document.getElementById('product-description-input').value.trim()) {
+                    document.getElementById('product-description-input').value = `Découvrez ${finalName} sur ${detectedPlatform} via notre lien vérifié JEOAH'S.`;
+                }
+                status.innerHTML = `💡 <strong>JEOAH a détecté ${detectedPlatform} !</strong> Complétez le nom, le prix et importez la photo du produit, puis cliquez sur <strong>« Générer le Lien »</strong>.`;
+                status.className = 'mt-2 text-sm text-amber-800';
             }
         }
 
         /**
-         * Simule la génération du lien.
+         * Génère l'aperçu + proposition JEOAH avec bouton de confirmation OK / Publier.
          */
         window.generateLink = async function () {
             const inputUrl = document.getElementById('product-url-input').value.trim();
-            const isPremium = userSubscriptionStatus.isPremium;
 
             if (!inputUrl) {
-                showCustomModal("Erreur", "Veuillez coller une URL de produit valide.");
+                showCustomModal("Erreur", "Veuillez coller une URL de produit valide (Amazon, Temu, Shein, AliExpress, Walmart, eBay...).");
                 return;
             }
 
@@ -263,14 +322,15 @@
                 return;
             }
 
+            const detectedPlatform = detectPlatformName(inputUrl);
             const productNameInput = document.getElementById('product-name-input').value.trim();
-            const productName = productNameInput || `Produit recommandé sur ${productUrl.hostname.replace(/^www\./, '')}`;
-            const productHook = document.getElementById('product-hook-input').value.trim() || `Une belle découverte à ne pas manquer`;
-            const productDescription = document.getElementById('product-description-input').value.trim() || `Découvrez ${productName} et consultez l'offre partenaire.`;
+            const productName = productNameInput || `Produit recommandé sur ${detectedPlatform}`;
+            const productHook = document.getElementById('product-hook-input').value.trim() || `🔥 Sélection ${detectedPlatform} à ne pas manquer`;
+            const productDescription = document.getElementById('product-description-input').value.trim() || `Découvrez ${productName} sur ${detectedPlatform} et consultez l'offre partenaire.`;
             const productPrice = document.getElementById('product-price-input').value.trim() || 'Voir le prix sur la plateforme';
-            const productImage = document.getElementById('product-image-input').value.trim() || `https://placehold.co/600x420/0f766e/ffffff?text=${encodeURIComponent(productName.slice(0, 18))}`;
+            const productImage = document.getElementById('product-image-input').value.trim() || `/public/assets/logo.png`;
             const configuredPrograms = getConfiguredAffiliatePrograms();
-            const sourcePlatform = configuredPrograms.find(program => productUrl.hostname.toLowerCase().includes(program.name.toLowerCase()))?.name || productUrl.hostname.replace(/^www\./, '');
+            const sourcePlatform = configuredPrograms.find(program => detectedPlatform.toLowerCase().includes(program.name.toLowerCase()))?.name || detectedPlatform;
             const comparisonPrograms = configuredPrograms.filter(program => program.name.toLowerCase() !== sourcePlatform.toLowerCase());
             const trackingUrl = new URL('/api/affiliate-click.js', window.location.origin);
             trackingUrl.searchParams.set('url', inputUrl);
@@ -285,20 +345,31 @@
             }
             const productId = `affiliate-${Date.now()}`;
             const baseNum = Number(String(productPrice).replace(/[^0-9.]/g, '')) || 29.99;
-            const programsList = configuredPrograms.length ? configuredPrograms : [
+            const defaultMulti = [
+                { name: sourcePlatform, id: 'direct' },
                 { name: 'Amazon', id: 'jeoahs-20' },
-                { name: 'eBay', id: 'jeoahs-ebay' },
-                { name: 'Walmart', id: 'jeoahs-wmt' }
+                { name: 'Temu', id: 'jeoahs-temu' },
+                { name: 'Shein', id: 'jeoahs-shein' },
+                { name: 'AliExpress', id: 'jeoahs-ali' },
+                { name: 'Walmart', id: 'jeoahs-wmt' },
+                { name: 'eBay', id: 'jeoahs-ebay' }
             ];
-            const multiOffers = programsList.map((prog, idx) => {
-                const factor = idx === 0 ? 1 : (idx === 1 ? 0.92 : 0.96);
+            const uniquePrograms = [];
+            const seenNames = new Set();
+            [...(configuredPrograms.length ? configuredPrograms : []), ...defaultMulti].forEach(p => {
+                const key = p.name.toLowerCase();
+                if (!seenNames.has(key)) { seenNames.add(key); uniquePrograms.push(p); }
+            });
+            const multiOffers = uniquePrograms.slice(0, 6).map((prog, idx) => {
+                const isSource = prog.name.toLowerCase() === sourcePlatform.toLowerCase();
                 return {
                     platform: prog.name,
-                    price: `$${(baseNum * factor).toFixed(2)}`,
-                    url: idx === 0 ? generatedLink : `https://www.google.com/search?q=${encodeURIComponent(prog.name + ' ' + productName)}`
+                    price: isSource ? productPrice : `Comparer sur ${prog.name}`,
+                    url: isSource ? generatedLink : `https://www.google.com/search?q=${encodeURIComponent(prog.name + ' ' + productName)}`
                 };
             });
-            const newProd = {
+
+            pendingGeneratedProduct = {
                 id: productId,
                 affiliateId: userId || 'local',
                 ownerId: userId || 'local',
@@ -311,59 +382,106 @@
                 imageUrl: productImage,
                 url: generatedLink,
                 offers: multiOffers,
-                source: multiOffers.map(o => o.platform).join(' / '),
+                source: sourcePlatform,
                 comparisonPlatforms: comparisonPrograms.map(program => program.name),
                 subscriptionActive: subInfo.active,
                 subscriptionPlan: subInfo.plan,
                 subscriptionExpiresAt: subInfo.expiresAt || new Date(Date.now() - 1000).toISOString(),
                 createdAt: new Date().toISOString()
             };
-            affiliateProducts.unshift(newProd);
-            localStorage.setItem('jeoahs_affiliate_products', JSON.stringify(affiliateProducts));
-            if (subInfo.active) {
-                const centralProds = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]');
-                centralProds.unshift(newProd);
-                localStorage.setItem('jeoahs_central_products', JSON.stringify(centralProds));
-            }
-            if (db && userId) {
-                try {
-                    await setDoc(doc(db, `artifacts/${appId}/public/data/affiliate_products`, productId), {
-                        ...newProd,
-                        published: true
-                    });
-                    if (subInfo.active) {
-                        await setDoc(doc(db, `artifacts/${appId}/public/data/products`, productId), newProd, { merge: true });
-                    }
-                } catch (error) {
-                    console.warn('Publication publique indisponible, conservation locale active.', error);
-                }
-            }
 
             const resultDiv = document.getElementById('generation-result');
-
             resultDiv.innerHTML = `
-                <div class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-                    <div class="relative aspect-[16/9] overflow-hidden bg-slate-100">
-                        <img src="${productImage}" alt="${productName.replace(/"/g, '&quot;')}" class="h-full w-full object-cover" onerror="this.src='https://placehold.co/900x500/102a43/ffffff?text=Photo+du+produit'">
-                        <span class="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-xs font-bold text-teal-700">${sourcePlatform}</span>
+                <div class="mt-6 overflow-hidden rounded-2xl border-2 border-indigo-400 bg-white shadow-xl">
+                    <div class="bg-indigo-600 text-white px-5 py-3 flex flex-wrap items-center justify-between gap-2">
+                        <span class="text-xs font-extrabold uppercase tracking-wider"><i class="fas fa-robot mr-1.5"></i> Proposition de JEOAH prête (${sourcePlatform})</span>
+                        <span class="text-xs font-semibold text-indigo-100">Vérifiez puis cliquez sur OK pour publier</span>
+                    </div>
+                    <div class="relative aspect-[16/9] max-h-72 w-full overflow-hidden bg-slate-100 flex items-center justify-center">
+                        <img src="${productImage}" alt="${productName.replace(/"/g, '&quot;')}" class="h-full w-full object-contain bg-white" onerror="this.src='/public/assets/logo.png'">
+                        <span class="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-xs font-bold text-indigo-700 shadow">${sourcePlatform}</span>
                     </div>
                     <div class="p-5 sm:p-6">
-                        <p class="text-sm font-bold uppercase tracking-wide text-teal-700">${productHook}</p>
+                        <p class="text-sm font-bold uppercase tracking-wide text-indigo-700">${productHook}</p>
                         <h3 class="mt-2 text-2xl font-extrabold leading-tight text-slate-900">${productName}</h3>
                         <p class="mt-3 text-base leading-7 text-slate-600">${productDescription}</p>
-                        <div class="mt-5 flex flex-col gap-4 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                            <div><p class="text-xs font-semibold uppercase text-slate-500">Prix indicatif</p><p class="text-2xl font-extrabold text-blue-700">${productPrice}</p></div>
-                            <a href="${generatedLink}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3 font-bold text-white shadow-md hover:bg-blue-700">Voir l'offre <i class="fas fa-arrow-up-right-from-square ml-2"></i></a>
+                        <div class="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                            <div><p class="text-xs font-semibold uppercase text-slate-500">Prix affiché</p><p class="text-2xl font-extrabold text-blue-700">${productPrice}</p></div>
+                            <div class="flex flex-wrap gap-2.5">
+                                <button type="button" onclick="confirmPublishPendingProduct()" class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-6 py-3 font-extrabold text-white shadow-md hover:bg-emerald-700 transition cursor-pointer">
+                                    <i class="fas fa-check-circle mr-2"></i> OK — Publier sur ma Vitrine
+                                </button>
+                                <button type="button" onclick="document.getElementById('generation-result').innerHTML=''" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer">
+                                    Modifier
+                                </button>
+                            </div>
                         </div>
-                        <div class="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-500">
-                            <button type="button" onclick="copyToClipboard('${generatedLink}')" class="font-semibold text-blue-700 hover:underline"><i class="fas fa-link mr-1"></i>Copier le lien</button>
-                            <span>Les achats et commissions sont gérés par ${sourcePlatform}.</span>
+                        <div class="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                            <button type="button" onclick="copyToClipboard('${generatedLink}')" class="font-semibold text-blue-700 hover:underline"><i class="fas fa-link mr-1"></i>Copier le lien de suivi</button>
+                            <span>Plateforme : <strong>${sourcePlatform}</strong> · Multi-offres générées : ${multiOffers.map(o => o.platform).join(', ')}</span>
                         </div>
                     </div>
                 </div>
-                <p class="mt-3 text-center text-sm text-green-700"><i class="fas fa-check-circle mr-1"></i>Aperçu de la publication enregistré dans votre vitrine.</p>
             `;
-        }
+        };
+
+        window.confirmPublishPendingProduct = async function () {
+            if (!pendingGeneratedProduct) return;
+            const prod = pendingGeneratedProduct;
+            const subInfo = getAffiliateSubscriptionInfo();
+
+            const affiliateProducts = JSON.parse(localStorage.getItem('jeoahs_affiliate_products') || '[]');
+            affiliateProducts.unshift(prod);
+            try {
+                localStorage.setItem('jeoahs_affiliate_products', JSON.stringify(affiliateProducts));
+                if (subInfo.active) {
+                    const centralProds = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]');
+                    centralProds.unshift(prod);
+                    localStorage.setItem('jeoahs_central_products', JSON.stringify(centralProds));
+                }
+            } catch (e) {
+                console.warn('Quota stockage local atteint:', e);
+            }
+
+            if (db && userId) {
+                try {
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/affiliate_products`, prod.id), { ...prod, published: true });
+                    if (subInfo.active) {
+                        await setDoc(doc(db, `artifacts/${appId}/public/data/products`, prod.id), prod, { merge: true });
+                    }
+                } catch (error) {
+                    console.warn('Publication Firestore ignorée, conservation locale active.', error);
+                }
+            }
+
+            // Vider proprement les champs pour ne pas laisser l'ancien lien affiché
+            ['product-url-input', 'product-name-input', 'product-hook-input', 'product-image-input', 'product-price-input', 'product-description-input'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            const fileInput = document.getElementById('product-image-file');
+            if (fileInput) fileInput.value = '';
+            pendingGeneratedProduct = null;
+
+            const resultDiv = document.getElementById('generation-result');
+            if (resultDiv) {
+                resultDiv.innerHTML = `
+                    <div class="mt-4 rounded-2xl border-2 border-emerald-400 bg-emerald-50 p-5 text-center space-y-3">
+                        <p class="text-base font-extrabold text-emerald-900"><i class="fas fa-check-circle text-emerald-600 mr-1.5"></i> Produit "${prod.name}" publié avec succès par JEOAH !</p>
+                        <p class="text-xs text-emerald-800">Il est maintenant visible sur votre Vitrine Affilié${subInfo.active ? ' et sur la Vitrine Centrale' : ''}.</p>
+                        <div class="flex flex-wrap justify-center gap-3 pt-1">
+                            <a href="/affiliate-storefront.html" class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-extrabold hover:bg-emerald-700 shadow">Voir ma Vitrine →</a>
+                            <a href="/showcase.html" class="px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-extrabold hover:bg-indigo-700 shadow">Voir la Vitrine Centrale →</a>
+                        </div>
+                    </div>
+                `;
+            }
+            const status = document.getElementById('metadata-status');
+            if (status) {
+                status.textContent = 'Prêt pour un nouveau lien (Amazon, Temu, Shein, AliExpress, Walmart, eBay...).';
+                status.className = 'mt-2 text-sm text-gray-500';
+            }
+        };
 
         // Fonction utilitaire de formatage et de copie
         function formatCurrency(amount) {
@@ -634,8 +752,8 @@
                             Générateur de Liens Standard
                         </h2>
                         <span id="premium-badge"
-                            class="hidden bg-yellow-500 text-white text-xs font-bold py-1 px-3 rounded-full shadow-md transform rotate-1">
-                            NEY PREMIUM
+                            class="hidden bg-indigo-600 text-white text-xs font-bold py-1 px-3 rounded-full shadow-md transform rotate-1">
+                            JEOAH STUDIO
                         </span>
                     </div>
 
@@ -643,8 +761,8 @@
                     <div class="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-3">
                         <input type="text" id="product-name-input" placeholder="Nom du produit (facultatif)"
                             class="flex-grow px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm">
-                        <input type="url" id="product-url-input" onblur="loadProductMetadata()"
-                            placeholder="Collez ici l'URL du produit à promouvoir (Ex: https://amazon.fr/mon-produit)"
+                        <input type="url" id="product-url-input" onblur="loadProductMetadata()" onpaste="setTimeout(loadProductMetadata, 120)"
+                            placeholder="Collez ici l'URL (Amazon, Temu, Shein, AliExpress, Walmart, eBay...)"
                             class="flex-grow px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm">
                         <button type="button" onclick="generateLink()"
                             class="py-3 px-6 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition duration-300 shadow-md flex-shrink-0">
@@ -653,41 +771,45 @@
                     </div>
                     <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
                         <input type="text" id="product-hook-input"
-                            placeholder="Titre accrocheur (ex : Le style qu'il vous faut)"
+                            placeholder="Slogan / Titre accrocheur proposé par JEOAH"
                             class="px-4 py-3 border border-gray-300 rounded-lg text-sm">
-                        <input type="url" id="product-image-input" placeholder="URL de la photo du produit"
-                            class="px-4 py-3 border border-gray-300 rounded-lg text-sm">
-                        <input type="text" id="product-price-input" placeholder="Prix affiché (ex : 29,99 €)"
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="product-image-input" placeholder="URL de la photo ou importez un fichier →"
+                                class="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-sm">
+                            <label class="cursor-pointer shrink-0 px-3 py-3 rounded-lg bg-indigo-50 border border-indigo-300 text-indigo-800 text-xs font-bold hover:bg-indigo-100 transition" title="Importer une photo du produit">
+                                <i class="fas fa-camera mr-1"></i> Photo
+                                <input id="product-image-file" type="file" accept="image/*" onchange="handleProductImageUpload(this)" class="hidden">
+                            </label>
+                        </div>
+                        <input type="text" id="product-price-input" placeholder="Prix affiché (ex : $29.99)"
                             class="px-4 py-3 border border-gray-300 rounded-lg text-sm">
                         <textarea id="product-description-input" rows="2" maxlength="240"
                             placeholder="Description courte et simple du produit"
                             class="px-4 py-3 border border-gray-300 rounded-lg text-sm resize-none"></textarea>
                     </div>
-                    <p id="metadata-status" class="mt-2 text-sm text-gray-500">Collez un lien puis cliquez ailleurs pour
-                        lancer la récupération automatique.</p>
+                    <p id="metadata-status" class="mt-2 text-sm text-gray-500">Collez un lien (Amazon, Temu, Shein, AliExpress, Walmart, eBay...) : JEOAH prépare automatiquement ses propositions.</p>
 
-                    <!-- Contenu de la Génération / Blocs Conditionnels NEY -->
+                    <!-- Contenu de la Génération / Blocs Conditionnels JEOAH -->
                     <div id="generation-result" class="mt-4">
                         <!-- Résultat de la génération apparaîtra ici -->
                     </div>
 
-                    <!-- Explication des fonctionnalités NEY Premium -->
+                    <!-- Explication des fonctionnalités JEOAH Studio -->
                     <div id="premium-features-unlocked"
                         class="hidden mt-6 bg-green-50 p-4 rounded-xl border border-green-200">
-                        <p class="font-bold text-green-700">Fonctionnalités NEY Actives :</p>
+                        <p class="font-bold text-green-700">Fonctionnalités JEOAH Actives :</p>
                         <ul class="text-sm text-gray-600 mt-2 list-disc list-inside">
-                            <li>**Agrégation Multi-Affiliée :** Recherche et comparaison automatique des prix sur tous
-                                vos sites.</li>
-                            <li>**Page Produit Unique :** Génération d'une page comparatrice pour votre public.</li>
-                            <li>**Tendances :** Suggestion automatique des produits en forte demande.</li>
+                            <li><strong>Agrégation Multi-Affiliée :</strong> Compatible Amazon, Temu, Shein, AliExpress, Walmart et eBay.</li>
+                            <li><strong>Propositions JEOAH IA :</strong> Slogan, description et aperçu générés automatiquement avec bouton de validation OK.</li>
+                            <li><strong>Publication directe :</strong> Synchronisé avec votre Vitrine Affilié et la Vitrine Centrale.</li>
                         </ul>
                     </div>
 
                     <div id="premium-features-locked" class="mt-6 bg-red-50 p-4 rounded-xl border border-red-200">
                         <p class="font-bold text-red-700 flex items-center">
-                            <i class="fas fa-lock mr-2"></i> Fonctionnalité NEY Verrouillée
+                            <i class="fas fa-lock mr-2"></i> Fonctionnalité JEOAH Verrouillée
                         </p>
-                        <p class="text-sm text-gray-600 mt-2">Passez à **NEY Premium** pour débloquer l'agrégation
+                        <p class="text-sm text-gray-600 mt-2">Passez à <strong>JEOAH Studio</strong> pour débloquer l'agrégation
                             multi-sites et les alertes de réduction en temps réel. <a href="subscription_manager.html"
                                 class="font-semibold text-blue-600 hover:underline">Voir les plans</a>.</p>
                     </div>

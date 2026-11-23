@@ -139,6 +139,37 @@
             renderProductGrids();
         };
 
+        function compressImageToDataUrl(file, maxDim = 480, quality = 0.78) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = reject;
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onerror = () => resolve(reader.result);
+                    img.onload = () => {
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > maxDim || h > maxDim) {
+                            if (w > h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
+                            else { w = Math.round(w * (maxDim / h)); h = maxDim; }
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        try {
+                            resolve(canvas.toDataURL('image/jpeg', quality));
+                        } catch (_) {
+                            resolve(reader.result);
+                        }
+                    };
+                    img.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
         window.switchBetweenVendorAndAffiliate = function (targetRole) {
             const acc = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
             if (!acc) {
@@ -219,25 +250,23 @@
                     </form>
                 </div>
             `;
-            document.getElementById('cust-avatar-file')?.addEventListener('change', (ev) => {
+            document.getElementById('cust-avatar-file')?.addEventListener('change', async (ev) => {
                 const file = ev.target.files?.[0];
                 if (!file) return;
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const input = document.getElementById('cust-store-avatar');
-                    if (input) input.value = reader.result;
-                };
-                reader.readAsDataURL(file);
+                const compressed = await compressImageToDataUrl(file, 360, 0.78);
+                const input = document.getElementById('cust-store-avatar');
+                if (input) input.value = compressed;
+                const avatarImg = document.getElementById('store-avatar-img');
+                if (avatarImg) avatarImg.src = compressed;
             });
-            document.getElementById('cust-hero-file')?.addEventListener('change', (ev) => {
+            document.getElementById('cust-hero-file')?.addEventListener('change', async (ev) => {
                 const file = ev.target.files?.[0];
                 if (!file) return;
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const input = document.getElementById('cust-store-hero');
-                    if (input) input.value = reader.result;
-                };
-                reader.readAsDataURL(file);
+                const compressed = await compressImageToDataUrl(file, 640, 0.78);
+                const input = document.getElementById('cust-store-hero');
+                if (input) input.value = compressed;
+                const heroImg = document.getElementById('store-hero-showcase-img');
+                if (heroImg) heroImg.src = compressed;
             });
             document.getElementById('store-customize-form').addEventListener('submit', async (ev) => {
                 ev.preventDefault();
@@ -262,8 +291,20 @@
                     logoUrl: storeData.avatar,
                     heroImageUrl: storeData.heroImage
                 };
-                localStorage.setItem('jeoahs_vendor_profile', JSON.stringify(updatedProfile));
-                localStorage.setItem('jeoahs_custom_storefront', JSON.stringify(storeData));
+                try {
+                    localStorage.setItem('jeoahs_custom_storefront', JSON.stringify(storeData));
+                    localStorage.setItem('jeoahs_vendor_profile', JSON.stringify(updatedProfile));
+                    localStorage.setItem('jeoahs_affiliate_profile', JSON.stringify({
+                        ...(JSON.parse(localStorage.getItem('jeoahs_affiliate_profile') || '{}')),
+                        username: storeData.name,
+                        bio: storeData.bio,
+                        profilePictureUrl: storeData.avatar,
+                        heroImageUrl: storeData.heroImage
+                    }));
+                } catch (storageErr) {
+                    console.warn('Stockage local saturé, compression supplémentaire appliquée:', storageErr);
+                    alert('Vos informations ont été mises à jour. Si une photo était très lourde, choisissez une image plus légère.');
+                }
                 try {
                     if (authUser?.uid) {
                         await setDoc(doc(db, `artifacts/${appId}/public/data/affiliates`, authUser.uid), {
