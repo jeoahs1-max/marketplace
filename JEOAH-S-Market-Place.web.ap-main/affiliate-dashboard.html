@@ -205,7 +205,7 @@
 
         function detectPlatformName(urlStr) {
             const u = String(urlStr || '').toLowerCase();
-            if (u.includes('amazon.') || u.includes('amzn.') || u.includes('a.co')) return 'Amazon';
+            if (u.includes('amazon') || u.includes('amzn.') || u.includes('a.co')) return 'Amazon';
             if (u.includes('temu.')) return 'Temu';
             if (u.includes('shein.')) return 'Shein';
             if (u.includes('aliexpress.') || u.includes('ali.')) return 'AliExpress';
@@ -411,6 +411,9 @@
                                 <button type="button" onclick="confirmPublishPendingProduct()" class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-6 py-3 font-extrabold text-white shadow-md hover:bg-emerald-700 transition cursor-pointer">
                                     <i class="fas fa-check-circle mr-2"></i> OK — Publier sur ma Vitrine
                                 </button>
+                                <button type="button" onclick="regenerateJeoahProposal()" class="inline-flex items-center justify-center rounded-xl bg-indigo-50 border border-indigo-300 px-4 py-3 text-sm font-bold text-indigo-800 hover:bg-indigo-100 transition cursor-pointer">
+                                    <i class="fas fa-rotate mr-1.5"></i> Autre proposition JEOAH
+                                </button>
                                 <button type="button" onclick="document.getElementById('generation-result').innerHTML=''" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer">
                                     Modifier
                                 </button>
@@ -423,6 +426,46 @@
                     </div>
                 </div>
             `;
+        };
+
+        let proposalVariantIndex = 0;
+        function buildJeoahVariant(platform, name, idx) {
+            const variants = [
+                {
+                    hook: `🔥 Coup de cœur ${platform} : ${name}`,
+                    desc: `Sélectionné par JEOAH sur ${platform} : ${name}. Profitez d'un excellent rapport qualité-prix et commandez en un clic.`
+                },
+                {
+                    hook: `✨ Tendance du moment : ${name}`,
+                    desc: `Très recherché cette semaine ! Découvrez ${name} disponible sur ${platform} ainsi que nos offres comparées multi-sites.`
+                },
+                {
+                    hook: `💎 Bon plan vérifié ${platform} — ${name}`,
+                    desc: `Ne cherchez plus ailleurs : comparez ${name} sur ${platform} et nos plateformes partenaires directement depuis JEOAH'S.`
+                },
+                {
+                    hook: `🚀 Offre recommandée : ${name}`,
+                    desc: `Qualité, style et livraison rapide : ${name} est l'un des articles les plus appréciés sur ${platform}.`
+                },
+                {
+                    hook: `🎯 Choix malin ${platform} : ${name}`,
+                    desc: `Envie de vous faire plaisir ou d'offrir un cadeau ? ${name} est disponible dès maintenant via notre sélection ${platform}.`
+                }
+            ];
+            return variants[idx % variants.length];
+        }
+
+        window.regenerateJeoahProposal = function () {
+            proposalVariantIndex++;
+            const inputUrl = document.getElementById('product-url-input')?.value?.trim() || '';
+            const platform = detectPlatformName(inputUrl);
+            const name = document.getElementById('product-name-input')?.value?.trim() || `Offre ${platform}`;
+            const next = buildJeoahVariant(platform, name, proposalVariantIndex);
+            const hookEl = document.getElementById('product-hook-input');
+            const descEl = document.getElementById('product-description-input');
+            if (hookEl) hookEl.value = next.hook;
+            if (descEl) descEl.value = next.desc;
+            window.generateLink();
         };
 
         window.confirmPublishPendingProduct = async function () {
