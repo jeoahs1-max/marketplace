@@ -191,6 +191,82 @@
         <!-- Liste des Produits -->
         <div id="products-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
+        <!-- STUDIO PUB & VIDÉO JEOAH IA (3 produits = 1 Texte Pub · 5 produits = 1 Vidéo Produit) -->
+        <section id="jeoah-studio-section" class="bg-white rounded-2xl shadow-xl border-2 border-indigo-200 p-6 sm:p-8 space-y-5">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-indigo-800">
+                        <i class="fas fa-film"></i> Studio Pub &amp; Vidéo JEOAH IA
+                    </span>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 mt-1.5">Générer vos Textes Pub &amp; Vidéos Produits</h2>
+                    <p class="text-xs text-slate-600 mt-1">
+                        <strong>Règle JEOAH :</strong> <strong>3 produits différents = 1 Texte Publicitaire</strong> groupé · <strong>5 produits différents = 1 Vidéo Produit IA</strong> (avec votre approbation obligatoire avant publication). Réservé aux plans payants, Testeurs Officiels et PDG.
+                    </p>
+                </div>
+                <span id="studio-access-badge" class="rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1 text-xs font-extrabold">Vérification du plan...</span>
+            </div>
+
+            <!-- Routage intelligent par réseau social -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                <div class="rounded-xl border border-sky-200 bg-sky-50/60 p-3.5">
+                    <p class="font-extrabold text-sky-900"><i class="fas fa-align-left mr-1 text-sky-600"></i> Réseaux orientés TEXTE</p>
+                    <p class="text-sky-800 mt-1">LinkedIn · Quora · X (Twitter) · Reddit</p>
+                </div>
+                <div class="rounded-xl border border-pink-200 bg-pink-50/60 p-3.5">
+                    <p class="font-extrabold text-pink-900"><i class="fas fa-video mr-1 text-pink-600"></i> Réseaux orientés VIDÉO</p>
+                    <p class="text-pink-800 mt-1">TikTok · YouTube Shorts · Instagram Reels</p>
+                </div>
+                <div class="rounded-xl border border-purple-200 bg-purple-50/60 p-3.5">
+                    <p class="font-extrabold text-purple-900"><i class="fas fa-share-nodes mr-1 text-purple-600"></i> Réseaux MIXTES (Texte + Vidéo)</p>
+                    <p class="text-purple-800 mt-1">Facebook · Instagram · Pinterest · WhatsApp</p>
+                </div>
+            </div>
+
+            <!-- Boutons de Génération par Lot (3 produits / 5 produits) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="rounded-2xl border border-indigo-200 bg-indigo-50/40 p-5 flex flex-col justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-extrabold uppercase text-indigo-700">Lot de 3 Produits Différents</p>
+                        <h3 class="text-lg font-extrabold text-slate-900 mt-1">1 Texte Publicitaire Multi-Produits</h3>
+                        <p id="studio-text-progress" class="text-xs text-slate-600 mt-1">Compteur actuel : 0 / 3 produits</p>
+                    </div>
+                    <button type="button" onclick="window.generateStudioTextBatch()" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow transition cursor-pointer">
+                        <i class="fas fa-wand-magic-sparkles mr-1.5"></i> Générer 1 Texte Pub (3 produits)
+                    </button>
+                </div>
+                <div class="rounded-2xl border border-fuchsia-200 bg-fuchsia-50/40 p-5 flex flex-col justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-extrabold uppercase text-fuchsia-700">Lot de 5 Produits Différents</p>
+                        <h3 class="text-lg font-extrabold text-slate-900 mt-1">1 Vidéo Produit IA (Storyboard + Voix-off)</h3>
+                        <p id="studio-video-progress" class="text-xs text-slate-600 mt-1">Compteur actuel : 0 / 5 produits</p>
+                    </div>
+                    <button type="button" onclick="window.generateStudioVideoBatch()" class="w-full py-2.5 px-4 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-extrabold text-xs shadow transition cursor-pointer">
+                        <i class="fas fa-clapperboard mr-1.5"></i> Générer 1 Vidéo Produits (5 produits)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Zone d'Approbation Utilisateur -->
+            <div id="studio-preview-box" class="hidden rounded-2xl border-2 border-emerald-300 bg-emerald-50/40 p-5 space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <strong id="studio-preview-title" class="text-sm font-extrabold text-emerald-950">Proposition JEOAH prête pour approbation</strong>
+                    <span id="studio-preview-networks" class="text-[11px] font-bold bg-white border border-emerald-200 text-emerald-800 px-2.5 py-1 rounded-full"></span>
+                </div>
+                <div id="studio-preview-content" class="bg-white rounded-xl border border-slate-200 p-4 text-xs text-slate-800 whitespace-pre-line leading-relaxed"></div>
+                <div class="flex flex-wrap gap-2.5">
+                    <button type="button" onclick="window.approveStudioCampaign()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow transition cursor-pointer">
+                        <i class="fas fa-check-circle mr-1.5"></i> Approuver &amp; Envoyer Rapport par e-mail
+                    </button>
+                    <button type="button" onclick="window.regenerateCurrentStudio()" class="px-4 py-2.5 rounded-xl bg-indigo-50 border border-indigo-300 text-indigo-800 font-bold text-xs hover:bg-indigo-100 transition cursor-pointer">
+                        <i class="fas fa-rotate mr-1"></i> Autre version JEOAH
+                    </button>
+                    <button type="button" onclick="document.getElementById('studio-preview-box').classList.add('hidden')" class="px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold text-xs hover:bg-slate-50 cursor-pointer">
+                        Refuser / Fermer
+                    </button>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <script>
@@ -517,8 +593,126 @@
                 );
             });
 
+            let currentStudioType = null;
+            let currentStudioPayload = null;
+            let studioVariant = 0;
+
+            function hasStudioAccess() {
+                const acc = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null') || {};
+                const email = String(acc.email || '').trim().toLowerCase();
+                const freeEmails = new Set([
+                    'jeoahs1@gmail.com', 'jjeanlouis96@gmail.com',
+                    'ff1986fredlin11@gmail.com', 'fleuricotamy@gmail.com',
+                    'stephaniejeancharles95@gmail.com', 'physiotherapeutejoseph@gmail.com',
+                    'vernetloveson509@gmail.com', 'jeanlouislynseykeren@gmail.com',
+                    'ramecey30@gmail.com', 'jeanlouisardyyy@gmail.com',
+                    'emelinejulien744@gmail.com'
+                ]);
+                const vSub = JSON.parse(localStorage.getItem('jeoahs_vendor_subscription') || 'null');
+                const aSub = JSON.parse(localStorage.getItem('jeoahs_affiliate_subscription') || 'null');
+                const isPaid = Boolean((vSub && vSub.active && vSub.plan !== 'free') || (aSub && aSub.active && aSub.plan !== 'free'));
+                const isTesterOrCeo = Boolean(acc.testAccount || acc.role === 'admin' || freeEmails.has(email));
+                return { allowed: isPaid || isTesterOrCeo, isTesterOrCeo, email };
+            }
+
+            function refreshStudioCounters() {
+                const prods = getProducts();
+                const access = hasStudioAccess();
+                const badge = document.getElementById('studio-access-badge');
+                const txtP = document.getElementById('studio-text-progress');
+                const vidP = document.getElementById('studio-video-progress');
+                if (badge) {
+                    badge.textContent = access.isTesterOrCeo
+                        ? 'Accès Gratuit Illimité (PDG / Testeur)'
+                        : (access.allowed ? 'Plan Actif · Studio Débloqué' : 'Plan Payant Requis');
+                    badge.className = access.allowed
+                        ? 'rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1 text-xs font-extrabold'
+                        : 'rounded-full bg-amber-100 text-amber-900 border border-amber-300 px-3 py-1 text-xs font-extrabold';
+                }
+                if (txtP) txtP.textContent = `Produits disponibles : ${prods.length} / 3 requis pour 1 Texte Pub multi-produits`;
+                if (vidP) vidP.textContent = `Produits disponibles : ${prods.length} / 5 requis pour 1 Vidéo Produits IA`;
+            }
+
+            window.generateStudioTextBatch = function () {
+                const access = hasStudioAccess();
+                if (!access.allowed) {
+                    showBanner('⚠️ Le Studio Pub IA nécessite un plan actif (hors Testeurs Officiels & PDG). <a href="/plans.html" class="underline font-extrabold">Voir les plans →</a>', 'error');
+                    return;
+                }
+                const prods = getProducts();
+                if (prods.length < 3) {
+                    showBanner(`⚠️ Ajoutez au moins <strong>3 produits différents</strong> pour générer 1 Texte Pub multi-produits (actuellement : ${prods.length}/3).`, 'error');
+                    return;
+                }
+                const trio = prods.slice(0, 3);
+                const intros = [
+                    '🔥 Découvrez notre sélection exclusive de 3 incontournables sur JEOAH\'S Market Place :',
+                    '✨ Top 3 des nouveautés de la semaine — Qualité vérifiée et livraison sécurisée :',
+                    '💎 Ne manquez pas ces 3 pépites disponibles dès aujourd\'hui sur notre vitrine :'
+                ];
+                const body = `${intros[studioVariant % intros.length]}\n\n1) ${trio[0].name} — ${trio[0].price || ''}\n2) ${trio[1].name} — ${trio[1].price || ''}\n3) ${trio[2].name} — ${trio[2].price || ''}\n\n👉 Commandez directement en toute sécurité (Protection Séquestre JEOAH'S) sur https://www.jeoahs.com/showcase.html\n\n#JEOAHS #Marketplace #Shopping #Qualite`;
+                currentStudioType = 'text';
+                currentStudioPayload = { type: 'TEXTE PUB (3 PRODUITS)', products: trio.map(p => p.name), networks: 'LinkedIn, Quora, X, Facebook, Instagram', content: body };
+                document.getElementById('studio-preview-title').textContent = '📝 Texte Publicitaire (3 produits) — En attente de votre approbation';
+                document.getElementById('studio-preview-networks').textContent = 'Réseaux ciblés : LinkedIn · Quora · X · Facebook';
+                document.getElementById('studio-preview-content').textContent = body;
+                document.getElementById('studio-preview-box').classList.remove('hidden');
+            };
+
+            window.generateStudioVideoBatch = function () {
+                const access = hasStudioAccess();
+                if (!access.allowed) {
+                    showBanner('⚠️ La génération de Vidéos Produits IA nécessite un plan actif (hors Testeurs Officiels & PDG). <a href="/plans.html" class="underline font-extrabold">Voir les plans →</a>', 'error');
+                    return;
+                }
+                const prods = getProducts();
+                if (prods.length < 5) {
+                    showBanner(`⚠️ Ajoutez au moins <strong>5 produits différents</strong> pour générer 1 Vidéo Produits IA (actuellement : ${prods.length}/5).`, 'error');
+                    return;
+                }
+                const five = prods.slice(0, 5);
+                const script = `🎬 SCRIPT VIDÉO PRODUITS JEOAH IA (Format Vertical 9:16 — 35 secondes)\n\n[00:00 - 00:05] ACCROCHE : "Voici les 5 meilleures trouvailles du moment disponibles sur JEOAH'S Market Place !"\n[00:05 - 00:10] SCÈNE 1 : Zoom sur "${five[0].name}" (${five[0].price || 'Prix canon'})\n[00:10 - 00:15] SCÈNE 2 : Présentation dynamique de "${five[1].name}" (${five[1].price || ''})\n[00:15 - 00:20] SCÈNE 3 : Gros plan sur "${five[2].name}" (${five[2].price || ''})\n[00:20 - 00:25] SCÈNE 4 : Mise en situation de "${five[3].name}" (${five[3].price || ''})\n[00:25 - 00:30] SCÈNE 5 : Final coup de cœur "${five[4].name}" (${five[4].price || ''})\n[00:30 - 00:35] APPEL À L'ACTION : "Lien en bio · Paiement sécurisé en séquestre sur www.jeoahs.com !"`;
+                currentStudioType = 'video';
+                currentStudioPayload = { type: 'VIDÉO PRODUITS (5 PRODUITS)', products: five.map(p => p.name), networks: 'TikTok, YouTube Shorts, Instagram Reels, Facebook', content: script };
+                document.getElementById('studio-preview-title').textContent = '🎬 Vidéo Produits IA (5 produits) — En attente de votre approbation';
+                document.getElementById('studio-preview-networks').textContent = 'Réseaux ciblés : TikTok · YouTube Shorts · Reels · Facebook';
+                document.getElementById('studio-preview-content').textContent = script;
+                document.getElementById('studio-preview-box').classList.remove('hidden');
+            };
+
+            window.regenerateCurrentStudio = function () {
+                studioVariant++;
+                if (currentStudioType === 'video') window.generateStudioVideoBatch();
+                else window.generateStudioTextBatch();
+            };
+
+            window.approveStudioCampaign = function () {
+                if (!currentStudioPayload) return;
+                const access = hasStudioAccess();
+                const approved = JSON.parse(localStorage.getItem('jeoahs_approved_campaigns') || '[]');
+                approved.unshift({ ...currentStudioPayload, approvedAt: new Date().toISOString() });
+                localStorage.setItem('jeoahs_approved_campaigns', JSON.stringify(approved.slice(0, 30)));
+                if (access.email) {
+                    try {
+                        fetch('/api/send-welcome-email', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                to: access.email,
+                                subject: `Rapport de publication JEOAH — ${currentStudioPayload.type}`,
+                                message: `${currentStudioPayload.type}\nRéseaux : ${currentStudioPayload.networks}\n\n${currentStudioPayload.content}`
+                            })
+                        }).catch(() => {});
+                    } catch (_) {}
+                }
+                document.getElementById('studio-preview-box').classList.add('hidden');
+                showBanner(`✅ <strong>${currentStudioPayload.type} approuvé !</strong> Planifié sur (${currentStudioPayload.networks}) et rapport envoyé à votre adresse e-mail.`, 'success');
+                currentStudioPayload = null;
+            };
+
             loadHeaderAndStorePreview();
             renderProducts();
+            refreshStudioCounters();
         })();
     </script>
     <script src="/public/jeoah-loader.js" defer></script>

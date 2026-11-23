@@ -344,26 +344,18 @@
                 return;
             }
             const productId = `affiliate-${Date.now()}`;
-            const baseNum = Number(String(productPrice).replace(/[^0-9.]/g, '')) || 29.99;
-            const defaultMulti = [
-                { name: sourcePlatform, id: 'direct' },
-                { name: 'Amazon', id: 'jeoahs-20' },
-                { name: 'Temu', id: 'jeoahs-temu' },
-                { name: 'Shein', id: 'jeoahs-shein' },
-                { name: 'AliExpress', id: 'jeoahs-ali' },
-                { name: 'Walmart', id: 'jeoahs-wmt' },
-                { name: 'eBay', id: 'jeoahs-ebay' }
-            ];
-            const uniquePrograms = [];
-            const seenNames = new Set();
-            [...(configuredPrograms.length ? configuredPrograms : []), ...defaultMulti].forEach(p => {
+            // RÈGLE STRICTE : N'inclure dans Comparer (X) QUE les plateformes où l'affilié a réellement configuré un ID + la plateforme du lien collé
+            const uniquePrograms = [{ name: sourcePlatform, id: 'direct' }];
+            const seenNames = new Set([sourcePlatform.toLowerCase()]);
+            configuredPrograms.forEach(p => {
                 const key = p.name.toLowerCase();
                 if (!seenNames.has(key)) { seenNames.add(key); uniquePrograms.push(p); }
             });
-            const multiOffers = uniquePrograms.slice(0, 6).map((prog, idx) => {
+            const multiOffers = uniquePrograms.map((prog) => {
                 const isSource = prog.name.toLowerCase() === sourcePlatform.toLowerCase();
                 return {
                     platform: prog.name,
+                    affiliateTag: prog.id || '',
                     price: isSource ? productPrice : `Comparer sur ${prog.name}`,
                     url: isSource ? generatedLink : `https://www.google.com/search?q=${encodeURIComponent(prog.name + ' ' + productName)}`
                 };
