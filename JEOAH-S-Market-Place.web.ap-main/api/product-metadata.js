@@ -21,8 +21,10 @@ function getMeta(html, names) {
     const reversePattern = new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']${name}["'][^>]*>`, 'i');
     const match = html.match(pattern) || html.match(reversePattern);
     if (match?.[1]) {
-      const val = match[1].trim();
-      if (isValidProductImage(val)) {
+      const val = decodeEntities(match[1].trim());
+      if (name.includes('image')) {
+        if (isValidProductImage(val)) return val;
+      } else if (val) {
         return val;
       }
     }
@@ -73,11 +75,21 @@ function getAmazonPrice(html) {
   return '';
 }
 
+function decodeEntities(str) {
+  return String(str || '')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#x27;/gi, "'");
+}
+
 function getTitle(html) {
   const match = html.match(/<span[^>]+id=["']productTitle["'][^>]*>([\s\S]*?)<\/span>/i) ||
                 html.match(/<h1[^>]+id=["']title["'][^>]*>([\s\S]*?)<\/h1>/i) ||
                 html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  let title = match?.[1]?.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() || '';
+  let title = decodeEntities(match?.[1]?.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() || '');
   title = title.replace(/: Amazon\.[a-z.]+.*$/i, '').replace(/ - Amazon\.[a-z.]+.*$/i, '').trim();
   return title;
 }
@@ -116,8 +128,6 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'URL non autorisee' });
     }
 
-    const isAmazon = target.hostname.includes('amazon');
-
     const response = await fetch(target.href, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -139,6 +149,9 @@ module.exports = async (req, res) => {
       });
     }
 
+    const finalUrl = (response.url || target.href).toLowerCase();
+    const isAmazon = finalUrl.includes('amazon.') || target.hostname.includes('amazon') || target.hostname.includes('a.co') || target.hostname.includes('amzn');
+
     const html = await response.text();
     const jsonLd = getJsonLdProduct(html);
     const amazonImg = isAmazon ? getAmazonProductImage(html) : '';
@@ -154,8 +167,8 @@ module.exports = async (req, res) => {
       finalImg = metaImg;
     }
 
-    const title = getTitle(html) || jsonLd.name || getMeta(html, ['og:title', 'twitter:title']);
-    const desc = jsonLd.description || getMeta(html, ['og:description', 'description', 'twitter:description']);
+    const title = decodeEntities(getTitle(html) || jsonLd.name || getMeta(html, ['og:title', 'twitter:title']));
+    const desc = decodeEntities(jsonLd.description || getMeta(html, ['og:description', 'description', 'twitter:description']));
     const price = amazonPrice || jsonLd.price || getMeta(html, ['product:price:amount', 'og:price:amount']);
 
     return res.status(200).json({

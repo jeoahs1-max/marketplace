@@ -19,30 +19,13 @@
 
             <div id="active-session-box" class="hidden mt-4 rounded-xl border border-indigo-200 bg-indigo-50/80 p-4 space-y-3 text-xs">
                 <p id="active-session-text" class="font-bold text-indigo-950"></p>
-                <div class="space-y-1.5">
-                    <p class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-800">1. Vérifier les Parcours d'Inscription (Onboarding) :</p>
-                    <div class="grid grid-cols-1 gap-1.5">
-                        <button type="button" onclick="startOnboardingFlow('vendeur')" class="rounded-lg bg-blue-600 px-3 py-2 font-extrabold text-white hover:bg-blue-700 transition text-left">
-                            📝 Parcours Inscription Vendeur (Étapes 1 → 2 → 3)
-                        </button>
-                        <button type="button" onclick="startOnboardingFlow('affilie')" class="rounded-lg bg-fuchsia-700 px-3 py-2 font-extrabold text-white hover:bg-fuchsia-800 transition text-left">
-                            📝 Parcours Inscription Affilié (Étapes 1 → 2 → 3)
-                        </button>
-                        <button type="button" onclick="startOnboardingFlow('acheteur')" class="rounded-lg bg-teal-600 px-3 py-2 font-extrabold text-white hover:bg-teal-700 transition text-left">
-                            📝 Parcours Inscription Acheteur Membre (Profil Social)
-                        </button>
-                    </div>
-                </div>
-                <div class="space-y-1.5 pt-2 border-t border-indigo-200/60">
-                    <p class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-800">2. Accès direct aux Espaces &amp; Tableaux de Bord :</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <button type="button" onclick="enterRoleSpace('vendeur')" class="rounded-lg bg-emerald-600 px-3 py-2.5 font-extrabold text-white hover:bg-emerald-700 transition">
-                            🏪 Espace Vendeur
-                        </button>
-                        <button type="button" onclick="enterRoleSpace('affilie')" class="rounded-lg bg-purple-700 px-3 py-2.5 font-extrabold text-white hover:bg-purple-800 transition">
-                            🔗 Espace Affilié
-                        </button>
-                    </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button type="button" onclick="enterRoleSpace('vendeur')" class="rounded-lg bg-emerald-600 px-3 py-2.5 font-extrabold text-white hover:bg-emerald-700 transition">
+                        🏪 Espace Vendeur
+                    </button>
+                    <button type="button" onclick="enterRoleSpace('affilie')" class="rounded-lg bg-purple-700 px-3 py-2.5 font-extrabold text-white hover:bg-purple-800 transition">
+                        🔗 Espace Affilié
+                    </button>
                 </div>
                 <div class="flex items-center justify-between pt-1 border-t border-indigo-200/60">
                     <a href="/affiliate-storefront.html" class="font-bold text-indigo-700 hover:underline">Voir ma Vitrine</a>
