@@ -17,22 +17,6 @@
             <p id="form-description" class="mt-2 text-sm text-slate-600">Retrouvez votre vitrine et votre espace
                 personnel.</p>
 
-            <div id="active-session-box" class="hidden mt-4 rounded-xl border border-indigo-200 bg-indigo-50/80 p-4 space-y-3 text-xs">
-                <p id="active-session-text" class="font-bold text-indigo-950"></p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <button type="button" onclick="enterRoleSpace('vendeur')" class="rounded-lg bg-emerald-600 px-3 py-2.5 font-extrabold text-white hover:bg-emerald-700 transition">
-                        🏪 Espace Vendeur
-                    </button>
-                    <button type="button" onclick="enterRoleSpace('affilie')" class="rounded-lg bg-purple-700 px-3 py-2.5 font-extrabold text-white hover:bg-purple-800 transition">
-                        🔗 Espace Affilié
-                    </button>
-                </div>
-                <div class="flex items-center justify-between pt-1 border-t border-indigo-200/60">
-                    <a href="/affiliate-storefront.html" class="font-bold text-indigo-700 hover:underline">Voir ma Vitrine</a>
-                    <button type="button" onclick="logoutCurrentSession()" class="font-bold text-red-600 hover:underline">Se déconnecter / Autre compte</button>
-                </div>
-            </div>
-
             <form id="auth-form" class="mt-6 space-y-5">
                 <label class="block text-sm font-bold text-slate-700">Adresse e-mail
                     <input id="email" type="email" autocomplete="email" required
@@ -292,13 +276,6 @@
 
             if (shouldRedirect) {
                 location.href = destination(profile);
-            } else {
-                const box = document.getElementById('active-session-box');
-                const txt = document.getElementById('active-session-text');
-                if (box && txt) {
-                    txt.textContent = `Connecté avec ${user.email} ${isTester ? '(Compte Testeur Actif)' : ''} — Choisissez le parcours à vérifier :`;
-                    box.classList.remove('hidden');
-                }
             }
         }
 

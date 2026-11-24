@@ -307,7 +307,7 @@
                 }
                 try {
                     if (authUser?.uid) {
-                        await setDoc(doc(db, `artifacts/${appId}/public/data/affiliates`, authUser.uid), {
+                        const cloudPayload = {
                             storeName: storeData.name,
                             bio: storeData.bio,
                             aboutDetails: storeData.aboutDetails,
@@ -315,8 +315,15 @@
                             location: storeData.location,
                             hours: storeData.hours,
                             profilePictureUrl: storeData.avatar,
-                            heroImageUrl: storeData.heroImage
-                        }, { merge: true });
+                            heroImageUrl: storeData.heroImage,
+                            updatedAt: new Date().toISOString()
+                        };
+                        try {
+                            await setDoc(doc(db, `artifacts/${appId}/public/data/affiliates`, authUser.uid), cloudPayload, { merge: true });
+                        } catch (_) {}
+                        try {
+                            await setDoc(doc(db, 'profiles', authUser.uid), { storefront: cloudPayload }, { merge: true });
+                        } catch (_) {}
                     }
                 } catch (_) {}
                 applyStoreHeaderData();
@@ -499,8 +506,8 @@
                 const mainImg = imgs[0];
                 const numPrice = typeof p.price === 'number' ? p.price : (parseFloat(String(p.price || '22').replace(/[^0-9.]/g, '')) || 22);
                 const displayPrice = `$${numPrice.toFixed(2)}`;
-                const rating = p.rating || '4.8';
-                const reviews = p.reviews || 32;
+                const rating = p.rating || '0.0';
+                const reviews = p.reviews || 0;
                 const hasMultiplePhotos = imgs.length > 1;
 
                 return `
@@ -651,8 +658,24 @@
                         storeData.category = data.category || storeData.category;
                         storeData.hours = data.hours || storeData.hours;
                     }
+                    const profSnap = await getDoc(doc(db, 'profiles', storeId));
+                    if (profSnap.exists() && profSnap.data()?.storefront) {
+                        const sf = profSnap.data().storefront;
+                        storeData.name = sf.storeName || storeData.name;
+                        storeData.bio = sf.bio || storeData.bio;
+                        storeData.aboutDetails = sf.aboutDetails || storeData.bio;
+                        storeData.avatar = sf.profilePictureUrl || storeData.avatar;
+                        storeData.heroImage = sf.heroImageUrl || storeData.heroImage;
+                        storeData.location = sf.location || storeData.location;
+                        storeData.category = sf.category || storeData.category;
+                        storeData.hours = sf.hours || storeData.hours;
+                    }
                 }
             } catch (_) {}
+
+            if (storeData.bio && storeData.bio.includes('[ ]')) {
+                storeData.bio = 'Découvrez ma sélection d\'articles vérifiés sur JEOAH\'S Market Place.';
+            }
 
             applyStoreHeaderData();
 
@@ -675,8 +698,17 @@
                 }
             });
 
-            // Conserver les produits du modèle par défaut + les produits ajoutés par le vendeur en tête
-            storeProducts = [...userAddedProds, ...DEFAULT_STORE_PRODUCTS];
+            // Filtrer les anciens produits de test vides (sans titre réel ou image placeholder verte)
+            const validProds = userAddedProds.filter(p => {
+                const rawName = String(p?.name || p?.title || '').trim();
+                if (!rawName || rawName === 'Produit...' || rawName === 'Produit recommandé') return false;
+                const img = String((Array.isArray(p?.images) && p.images[0]) || p?.imageUrl || p?.image || '');
+                if (img.includes('Produit%20recommand') && !p?.offers?.length) return false;
+                return true;
+            });
+
+            // Conserver uniquement les vrais produits ajoutés
+            storeProducts = [...validProds, ...DEFAULT_STORE_PRODUCTS];
             renderProductGrids();
 
             if (urlParams.get('edit') === '1') {

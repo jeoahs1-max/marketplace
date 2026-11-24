@@ -468,9 +468,20 @@
       window.location.href = '/panier.html';
     };
 
+    function isRealDisplayProduct(p) {
+      if (!p) return false;
+      const rawName = String(p.name || p.title || '').trim();
+      if (!rawName || rawName === 'Produit...' || rawName === 'Produit recommandé') return false;
+      const img = String((Array.isArray(p.images) && p.images[0]) || p.imageUrl || p.image || '');
+      const numPrice = parseFloat(String(p.price || p.priceUsd || 0).replace(/[^0-9.]/g, '')) || 0;
+      if (img.includes('Produit%20recommand') && numPrice <= 0) return false;
+      return true;
+    }
+
     function renderProducts() {
       const q = (document.getElementById('market-search')?.value || '').trim().toLowerCase();
       const visible = products.filter(p => {
+        if (!isRealDisplayProduct(p)) return false;
         const catMatch = selectedCategory === 'all' || String(p.category || '').toLowerCase().includes(selectedCategory.toLowerCase());
         const textMatch = !q || `${p.name || ''} ${p.category || ''} ${p.storeName || ''} ${p.description || ''}`.toLowerCase().includes(q);
         return catMatch && textMatch;
@@ -514,7 +525,7 @@
                   ${p.oldPrice ? `<span class="text-[10px] text-slate-400 line-through">${formatPriceVal(p.oldPrice)}</span>` : ''}
                 </div>
                 <p class="text-[11px] font-bold text-amber-500 mt-1">
-                  <i class="fas fa-star"></i> ${esc(p.rating || '4.8')} <span class="text-slate-400 font-normal">(${esc(p.reviews || 24)})</span>
+                  <i class="fas fa-star"></i> ${esc(p.rating || '0.0')} <span class="text-slate-400 font-normal">(${esc(p.reviews || 0)})</span>
                 </p>
               </div>
             </div>
