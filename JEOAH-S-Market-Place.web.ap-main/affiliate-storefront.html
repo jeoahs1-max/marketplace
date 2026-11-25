@@ -504,11 +504,15 @@
             const renderCard = (p, showBadge = false) => {
                 const imgs = Array.isArray(p.images) && p.images.length ? p.images : [p.imageUrl || p.image || 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=500&q=80'];
                 const mainImg = imgs[0];
-                const numPrice = typeof p.price === 'number' ? p.price : (parseFloat(String(p.price || '22').replace(/[^0-9.]/g, '')) || 22);
-                const displayPrice = `$${numPrice.toFixed(2)}`;
+                const numPrice = typeof p.price === 'number' ? p.price : (parseFloat(String(p.price || '0').replace(/[^0-9.]/g, '')) || 0);
+                const displayPrice = numPrice > 0 ? `$${numPrice.toFixed(2)}` : (p.price || 'Voir le prix');
                 const rating = p.rating || '0.0';
-                const reviews = p.reviews || 0;
+                const reviews = Number(p.reviews || 0);
                 const hasMultiplePhotos = imgs.length > 1;
+                const hasOffers = Array.isArray(p.offers) && p.offers.length > 0;
+                const offerBadgesHtml = hasOffers
+                    ? `<div class="flex flex-wrap gap-1 mt-1.5">${p.offers.map(o => `<span class="px-1.5 py-0.5 rounded bg-purple-50 border border-purple-200 text-[9px] font-extrabold text-purple-800">${esc(o.platform)}</span>`).join('')}</div>`
+                    : '';
 
                 return `
                     <div class="product-card bg-white rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between relative group p-2.5">
@@ -521,7 +525,7 @@
                         ` : ''}
                         <div>
                             <div class="relative h-36 sm:h-40 rounded-xl bg-slate-100 overflow-hidden">
-                                <img id="prod-img-${esc(p.id)}" src="${esc(mainImg)}" alt="${esc(p.name)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onerror="this.src='https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=500&q=80'">
+                                <img id="prod-img-${esc(p.id)}" src="${esc(mainImg)}" alt="${esc(p.name)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onerror="this.src='/public/assets/logo.png'">
                                 ${(showBadge && p.badge) ? `<span class="absolute top-2 left-2 bg-pink-600 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-sm">${esc(p.badge)}</span>` : ''}
                                 ${hasMultiplePhotos ? `<span class="absolute bottom-2 right-2 bg-black/65 text-white text-[10px] font-bold px-2 py-0.5 rounded-full"><i class="fas fa-images mr-1"></i>${imgs.length} photos</span>` : ''}
                             </div>
@@ -534,23 +538,33 @@
                                 <h3 class="font-bold text-slate-900 text-xs sm:text-sm line-clamp-1">${esc(p.name || 'Produit')}</h3>
                                 ${p.slogan ? `<p class="text-[11px] text-purple-700 font-semibold line-clamp-1 mt-0.5">${esc(p.slogan)}</p>` : ''}
                                 <p class="text-sm sm:text-base font-black text-slate-900 mt-1">${esc(displayPrice)}</p>
+                                ${offerBadgesHtml}
                                 <div class="flex items-center justify-between mt-1">
                                     <span class="text-[11px] text-amber-400 font-bold">
-                                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                                        <span class="text-slate-400 font-normal ml-0.5">(${esc(reviews)})</span>
+                                        <i class="fas fa-star"></i> ${esc(rating)}
+                                        <span class="text-slate-400 font-normal ml-0.5">(${reviews})</span>
                                     </span>
                                     ${p.videoUrl ? `<a href="${esc(p.videoUrl)}" target="_blank" rel="noopener" class="text-[10px] font-bold text-pink-600 hover:underline"><i class="fas fa-play-circle"></i> Vidéo</a>` : ''}
                                 </div>
                             </div>
                         </div>
                         <div class="pt-2.5 px-1">
-                            <a href="/payment.html?amount=${encodeURIComponent(numPrice.toFixed(2))}&item=${encodeURIComponent(p.name || 'Produit')}" class="block w-full py-1.5 rounded-lg bg-purple-50 hover:bg-purple-700 text-purple-800 hover:text-white font-bold text-[11px] text-center transition">
-                                Acheter ›
-                            </a>
+                            ${hasOffers ? `
+                                <button type="button" onclick="openStoreCompareModal('${esc(p.id)}')" class="cursor-pointer block w-full py-1.5 rounded-lg bg-purple-50 hover:bg-purple-700 text-purple-800 hover:text-white font-bold text-[11px] text-center transition">
+                                    ${p.offers.length > 1 ? `Comparer (${p.offers.length}) ›` : `Voir sur ${esc(p.offers[0].platform)} ›`}
+                                </button>
+                            ` : `
+                                <a href="/payment.html?amount=${encodeURIComponent(numPrice.toFixed(2))}&item=${encodeURIComponent(p.name || 'Produit')}" class="block w-full py-1.5 rounded-lg bg-purple-50 hover:bg-purple-700 text-purple-800 hover:text-white font-bold text-[11px] text-center transition">
+                                    Acheter ›
+                                </a>
+                            `}
                         </div>
                     </div>
                 `;
             };
+
+            const isAffiliateRole = (authUser?.role || storeData.role || 'affilie') !== 'vendeur';
+            const addProductHref = isAffiliateRole ? '/affiliate-dashboard.html' : '/vendor_product_submission.html';
 
             if (featuredContainer) {
                 const featured = storeProducts.slice(0, 4);
@@ -559,7 +573,7 @@
                     : `<div class="col-span-full py-8 text-center text-slate-500 bg-white rounded-2xl border border-dashed border-purple-200 p-6">
                         <i class="fas fa-box-open text-3xl text-purple-300 mb-2"></i>
                         <p class="font-bold text-slate-700 text-xs">Aucun produit en vedette pour le moment.</p>
-                        <a href="/vendor_product_submission.html" class="inline-block mt-2 px-3 py-1.5 bg-purple-700 text-white font-bold text-xs rounded-xl shadow hover:bg-purple-800">+ Ajouter un produit</a>
+                        <a href="${addProductHref}" class="inline-block mt-2 px-3 py-1.5 bg-purple-700 text-white font-bold text-xs rounded-xl shadow hover:bg-purple-800">+ Ajouter un produit</a>
                        </div>`;
             }
 
@@ -570,10 +584,70 @@
                         <i class="fas fa-store text-3xl text-purple-300 mb-2"></i>
                         <p class="font-bold text-slate-700 text-sm">Votre vitrine est prête !</p>
                         <p class="text-xs text-slate-400 mt-1">Vous n'avez pas encore ajouté de produit. Cliquez ci-dessous pour ajouter votre premier article.</p>
-                        <a href="/vendor_product_submission.html" class="inline-block mt-3 px-4 py-2 bg-purple-700 text-white font-bold text-xs rounded-xl shadow hover:bg-purple-800">+ Ajouter mon premier produit</a>
+                        <a href="${addProductHref}" class="inline-block mt-3 px-4 py-2 bg-purple-700 text-white font-bold text-xs rounded-xl shadow hover:bg-purple-800">+ Ajouter mon premier produit</a>
                        </div>`;
             }
         }
+
+        window.openStoreCompareModal = function (prodId) {
+            const prod = storeProducts.find(item => String(item.id) === String(prodId));
+            if (!prod) return;
+            const offers = Array.isArray(prod.offers) && prod.offers.length ? prod.offers : [];
+            const brandColors = {
+                amazon: 'bg-slate-900 text-amber-400',
+                temu: 'bg-orange-600 text-white',
+                shein: 'bg-black text-white',
+                aliexpress: 'bg-red-600 text-white',
+                walmart: 'bg-blue-600 text-amber-300',
+                ebay: 'bg-emerald-600 text-white'
+            };
+            const getBadgeClass = (name) => {
+                const k = String(name || '').toLowerCase();
+                for (const [key, cls] of Object.entries(brandColors)) {
+                    if (k.includes(key)) return cls;
+                }
+                return 'bg-purple-700 text-white';
+            };
+            let modal = document.getElementById('store-compare-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'store-compare-modal';
+                modal.className = 'fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4';
+                document.body.appendChild(modal);
+            }
+            const cardsHtml = offers.map((offer, idx) => `
+                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between gap-3">
+                    <div>
+                        <div class="flex items-center justify-between gap-2 mb-3">
+                            <span class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold uppercase tracking-wide ${getBadgeClass(offer.platform)}">${esc(offer.platform || 'Partenaire')}</span>
+                            ${idx === 0 ? '<span class="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Offre principale</span>' : '<span class="text-[10px] font-semibold text-slate-400">Comparatif</span>'}
+                        </div>
+                        <div class="aspect-square rounded-xl overflow-hidden bg-slate-50 border border-slate-100 mb-3 flex items-center justify-center">
+                            <img src="${esc(offer.imageUrl || prod.imageUrl || '/public/assets/logo.png')}" alt="${esc(prod.name)}" class="w-full h-full object-contain p-2" onerror="this.src='/public/assets/logo.png'">
+                        </div>
+                        <p class="text-xs font-bold text-slate-800 line-clamp-2">${esc(prod.name)}</p>
+                        <p class="text-sm font-black text-purple-800 mt-1">${esc(offer.price || prod.price || 'Voir le prix')}</p>
+                    </div>
+                    <a href="${esc(offer.url || '#')}" target="_blank" rel="noopener noreferrer" class="block w-full py-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs text-center transition shadow-sm">
+                        Voir sur ${esc(offer.platform)} <i class="fas fa-arrow-up-right-from-square ml-1"></i>
+                    </a>
+                </div>
+            `).join('');
+
+            modal.innerHTML = `
+                <div class="bg-slate-50 rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-purple-200 p-6 sm:p-7 space-y-5">
+                    <div class="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
+                        <div>
+                            <span class="inline-block text-[11px] font-extrabold uppercase tracking-wider text-purple-700 bg-purple-100 px-3 py-1 rounded-full">Comparateur Multi-Plateformes JEOAH'S</span>
+                            <h3 class="text-xl font-black text-slate-900 mt-2">${esc(prod.name)}</h3>
+                            <p class="text-xs text-slate-600 mt-1">Comparez toutes les offres en parallèle et finalisez votre commande directement sur la plateforme choisie.</p>
+                        </div>
+                        <button type="button" onclick="document.getElementById('store-compare-modal').remove()" class="text-slate-400 hover:text-slate-700 text-2xl font-bold leading-none">&times;</button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">${cardsHtml}</div>
+                </div>
+            `;
+        };
 
         function applyStoreHeaderData() {
             document.getElementById('store-name-display').textContent = storeData.name;
@@ -644,6 +718,7 @@
                 storeData.avatar = localAffiliateProfile.profilePictureUrl || storeData.avatar;
             }
 
+            let profileCloudProds = [];
             try {
                 if (storeId) {
                     const snap = await getDoc(doc(db, `artifacts/${appId}/public/data/affiliates`, storeId));
@@ -659,16 +734,22 @@
                         storeData.hours = data.hours || storeData.hours;
                     }
                     const profSnap = await getDoc(doc(db, 'profiles', storeId));
-                    if (profSnap.exists() && profSnap.data()?.storefront) {
-                        const sf = profSnap.data().storefront;
-                        storeData.name = sf.storeName || storeData.name;
-                        storeData.bio = sf.bio || storeData.bio;
-                        storeData.aboutDetails = sf.aboutDetails || storeData.bio;
-                        storeData.avatar = sf.profilePictureUrl || storeData.avatar;
-                        storeData.heroImage = sf.heroImageUrl || storeData.heroImage;
-                        storeData.location = sf.location || storeData.location;
-                        storeData.category = sf.category || storeData.category;
-                        storeData.hours = sf.hours || storeData.hours;
+                    if (profSnap.exists()) {
+                        const profData = profSnap.data();
+                        if (profData?.storefront) {
+                            const sf = profData.storefront;
+                            storeData.name = sf.storeName || storeData.name;
+                            storeData.bio = sf.bio || storeData.bio;
+                            storeData.aboutDetails = sf.aboutDetails || storeData.bio;
+                            storeData.avatar = sf.profilePictureUrl || storeData.avatar;
+                            storeData.heroImage = sf.heroImageUrl || storeData.heroImage;
+                            storeData.location = sf.location || storeData.location;
+                            storeData.category = sf.category || storeData.category;
+                            storeData.hours = sf.hours || storeData.hours;
+                        }
+                        if (Array.isArray(profData?.affiliateProducts)) {
+                            profileCloudProds = profData.affiliateProducts;
+                        }
                     }
                 }
             } catch (_) {}
@@ -679,11 +760,17 @@
 
             applyStoreHeaderData();
 
-            let userAddedProds = [];
+            let userAddedProds = [...profileCloudProds];
             try {
                 if (storeId) {
                     const pSnap = await getDocs(query(collection(db, `artifacts/${appId}/public/data/affiliate_products`), where('affiliateId', '==', storeId)));
-                    userAddedProds = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    const existingCloud = new Set(userAddedProds.map(item => String(item.id)));
+                    pSnap.docs.forEach(d => {
+                        if (!existingCloud.has(String(d.id))) {
+                            userAddedProds.push({ id: d.id, ...d.data() });
+                            existingCloud.add(String(d.id));
+                        }
+                    });
                 }
             } catch (_) {}
 

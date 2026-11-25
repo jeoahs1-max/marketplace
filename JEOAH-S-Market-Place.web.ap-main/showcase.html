@@ -525,7 +525,7 @@
                   ${p.oldPrice ? `<span class="text-[10px] text-slate-400 line-through">${formatPriceVal(p.oldPrice)}</span>` : ''}
                 </div>
                 <p class="text-[11px] font-bold text-amber-500 mt-1">
-                  <i class="fas fa-star"></i> ${esc(p.rating || '0.0')} <span class="text-slate-400 font-normal">(${esc(p.reviews || 0)})</span>
+                  <i class="fas fa-star"></i> ${esc(p.rating || '0.0')} <span class="text-slate-400 font-normal">(${Number(p.reviews || 0)})</span>
                 </p>
               </div>
             </div>

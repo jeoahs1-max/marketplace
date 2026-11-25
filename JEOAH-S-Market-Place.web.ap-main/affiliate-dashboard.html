@@ -344,8 +344,54 @@
                 return;
             }
             const productId = `affiliate-${Date.now()}`;
+            // Construire de VRAIS liens affiliés directs (JAMAIS Google) pour chaque plateforme configurée
+            function buildDirectAffiliatePlatformUrl(platformName, affId, queryTitle) {
+                const rawId = String(affId || '').trim();
+                if (rawId.startsWith('http://') || rawId.startsWith('https://')) return rawId;
+                const cleanQuery = encodeURIComponent(String(queryTitle || '').split(',')[0].slice(0, 70).trim());
+                const p = String(platformName || '').toLowerCase();
+                if (p.includes('amazon')) {
+                    return `https://www.amazon.com/s?k=${cleanQuery}${rawId ? `&tag=${encodeURIComponent(rawId)}` : ''}`;
+                }
+                if (p.includes('shein')) {
+                    return `https://us.shein.com/pdsearch/${cleanQuery}/${rawId ? `?aff_id=${encodeURIComponent(rawId)}` : ''}`;
+                }
+                if (p.includes('aliexpress') || p.includes('ali')) {
+                    return `https://www.aliexpress.com/wholesale?SearchText=${cleanQuery}${rawId ? `&aff_fcid=${encodeURIComponent(rawId)}&aff_short_key=${encodeURIComponent(rawId)}` : ''}`;
+                }
+                if (p.includes('temu')) {
+                    return `https://www.temu.com/search_result.html?search_key=${cleanQuery}${rawId ? `&_x_sessn_id=${encodeURIComponent(rawId)}` : ''}`;
+                }
+                if (p.includes('walmart')) {
+                    return `https://www.walmart.com/search?q=${cleanQuery}${rawId ? `&athbdg=${encodeURIComponent(rawId)}` : ''}`;
+                }
+                if (p.includes('ebay')) {
+                    return `https://www.ebay.com/sch/i.html?_nkw=${cleanQuery}${rawId ? `&campid=${encodeURIComponent(rawId)}` : ''}`;
+                }
+                return `https://www.amazon.com/s?k=${cleanQuery}`;
+            }
+
+            // Avis Conseiller Tendance JEOAH (suit les tendances actuelles)
+            function buildJeoahTrendAdvice(name, priceStr, srcPlat, compProgs) {
+                const low = String(name || '').toLowerCase();
+                const hotKeywords = ['beats', 'headphone', 'casque', 'airpods', 'iphone', 'watch', 'montre', 'parfum', 'fragrance', 'eau de toilette', 'nike', 'adidas', 'makeup', 'serum', 'skincare', 'robe', 'dress', 'sac', 'bag', 'led', 'bluetooth', 'speaker', 'camera', 'fitness', 'yoga'];
+                const isTrending = hotKeywords.some(k => low.includes(k));
+                const hasRealPrice = priceStr && !priceStr.toLowerCase().includes('voir le prix');
+                const verdictTitle = isTrending
+                    ? '✅ Avis Conseiller JEOAH : OUI — Produit très tendance en ce moment !'
+                    : '💡 Avis Conseiller JEOAH : Produit intéressant — vérifiez la demande actuelle';
+                const verdictDetail = isTrending
+                    ? `Excellente sélection ! "${name.slice(0, 60)}" appartient à une catégorie très recherchée cette semaine. Bon potentiel de clics et de commissions.`
+                    : `Ce produit peut convertir si vous mettez en avant un avantage clair ou une promo. ${hasRealPrice ? 'Le prix est bien affiché.' : 'Pensez à afficher le prix exact pour rassurer les acheteurs.'}`;
+                const multiNote = compProgs.length > 0
+                    ? `Vous avez ${compProgs.length + 1} plateformes configurées (${srcPlat} + ${compProgs.map(p => p.name).join(', ')}). JEOAH a préparé les liens affiliés directs pour chacune — décochez ci-dessous toute plateforme où ce produit n'est pas disponible.`
+                    : `Vous n'avez qu'une seule plateforme configurée (${srcPlat}). Ajoutez d'autres IDs dans Partenaires pour activer la comparaison multi-sites.`;
+                return { isTrending, verdictTitle, verdictDetail, multiNote };
+            }
+
             // RÈGLE STRICTE : N'inclure dans Comparer (X) QUE les plateformes où l'affilié a réellement configuré un ID + la plateforme du lien collé
-            const uniquePrograms = [{ name: sourcePlatform, id: 'direct' }];
+            const sourceProgObj = configuredPrograms.find(p => p.name.toLowerCase() === sourcePlatform.toLowerCase());
+            const uniquePrograms = [{ name: sourcePlatform, id: sourceProgObj?.id || 'direct' }];
             const seenNames = new Set([sourcePlatform.toLowerCase()]);
             configuredPrograms.forEach(p => {
                 const key = p.name.toLowerCase();
@@ -356,10 +402,12 @@
                 return {
                     platform: prog.name,
                     affiliateTag: prog.id || '',
-                    price: isSource ? productPrice : `Comparer sur ${prog.name}`,
-                    url: isSource ? generatedLink : `https://www.google.com/search?q=${encodeURIComponent(prog.name + ' ' + productName)}`
+                    price: isSource ? productPrice : `Voir sur ${prog.name}`,
+                    url: isSource ? generatedLink : buildDirectAffiliatePlatformUrl(prog.name, prog.id, productName),
+                    enabled: true
                 };
             });
+            const trendAdvice = buildJeoahTrendAdvice(productName, productPrice, sourcePlatform, comparisonPrograms);
 
             pendingGeneratedProduct = {
                 id: productId,
@@ -382,12 +430,36 @@
                 createdAt: new Date().toISOString()
             };
 
+            const secondaryOffersHtml = multiOffers.length > 1 ? `
+                <div class="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4 space-y-2.5">
+                    <p class="text-xs font-extrabold text-indigo-950"><i class="fas fa-code-compare mr-1.5 text-indigo-600"></i> Offres parallèles avec VOS IDs affiliés (cochez uniquement où le produit existe) :</p>
+                    <div class="space-y-2">
+                        ${multiOffers.map((off, idx) => idx === 0 ? '' : `
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-2 bg-white rounded-lg p-2.5 border border-slate-200 text-xs">
+                                <label class="inline-flex items-center gap-2 font-bold text-slate-800 shrink-0 cursor-pointer">
+                                    <input type="checkbox" checked onchange="togglePendingOffer(${idx}, this.checked)" class="w-4 h-4 accent-indigo-600">
+                                    <span>${off.platform}</span>
+                                    <span class="text-[10px] font-mono text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">${off.affiliateTag || 'ID'}</span>
+                                </label>
+                                <input type="text" placeholder="Prix ${off.platform} (optionnel, ex: $49.99)" oninput="updatePendingOfferField(${idx}, 'price', this.value)" class="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs">
+                                <input type="url" placeholder="Lien produit exact ${off.platform} (optionnel)" oninput="updatePendingOfferField(${idx}, 'url', this.value)" class="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs">
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : '';
+
             const resultDiv = document.getElementById('generation-result');
             resultDiv.innerHTML = `
                 <div class="mt-6 overflow-hidden rounded-2xl border-2 border-indigo-400 bg-white shadow-xl">
                     <div class="bg-indigo-600 text-white px-5 py-3 flex flex-wrap items-center justify-between gap-2">
                         <span class="text-xs font-extrabold uppercase tracking-wider"><i class="fas fa-robot mr-1.5"></i> Proposition de JEOAH prête (${sourcePlatform})</span>
                         <span class="text-xs font-semibold text-indigo-100">Vérifiez puis cliquez sur OK pour publier</span>
+                    </div>
+                    <div class="px-5 py-3 ${trendAdvice.isTrending ? 'bg-emerald-50 border-b border-emerald-200 text-emerald-950' : 'bg-amber-50 border-b border-amber-200 text-amber-950'} text-xs space-y-1">
+                        <p class="font-extrabold">${trendAdvice.verdictTitle}</p>
+                        <p>${trendAdvice.verdictDetail}</p>
+                        <p class="text-[11px] opacity-90"><i class="fas fa-layer-group mr-1"></i> ${trendAdvice.multiNote}</p>
                     </div>
                     <div class="relative aspect-[16/9] max-h-72 w-full overflow-hidden bg-slate-100 flex items-center justify-center">
                         <img src="${productImage}" alt="${productName.replace(/"/g, '&quot;')}" class="h-full w-full object-contain bg-white" onerror="this.src='/public/assets/logo.png'">
@@ -397,6 +469,7 @@
                         <p class="text-sm font-bold uppercase tracking-wide text-indigo-700">${productHook}</p>
                         <h3 class="mt-2 text-2xl font-extrabold leading-tight text-slate-900">${productName}</h3>
                         <p class="mt-3 text-base leading-7 text-slate-600">${productDescription}</p>
+                        ${secondaryOffersHtml}
                         <div class="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
                             <div><p class="text-xs font-semibold uppercase text-slate-500">Prix affiché</p><p class="text-2xl font-extrabold text-blue-700">${productPrice}</p></div>
                             <div class="flex flex-wrap gap-2.5">
@@ -413,11 +486,22 @@
                         </div>
                         <div class="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
                             <button type="button" onclick="copyToClipboard('${generatedLink}')" class="font-semibold text-blue-700 hover:underline"><i class="fas fa-link mr-1"></i>Copier le lien de suivi</button>
-                            <span>Plateforme : <strong>${sourcePlatform}</strong> · Multi-offres générées : ${multiOffers.map(o => o.platform).join(', ')}</span>
+                            <span>Plateforme : <strong>${sourcePlatform}</strong> · Multi-offres directes : ${multiOffers.map(o => o.platform).join(', ')}</span>
                         </div>
                     </div>
                 </div>
             `;
+        };
+
+        window.togglePendingOffer = function (idx, checked) {
+            if (!pendingGeneratedProduct || !pendingGeneratedProduct.offers?.[idx]) return;
+            pendingGeneratedProduct.offers[idx].enabled = Boolean(checked);
+        };
+
+        window.updatePendingOfferField = function (idx, field, val) {
+            if (!pendingGeneratedProduct || !pendingGeneratedProduct.offers?.[idx]) return;
+            const trimmed = String(val || '').trim();
+            if (trimmed) pendingGeneratedProduct.offers[idx][field] = trimmed;
         };
 
         let proposalVariantIndex = 0;
@@ -462,7 +546,10 @@
 
         window.confirmPublishPendingProduct = async function () {
             if (!pendingGeneratedProduct) return;
-            const prod = pendingGeneratedProduct;
+            const prod = {
+                ...pendingGeneratedProduct,
+                offers: (pendingGeneratedProduct.offers || []).filter(o => o.enabled !== false).map(({ enabled, ...rest }) => rest)
+            };
             const subInfo = getAffiliateSubscriptionInfo();
 
             const affiliateProducts = JSON.parse(localStorage.getItem('jeoahs_affiliate_products') || '[]');
@@ -487,7 +574,15 @@
                 } catch (error) {
                     console.warn('Publication Firestore ignorée, conservation locale active.', error);
                 }
+                // Synchronisation multi-appareils (Téléphone <-> Laptop) via profiles/{uid}
+                try {
+                    await setDoc(doc(db, 'profiles', userId), {
+                        affiliateProducts: affiliateProducts.slice(0, 50),
+                        updatedAt: new Date().toISOString()
+                    }, { merge: true });
+                } catch (_) {}
             }
+            if (typeof window.renderAffiliateJeoahStudio === 'function') window.renderAffiliateJeoahStudio();
 
             // Vider proprement les champs pour ne pas laisser l'ancien lien affiché
             ['product-url-input', 'product-name-input', 'product-hook-input', 'product-image-input', 'product-price-input', 'product-description-input'].forEach(id => {
@@ -851,6 +946,19 @@
 
                 </section>
 
+                <!-- Espace Vidéo & Pub JEOAH Studio (Accord Utilisateur) -->
+                <section id="affiliate-jeoah-studio" class="bg-white rounded-2xl shadow-lg border-2 border-purple-200 p-6 space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                        <div>
+                            <span class="inline-block text-[11px] font-extrabold uppercase tracking-wider text-purple-700 bg-purple-100 px-3 py-0.5 rounded-full"><i class="fas fa-film mr-1"></i> Espace Vidéo &amp; Pub JEOAH</span>
+                            <h3 class="text-xl font-extrabold text-slate-900 mt-1">Validation de vos publicités Texte &amp; Vidéo</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Cadence automatique : <strong>3 produits publiés = 1 Pub Texte</strong> · <strong>5 produits publiés = 1 Pub Vidéo</strong> (soumise ici pour votre accord avant diffusion).</p>
+                        </div>
+                        <span id="aff-studio-counter" class="rounded-xl bg-indigo-50 border border-indigo-200 px-3.5 py-2 text-xs font-extrabold text-indigo-800">0 produit publié</span>
+                    </div>
+                    <div id="aff-studio-body" class="space-y-4"></div>
+                </section>
+
                 <!-- Autres sections du tableau de bord (simulées) -->
                 <section class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <!-- Historique des Gains -->
@@ -907,6 +1015,94 @@
         </div>
     </div>
 
+    <script>
+        window.renderAffiliateJeoahStudio = function () {
+            const body = document.getElementById('aff-studio-body');
+            const counterEl = document.getElementById('aff-studio-counter');
+            if (!body) return;
+            const prods = JSON.parse(localStorage.getItem('jeoahs_affiliate_products') || '[]');
+            const count = prods.length;
+            if (counterEl) counterEl.textContent = `${count} produit${count > 1 ? 's' : ''} publié${count > 1 ? 's' : ''}`;
+
+            const textReady = count >= 3;
+            const videoReady = count >= 5;
+            const sample = prods[0] || { name: 'votre produit vedette', price: '', imageUrl: '/public/assets/logo.png' };
+            const approvedList = JSON.parse(localStorage.getItem('jeoahs_affiliate_studio_approved') || '[]');
+            const videoApproved = approvedList.includes('video-' + count);
+            const textApproved = approvedList.includes('text-' + count);
+
+            body.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Carte Pub Texte (dès 3 produits) -->
+                    <div class="rounded-xl border ${textReady ? 'border-indigo-300 bg-indigo-50/40' : 'border-slate-200 bg-slate-50'} p-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-extrabold text-indigo-900"><i class="fas fa-bullhorn mr-1.5 text-indigo-600"></i> Publicité Texte JEOAH</span>
+                            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${textReady ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}">${textReady ? 'Prête pour accord' : `${count}/3 produits`}</span>
+                        </div>
+                        ${textReady ? `
+                            <div class="bg-white rounded-lg p-3 border border-indigo-100 text-xs text-slate-700 leading-relaxed">
+                                🔥 <strong>Sélection Tendance JEOAH'S !</strong> Découvrez <strong>${sample.name}</strong> ${sample.price ? `(${sample.price})` : ''} et comparez nos meilleures offres partenaires directement sur ma vitrine JEOAH'S ! 👉 Commandez en un clic.
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 text-[11px]">
+                                <label class="inline-flex items-center gap-1 font-semibold"><input type="checkbox" checked class="accent-indigo-600"> Facebook</label>
+                                <label class="inline-flex items-center gap-1 font-semibold"><input type="checkbox" checked class="accent-indigo-600"> Instagram</label>
+                                <label class="inline-flex items-center gap-1 font-semibold"><input type="checkbox" checked class="accent-indigo-600"> WhatsApp</label>
+                            </div>
+                            <button type="button" onclick="approveAffiliateStudioAd('text-${count}', 'Publicité Texte')" class="w-full py-2.5 rounded-xl ${textApproved ? 'bg-emerald-600' : 'bg-indigo-600 hover:bg-indigo-700'} text-white font-extrabold text-xs transition cursor-pointer">
+                                ${textApproved ? '✅ Accord donné — Pub Texte validée' : '✅ Donner mon accord & publier'}
+                            </button>
+                        ` : `
+                            <p class="text-xs text-slate-500">Ajoutez encore <strong>${Math.max(0, 3 - count)} produit(s)</strong> pour que JEOAH génère automatiquement votre 1ère publicité texte ici pour votre validation.</p>
+                        `}
+                    </div>
+
+                    <!-- Carte Pub Vidéo (dès 5 produits) -->
+                    <div class="rounded-xl border ${videoReady ? 'border-purple-300 bg-purple-50/40' : 'border-slate-200 bg-slate-50'} p-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-extrabold text-purple-900"><i class="fas fa-video mr-1.5 text-purple-600"></i> Publicité Vidéo JEOAH</span>
+                            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${videoReady ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}">${videoReady ? 'Prête pour accord' : `${count}/5 produits`}</span>
+                        </div>
+                        ${videoReady ? `
+                            <div class="relative rounded-xl overflow-hidden bg-slate-900 text-white p-3 flex items-center gap-3">
+                                <img src="${sample.imageUrl || '/public/assets/logo.png'}" alt="Aperçu vidéo" class="w-16 h-16 rounded-lg object-cover bg-white shrink-0" onerror="this.src='/public/assets/logo.png'">
+                                <div class="text-[11px] space-y-1">
+                                    <p class="font-extrabold text-purple-300">🎬 Script Vidéo 15s (Reels / TikTok / Shorts)</p>
+                                    <p class="text-slate-200 line-clamp-2">« Vous cherchez ${sample.name} au meilleur prix ? Comparez Amazon, Shein &amp; AliExpress en un clic sur ma vitrine JEOAH'S ! »</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 text-[11px]">
+                                <label class="inline-flex items-center gap-1 font-semibold"><input type="checkbox" checked class="accent-purple-600"> TikTok</label>
+                                <label class="inline-flex items-center gap-1 font-semibold"><input type="checkbox" checked class="accent-purple-600"> Instagram Reels</label>
+                                <label class="inline-flex items-center gap-1 font-semibold"><input type="checkbox" checked class="accent-purple-600"> YouTube Shorts</label>
+                                <label class="inline-flex items-center gap-1 font-semibold"><input type="checkbox" checked class="accent-purple-600"> Facebook</label>
+                            </div>
+                            <button type="button" onclick="approveAffiliateStudioAd('video-${count}', 'Publicité Vidéo')" class="w-full py-2.5 rounded-xl ${videoApproved ? 'bg-emerald-600' : 'bg-purple-700 hover:bg-purple-800'} text-white font-extrabold text-xs transition cursor-pointer">
+                                ${videoApproved ? '✅ Accord donné — Pub Vidéo validée' : '✅ Donner mon accord & diffuser la vidéo'}
+                            </button>
+                        ` : `
+                            <p class="text-xs text-slate-500">Ajoutez encore <strong>${Math.max(0, 5 - count)} produit(s)</strong> pour que JEOAH prépare automatiquement votre 1ère publicité vidéo ici et vous demande votre accord.</p>
+                        `}
+                    </div>
+                </div>
+            `;
+        };
+
+        window.approveAffiliateStudioAd = function (adKey, label) {
+            const approvedList = JSON.parse(localStorage.getItem('jeoahs_affiliate_studio_approved') || '[]');
+            if (!approvedList.includes(adKey)) {
+                approvedList.push(adKey);
+                localStorage.setItem('jeoahs_affiliate_studio_approved', JSON.stringify(approvedList));
+            }
+            window.renderAffiliateJeoahStudio();
+            if (typeof window.showCustomModal === 'function') {
+                window.showCustomModal('Accord enregistré !', `JEOAH a bien reçu votre accord pour votre ${label}. Elle est prête pour diffusion sur vos réseaux configurés.`);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => window.renderAffiliateJeoahStudio(), 300);
+        });
+    </script>
 </body>
 
 </html>
