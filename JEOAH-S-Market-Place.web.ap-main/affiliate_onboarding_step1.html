@@ -9,13 +9,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Affilié - Étape 1 : Liens d'Affiliation</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/firebase-config.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -85,11 +86,44 @@
                 window.location.href = '/public/auth.html';
                 return;
             }
-            const retest = new URLSearchParams(window.location.search).get('retest') === '1';
-            if (account.role === 'affilie' && account.onboardingComplete && !retest && !isRoleUpgrade) {
-                // Permettre quand même l'affichage si l'utilisateur ouvre explicitement l'étape 1
+            userId = account.uid || '';
+            try {
+                if (firebaseConfig?.apiKey) {
+                    const app = getApps()[0] || initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+                }
+            } catch (_) {}
+
+            let savedLocal = JSON.parse(localStorage.getItem('jeoahs_affiliate_links') || 'null');
+            let savedCloud = null;
+            if (db && userId) {
+                try {
+                    const snap = await getDoc(doc(db, 'profiles', userId));
+                    if (snap.exists() && Array.isArray(snap.data()?.affiliateLinks) && snap.data().affiliateLinks.length) {
+                        savedCloud = snap.data().affiliateLinks;
+                    }
+                } catch (_) {}
             }
-            affiliateLinks = JSON.parse(localStorage.getItem('jeoahs_affiliate_links') || 'null') || initialMerchants.map(link => ({ ...link }));
+
+            const sourceLinks = (Array.isArray(savedCloud) && savedCloud.some(l => l.base_link && l.base_link.trim()))
+                ? savedCloud
+                : (Array.isArray(savedLocal) && savedLocal.length ? savedLocal : null);
+
+            if (sourceLinks) {
+                // Fusionner les liens sauvegardés avec les marchands de base pour ne rien perdre
+                const merged = sourceLinks.map(l => ({ ...l, icon_svg: getPlatformSvg(l.name) }));
+                initialMerchants.forEach(def => {
+                    if (!merged.some(m => (m.name || '').trim().toLowerCase() === def.name.toLowerCase()) && merged.length < MAX_LINKS) {
+                        merged.push({ ...def });
+                    }
+                });
+                affiliateLinks = merged;
+                localStorage.setItem('jeoahs_affiliate_links', JSON.stringify(affiliateLinks));
+            } else {
+                affiliateLinks = initialMerchants.map(link => ({ ...link }));
+            }
+
             renderAffiliateLinks();
             document.getElementById('loading-indicator').classList.add('hidden');
             document.getElementById('onboarding-content').classList.remove('hidden');
@@ -137,6 +171,12 @@
             if (value.trim()) {
                 document.getElementById(`${field}-${index}`)?.classList.remove('border-red-500');
             }
+            try {
+                localStorage.setItem('jeoahs_affiliate_links', JSON.stringify(affiliateLinks));
+            } catch (_) {}
+            const configuredLinks = affiliateLinks.filter(link => (link.name || '').trim() && (link.base_link || '').trim()).length;
+            const countEl = document.getElementById('link-count');
+            if (countEl) countEl.textContent = `${configuredLinks} / ${MAX_LINKS}`;
         }
 
         function renderAffiliateLinks() {
@@ -185,17 +225,28 @@
 
         window.handleSubmit = async function (event) {
             event.preventDefault();
+            // Lire les valeurs actuelles du DOM (au cas où le navigateur a rempli automatiquement un champ)
+            affiliateLinks.forEach((link, idx) => {
+                const nameEl = document.getElementById(`name-${idx}`);
+                const baseEl = document.getElementById(`base_link-${idx}`);
+                if (nameEl) link.name = nameEl.value.trim();
+                if (baseEl) link.base_link = baseEl.value.trim();
+            });
             const completedLinks = affiliateLinks.filter(link => link.name.trim() && link.base_link.trim());
-            const incomplete = affiliateLinks.find(link => Boolean(link.name.trim()) !== Boolean(link.base_link.trim()));
             if (!completedLinks.length) {
-                showCustomModal('Ajoutez au moins un lien', "Vous pouvez commencer avec Amazon uniquement ou ajouter plusieurs plateformes.");
+                showCustomModal('Ajoutez au moins un lien', "Vous pouvez commencer avec Amazon, Shein ou n'importe quelle plateforme.");
                 return;
             }
-            if (incomplete) {
-                showCustomModal('Lien incomplet', `Complétez ou effacez la ligne ${incomplete.name || 'personnalisée'}.`);
-                return;
-            }
+            // Sauvegarder tous les liens configurés (sans bloquer si certaines plateformes optionnelles restent vides)
             localStorage.setItem('jeoahs_affiliate_links', JSON.stringify(affiliateLinks));
+            if (db && userId) {
+                try {
+                    await setDoc(doc(db, 'profiles', userId), {
+                        affiliateLinks: completedLinks.map(l => ({ name: l.name, base_link: l.base_link })),
+                        updatedAt: new Date().toISOString()
+                    }, { merge: true });
+                } catch (_) {}
+            }
             if (isRoleUpgrade) {
                 localStorage.setItem('jeoahs_affiliate_enabled', 'true');
                 window.location.href = 'affiliate-storefront.html';
