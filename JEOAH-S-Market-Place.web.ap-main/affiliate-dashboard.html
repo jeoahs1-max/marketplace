@@ -354,7 +354,7 @@
                     return `https://www.amazon.com/s?k=${cleanQuery}${rawId ? `&tag=${encodeURIComponent(rawId)}` : ''}`;
                 }
                 if (p.includes('shein')) {
-                    return `https://us.shein.com/pdsearch/${cleanQuery}/${rawId ? `?aff_id=${encodeURIComponent(rawId)}` : ''}`;
+                    return `https://us.shein.com/pdsearch/${cleanQuery}/${rawId ? `?ici=affiliate&aff_id=${encodeURIComponent(rawId)}&url_from=${encodeURIComponent(rawId)}` : ''}`;
                 }
                 if (p.includes('aliexpress') || p.includes('ali')) {
                     return `https://www.aliexpress.com/wholesale?SearchText=${cleanQuery}${rawId ? `&aff_fcid=${encodeURIComponent(rawId)}&aff_short_key=${encodeURIComponent(rawId)}` : ''}`;
@@ -432,7 +432,7 @@
 
             const secondaryOffersHtml = multiOffers.length > 1 ? `
                 <div class="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4 space-y-2.5">
-                    <p class="text-xs font-extrabold text-indigo-950"><i class="fas fa-code-compare mr-1.5 text-indigo-600"></i> Offres parallèles avec VOS IDs affiliés (cochez uniquement où le produit existe) :</p>
+                    <p class="text-xs font-extrabold text-indigo-950"><i class="fas fa-code-compare mr-1.5 text-indigo-600"></i> Offres parallèles avec VOS IDs affiliés — saisissez le prix ou la fourchette (ex: $43 - $105) et décochez si absent :</p>
                     <div class="space-y-2">
                         ${multiOffers.map((off, idx) => idx === 0 ? '' : `
                             <div class="flex flex-col sm:flex-row sm:items-center gap-2 bg-white rounded-lg p-2.5 border border-slate-200 text-xs">
@@ -441,8 +441,9 @@
                                     <span>${off.platform}</span>
                                     <span class="text-[10px] font-mono text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">${off.affiliateTag || 'ID'}</span>
                                 </label>
-                                <input type="text" placeholder="Prix ${off.platform} (optionnel, ex: $49.99)" oninput="updatePendingOfferField(${idx}, 'price', this.value)" class="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs">
-                                <input type="url" placeholder="Lien produit exact ${off.platform} (optionnel)" oninput="updatePendingOfferField(${idx}, 'url', this.value)" class="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs">
+                                <a href="${off.url}" target="_blank" rel="noopener noreferrer" class="shrink-0 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] text-center">🔍 Voir prix</a>
+                                <input type="text" placeholder="Prix ou fourchette (ex: $43 - $105)" oninput="updatePendingOfferField(${idx}, 'price', this.value)" class="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs">
+                                <input type="url" placeholder="Lien affilié exact ${off.platform} (optionnel)" oninput="updatePendingOfferField(${idx}, 'url', this.value)" class="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs">
                             </div>
                         `).join('')}
                     </div>
