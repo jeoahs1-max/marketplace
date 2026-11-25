@@ -555,12 +555,15 @@
             };
             const subInfo = getAffiliateSubscriptionInfo();
 
-            const affiliateProducts = JSON.parse(localStorage.getItem('jeoahs_affiliate_products') || '[]');
+            const prodKey = String(prod.name || '').trim().toLowerCase();
+            const affiliateProducts = JSON.parse(localStorage.getItem('jeoahs_affiliate_products') || '[]')
+                .filter(item => String(item?.name || '').trim().toLowerCase() !== prodKey);
             affiliateProducts.unshift(prod);
             try {
                 localStorage.setItem('jeoahs_affiliate_products', JSON.stringify(affiliateProducts));
                 if (subInfo.active) {
-                    const centralProds = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]');
+                    const centralProds = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]')
+                        .filter(item => String(item?.name || '').trim().toLowerCase() !== prodKey);
                     centralProds.unshift(prod);
                     localStorage.setItem('jeoahs_central_products', JSON.stringify(centralProds));
                 }

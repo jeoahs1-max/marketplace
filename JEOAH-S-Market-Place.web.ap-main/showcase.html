@@ -637,7 +637,16 @@
           snapshot.docs.map(item => ({ id: item.id, ...item.data() })).filter(hasActivePlan).forEach(p => byId.set(String(p.id), p));
         }
       } catch (_) {}
-      products = Array.from(byId.values());
+      // Dédoublonner par nom de produit (garder toujours la version la plus récente pour éviter 3 cartes identiques)
+      const byName = new Map();
+      Array.from(byId.values()).forEach(p => {
+        const key = String(p.name || p.title || p.id).trim().toLowerCase();
+        const prev = byName.get(key);
+        if (!prev || String(p.createdAt || '') >= String(prev.createdAt || '')) {
+          byName.set(key, p);
+        }
+      });
+      products = Array.from(byName.values());
       renderStores();
       renderProducts();
     }

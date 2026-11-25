@@ -794,8 +794,18 @@
                 return true;
             });
 
-            // Conserver uniquement les vrais produits ajoutés
-            storeProducts = [...validProds, ...DEFAULT_STORE_PRODUCTS];
+            // Dédoublonner par nom de produit (garder la version la plus récente)
+            const dedupByName = new Map();
+            validProds.forEach(p => {
+                const key = String(p?.name || p?.title || p?.id).trim().toLowerCase();
+                const prev = dedupByName.get(key);
+                if (!prev || String(p.createdAt || '') >= String(prev.createdAt || '')) {
+                    dedupByName.set(key, p);
+                }
+            });
+
+            // Conserver uniquement les vrais produits ajoutés (sans doublons)
+            storeProducts = [...Array.from(dedupByName.values()), ...DEFAULT_STORE_PRODUCTS];
             renderProductGrids();
 
             if (urlParams.get('edit') === '1') {
