@@ -406,7 +406,7 @@
                     affiliateTag: prog.id || '',
                     price: isSource ? productPrice : `Voir sur ${prog.name}`,
                     url: isSource ? generatedLink : buildDirectAffiliatePlatformUrl(prog.name, prog.id, productName),
-                    enabled: true
+                    enabled: isSource
                 };
             });
             const trendAdvice = buildJeoahTrendAdvice(productName, productPrice, sourcePlatform, comparisonPrograms);
@@ -434,12 +434,12 @@
 
             const secondaryOffersHtml = multiOffers.length > 1 ? `
                 <div class="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4 space-y-2.5">
-                    <p class="text-xs font-extrabold text-indigo-950"><i class="fas fa-code-compare mr-1.5 text-indigo-600"></i> Offres parallèles avec VOS IDs affiliés — saisissez le prix ou la fourchette (ex: $43 - $105) et décochez si absent :</p>
+                    <p class="text-xs font-extrabold text-indigo-950"><i class="fas fa-code-compare mr-1.5 text-indigo-600"></i> Offres parallèles optionnelles — cochez UNIQUEMENT si le produit existe aussi sur ces plateformes et indiquez le prix (ex: $43 - $105) :</p>
                     <div class="space-y-2">
                         ${multiOffers.map((off, idx) => idx === 0 ? '' : `
                             <div class="flex flex-col sm:flex-row sm:items-center gap-2 bg-white rounded-lg p-2.5 border border-slate-200 text-xs">
                                 <label class="inline-flex items-center gap-2 font-bold text-slate-800 shrink-0 cursor-pointer">
-                                    <input type="checkbox" checked onchange="togglePendingOffer(${idx}, this.checked)" class="w-4 h-4 accent-indigo-600">
+                                    <input type="checkbox" id="pending-offer-chk-${idx}" onchange="togglePendingOffer(${idx}, this.checked)" class="w-4 h-4 accent-indigo-600">
                                     <span>${off.platform}</span>
                                     <span class="text-[10px] font-mono text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">${off.affiliateTag || 'ID'}</span>
                                 </label>
@@ -504,7 +504,12 @@
         window.updatePendingOfferField = function (idx, field, val) {
             if (!pendingGeneratedProduct || !pendingGeneratedProduct.offers?.[idx]) return;
             const trimmed = String(val || '').trim();
-            if (trimmed) pendingGeneratedProduct.offers[idx][field] = trimmed;
+            if (trimmed) {
+                pendingGeneratedProduct.offers[idx][field] = trimmed;
+                pendingGeneratedProduct.offers[idx].enabled = true;
+                const chk = document.getElementById(`pending-offer-chk-${idx}`);
+                if (chk) chk.checked = true;
+            }
         };
 
         let proposalVariantIndex = 0;
