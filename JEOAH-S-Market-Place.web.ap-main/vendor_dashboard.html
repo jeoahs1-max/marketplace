@@ -84,7 +84,9 @@
                     return;
                 }
                 userId = user.uid;
-                document.getElementById('user-id-display').textContent = `ID Vendeur: ${userId}`;
+                const savedAcc = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null') || {};
+                const siteCode = savedAcc.accountCode || `JEOAH-${String(savedAcc.uid || userId).slice(0, 8).toUpperCase()}`;
+                document.getElementById('user-id-display').textContent = `Code JEOAH'S : ${siteCode}`;
 
                 // Charger les données du vendeur en temps réel
                 const vendorDocRef = doc(db, `artifacts/${appId}/users/${userId}/vendor_data/profile`);
@@ -472,7 +474,11 @@
                         </div>
                     </div>
                     <div class="mt-4 sm:mt-0 text-sm text-right">
-                        <p id="user-id-display" class="text-gray-400">ID Vendeur: (Chargement...)</p>
+                        <p id="user-id-display" class="text-xs font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full inline-block">Code JEOAH'S : Chargement...</p>
+                        <button type="button" onclick="const acc=JSON.parse(localStorage.getItem('jeoahs_auth_user')||'{}');const code=acc.accountCode||'JEOAH-'+String(acc.uid||'MEMBRE').slice(0,8).toUpperCase();const link=acc.referralLink||(location.origin+'/public/auth.html?ref='+encodeURIComponent(code));navigator.clipboard?.writeText(link).catch(()=>{});alert('Code JEOAH\'S : '+code+'\nLien de parrainage copié :\n'+link+'\n\n⚠️ Un parrainage compte uniquement si la personne s\'inscrit ou achète via ce lien.');"
+                            class="text-purple-700 hover:text-purple-900 font-bold text-xs transition mt-1.5 block ml-auto">
+                            <i class="fas fa-gift mr-1"></i> Copier mon lien de parrainage
+                        </button>
                         <div class="flex flex-wrap justify-end gap-2 mt-2">
                             <a href="affiliate-storefront.html?role=vendeur"
                                 class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-xs shadow hover:from-purple-700 hover:to-pink-700 transition inline-flex items-center gap-1.5">

@@ -114,8 +114,10 @@
                     return;
                 }
                 userId = user.uid;
-                document.getElementById('user-id-display').textContent = `ID Affilié: ${userId}`;
-                document.getElementById('settings-user-id').textContent = `ID Affilié: ${userId}`;
+                const savedAcc = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null') || {};
+                const siteCode = savedAcc.accountCode || `JEOAH-${String(savedAcc.uid || userId).slice(0, 8).toUpperCase()}`;
+                document.getElementById('user-id-display').textContent = `Code JEOAH'S : ${siteCode}`;
+                document.getElementById('settings-user-id').textContent = `Code JEOAH'S : ${siteCode} (UID: ${userId})`;
                 loadClickStats();
 
                 // 1. Charger les données du profil de l'affilié
@@ -636,6 +638,14 @@
             showCustomModal('Lien de vitrine', `Votre lien personnel est prêt : ${link}`);
         }
 
+        window.copyReferralLink = function () {
+            const acc = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null') || {};
+            const code = acc.accountCode || `JEOAH-${String(acc.uid || userId || 'MEMBRE').slice(0, 8).toUpperCase()}`;
+            const refLink = acc.referralLink || `${window.location.origin}/public/auth.html?ref=${encodeURIComponent(code)}`;
+            navigator.clipboard?.writeText(refLink).catch(() => {});
+            showCustomModal('Lien de Parrainage JEOAH\'S copié !', `Votre Code Unique : ${code}\n\nLien : ${refLink}\n\n⚠️ Règle officielle : un parrainage est comptabilisé uniquement lorsque la personne s'inscrit ou achète via votre lien. Ce code sert aussi à vos Badges Certifiés.`);
+        };
+
         window.activateVendorRole = function () {
             const account = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
             if (!account) {
@@ -809,7 +819,11 @@
                         </div>
                     </div>
                     <div class="mt-4 sm:mt-0 text-sm text-right">
-                        <p id="user-id-display" class="text-gray-400">ID Affilié: (Chargement...)</p>
+                        <p id="user-id-display" class="text-xs font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full inline-block">Code JEOAH'S : Chargement...</p>
+                        <button type="button" onclick="copyReferralLink()"
+                            class="text-purple-700 hover:text-purple-900 font-bold text-xs transition mt-1.5 block ml-auto">
+                            <i class="fas fa-gift mr-1"></i> Copier mon lien de parrainage
+                        </button>
                         <a href="subscription_manager.html"
                             class="text-blue-600 hover:text-blue-800 font-semibold transition mt-1 block flex items-center justify-end">
                             <i class="fas fa-star mr-1 text-yellow-500"></i> <span id="subscription-link-text">Débloquer

@@ -73,7 +73,11 @@
         const status = document.getElementById('auth-status');
         const selectedPlan = new URLSearchParams(location.search).get('plan');
         const selectedPlanRole = new URLSearchParams(location.search).get('planRole');
-        const referralCode = new URLSearchParams(location.search).get('ref');
+        const urlRefCode = new URLSearchParams(location.search).get('ref');
+        if (urlRefCode) {
+            try { localStorage.setItem('jeoahs_referred_by', urlRefCode.trim()); } catch (_) {}
+        }
+        const referralCode = urlRefCode || localStorage.getItem('jeoahs_referred_by') || null;
         const testerEmails = new Set([
             'ff1986fredlin11@gmail.com', 'fleuricotamy@gmail.com',
             'stephaniejeancharles95@gmail.com', 'physiotherapeutejoseph@gmail.com',
