@@ -64,6 +64,11 @@
 
 <script>
   (function () {
+    // Verrou unique : empêche absolument 2 instances de JEOAH ou 2 voix en même temps
+    if (window.__jeoahWidgetBound) return;
+    window.__jeoahWidgetBound = true;
+    window.__jeoahSpeechToken = (window.__jeoahSpeechToken || 0);
+
     const panel = document.getElementById('jeoah-panel');
     const openBtn = document.getElementById('jeoah-open');
     const closeBtn = document.getElementById('jeoah-close');
@@ -90,6 +95,11 @@
     };
 
     function stopAllSpeech() {
+      window.__jeoahSpeechToken = (window.__jeoahSpeechToken || 0) + 1;
+      if (window.__jeoahActiveAudio) {
+        try { window.__jeoahActiveAudio.pause(); window.__jeoahActiveAudio.currentTime = 0; } catch (_) {}
+        window.__jeoahActiveAudio = null;
+      }
       if (currentAudio) {
         try { currentAudio.pause(); currentAudio.currentTime = 0; } catch (_) {}
         currentAudio = null;
@@ -391,27 +401,36 @@
       const cleanText = cleanSpeechText(text);
       if (!cleanText) return;
       stopAllSpeech();
+      const myToken = window.__jeoahSpeechToken;
       const selectedLanguage = (!language || language === 'auto') ? (localStorage.getItem('jeoahs-lang') || 'fr') : language;
       const locale = (languageConfig[selectedLanguage] || languageConfig.fr).locale;
 
-      // Lecture immédiate via la synthèse vocale du navigateur pour éviter tout blocage d'autoplay après un appel réseau
+      // Voix professionnelle unique OpenAI HD (/api/tts) — annule toute ancienne lecture si un nouveau message arrive
       try {
-        const res = await fetch('/api/tts.js', {
+        const res = await fetch('/api/tts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: cleanText, persona: 'jeoah', language: selectedLanguage })
         });
+        if (myToken !== window.__jeoahSpeechToken) return;
         const contentType = res.headers.get('content-type') || '';
         if (res.ok && contentType.includes('audio/')) {
           const blob = await res.blob();
+          if (myToken !== window.__jeoahSpeechToken) return;
           const url = URL.createObjectURL(blob);
+          if ('speechSynthesis' in window) { try { window.speechSynthesis.cancel(); } catch (_) {} }
           currentAudio = new Audio(url);
-          currentAudio.onended = () => URL.revokeObjectURL(url);
+          window.__jeoahActiveAudio = currentAudio;
+          currentAudio.onended = () => {
+            URL.revokeObjectURL(url);
+            if (window.__jeoahActiveAudio === currentAudio) window.__jeoahActiveAudio = null;
+          };
           await currentAudio.play();
           return;
         }
       } catch (_) {}
 
+      if (myToken !== window.__jeoahSpeechToken) return;
       speakBrowserMasculine(cleanText, locale);
     }
 

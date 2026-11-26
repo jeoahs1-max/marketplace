@@ -10,7 +10,7 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 && !admin.apps.length) {
   }
 }
 
-const modelFor = prompt => /analyse|rapport|formation|publicit[eé]|traduction|description|complexe/i.test(prompt || '') ? (process.env.JEOAH_COMPLEX_MODEL || 'gpt-5.6-luna') : (process.env.JEOAH_MODEL || 'gpt-5.6-luna');
+const modelFor = prompt => /analyse|rapport|formation|publicit[eé]|traduction|description|complexe/i.test(prompt || '') ? (process.env.JEOAH_COMPLEX_MODEL || 'gpt-4o') : (process.env.JEOAH_MODEL || 'gpt-4o-mini');
 const languageNames = { auto: 'la langue utilisee dans le dernier message de l utilisateur', fr: 'francais', ht: 'kreyol ayisyen', en: 'anglais', es: 'espagnol', zh: 'chinois simplifie' };
 const unavailableReplies = {
   fr: 'Je peux vous guider maintenant en mode intégré. Demandez-moi votre inscription, votre vitrine, un produit, une suggestion publicitaire ou votre parcours.',
@@ -56,10 +56,23 @@ Tes responsabilites essentielles :
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return res.status(200).json({ reply: unavailableReplies[selectedLanguage], model: 'local', local: true });
   try {
-    const response = await fetch('https://api.openai.com/v1/responses', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` }, body: JSON.stringify({ model, input: [{ role: 'developer', content: system }, ...memory.slice(-10).map(item => ({ role: item.role === 'assistant' ? 'assistant' : 'user', content: item.content })), { role: 'user', content: prompt }], text: { format: { type: 'text' }, verbosity: 'medium' }, reasoning: { effort: 'medium', summary: 'auto' }, tools: [], store: true }) });
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        temperature: 0.6,
+        max_tokens: 450,
+        messages: [
+          { role: 'system', content: system },
+          ...memory.slice(-8).map(item => ({ role: item.role === 'assistant' ? 'assistant' : 'user', content: item.content })),
+          { role: 'user', content: prompt }
+        ]
+      })
+    });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) return res.status(200).json({ reply: unavailableReplies[selectedLanguage], model: 'local', local: true, providerError: true, providerStatus: response.status, providerMessage: data.error?.message || 'OpenAI a refusé la demande.' });
-    const reply = data.output_text || data.output?.flatMap(item => item.content || []).map(item => item.text || '').join('') || 'Je n’ai pas de réponse pour le moment.';
+    const reply = data.choices?.[0]?.message?.content?.trim() || 'Je n’ai pas de réponse pour le moment.';
     if (admin.apps.length) await admin.firestore().collection('jeoah_conversations').add({ role, plan, language: selectedLanguage, prompt, reply, model, createdAt: admin.firestore.FieldValue.serverTimestamp() });
     return res.status(200).json({ reply, model });
   } catch (error) {
