@@ -39,7 +39,7 @@ module.exports = async (req, res) => {
 
   const selectedLanguage = languageNames[language] ? language : 'fr';
   const responseLanguage = languageNames[selectedLanguage];
-  const model = process.env.NEY_FAST_MODEL || 'gpt-5.6-terra';
+  const model = process.env.NEY_FAST_MODEL || 'gpt-4o';
 
   const system = `Tu es Ney (dérivé de Neyslyne), la Responsable Service Client & Support de la marketplace JEOAH'S.
 Réponds uniquement en ${responseLanguage}.
@@ -47,7 +47,7 @@ Ton ton est féminin, doux, souriant, chaleureux, rassurant et très professionn
 Rôle actuel de l'interlocuteur : ${role}${userName ? ` (Nom : ${userName})` : ''}.
 Règles métier JEOAH'S :
 1. Si l'interlocuteur est un "visiteur" non inscrit qui souhaite créer un compte, ouvrir une boutique, devenir vendeur/affilié ou suivre une commande personnelle, explique-lui avec douceur qu'un compte est nécessaire et oriente-le vers ton collègue JEOAH (page Connexion / Inscription : /public/auth.html) qui l'accompagnera étape par étape.
-2. Pour les commandes et paiements : les fonds sont protégés en séquestre jusqu'à confirmation de la livraison. Des frais de service de 3% s'appliquent côté acheteur pour sécuriser la transaction. Moyens de paiement prévus : Carte/Stripe, PayPal, Wise, MonCash et NatCash. Pour MonCash et NatCash, le transfert s'effectue vers le numéro officiel +509 3740 1113 au nom de Jasmine Jean-Louis, et le client doit obligatoirement ajouter les frais de retrait au montant envoyé.
+2. Pour les commandes et paiements : les fonds sont protégés en séquestre jusqu'à confirmation de la livraison. Des frais de service de 3% s'appliquent côté acheteur pour sécuriser la transaction. Moyens de paiement actifs : Carte Visa/Mastercard & PayPal (via Fygaro), Payoneer Business (support@jeoahs.com — Jeoahs Market), MonCash (+509 3740 1113) et NatCash (+509 4317-9773) au nom de Jasmine Jean-Louis, avec frais de retrait inclus et capture de dépôt obligatoire.
 3. Pour les livraisons et litiges : chaque vendeur fixe ses délais. En cas de retard supérieur à 7 jours ou de problème sur un article, tu prends en charge l'ouverture d'un dossier de réclamation/médiation.
 4. Pour toute question technique serveur réservée à l'administration, rappelle que l'ingénieur IA Jack et ton interface administrative sont disponibles dans l'espace Admin.
 Sois concise (2 à 4 phrases fluides faciles à écouter à l'oral) et ne répète jamais mot pour mot une réponse précédente.`;
@@ -58,7 +58,7 @@ Sois concise (2 à 4 phrases fluides faciles à écouter à l'oral) et ne répè
   }
 
   try {
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -66,18 +66,16 @@ Sois concise (2 à 4 phrases fluides faciles à écouter à l'oral) et ne répè
       },
       body: JSON.stringify({
         model,
-        input: [
-          { role: 'developer', content: system },
+        temperature: 0.6,
+        max_tokens: 400,
+        messages: [
+          { role: 'system', content: system },
           ...memory.slice(-8).map(item => ({
             role: item.role === 'assistant' ? 'assistant' : 'user',
             content: item.content
           })),
           { role: 'user', content: prompt }
-        ],
-        text: { format: { type: 'text' }, verbosity: 'medium' },
-        reasoning: { effort: 'low', summary: 'auto' },
-        tools: [],
-        store: true
+        ]
       })
     });
 
@@ -91,7 +89,7 @@ Sois concise (2 à 4 phrases fluides faciles à écouter à l'oral) et ne répè
       });
     }
 
-    const reply = data.output_text || data.output?.flatMap(item => item.content || []).map(item => item.text || '').join('') || fallbackReplies[selectedLanguage];
+    const reply = data.choices?.[0]?.message?.content?.trim() || fallbackReplies[selectedLanguage];
 
     if (admin.apps.length) {
       await admin.firestore().collection('conversations').add({

@@ -31,7 +31,7 @@ async function authenticate(req) {
 
 function chooseModel(task) {
   const complex = /rapport|analyse|planif|coordonn|décision|decision|statistique|formation|campagne|probl[eè]me/i.test(task || '');
-  return complex ? (process.env.NEY_COMPLEX_MODEL || 'gpt-4o-mini') : (process.env.NEY_FAST_MODEL || 'gpt-4o-mini');
+  return complex ? (process.env.NEY_COMPLEX_MODEL || 'gpt-4o') : (process.env.NEY_FAST_MODEL || 'gpt-4o');
 }
 
 const languageNames = { auto: 'la langue utilisee dans le dernier message administrateur', fr: 'francais', ht: 'kreyol ayisyen', en: 'anglais', es: 'espagnol', zh: 'chinois' };
@@ -83,14 +83,23 @@ RÈGLES IMPORTANTES DE SÉCURITÉ ET PAIEMENTS :
 3. Rappelle toujours que les frais de retrait ne dépendent pas de JEOAH'S, mais dépendent exclusivement de la maison de transfert ou opérateur concerné (MonCash, Natcash, Western Union, CAM Transfert, Unitransfert, Wise, PayPal, etc.).
 4. SÉQUESTRE ET DÉBLOCAGE DES FONDS : Les vendeurs ne reçoivent JAMAIS directement l'argent des acheteurs. Les fonds sont obligatoirement bloqués en séquestre sur JEOAH'S. La somme n'est débloquée dans le solde retirable du vendeur QU'APRÈS accord et confirmation formelle de livraison par l'acheteur (« Rapport / Confirmation de réception acheteur »). Lors de l'audit d'un retrait pour l'Administratrice, tu vérifies toujours que la commande correspondante a bien reçu le rapport/accord de livraison de l'acheteur avant de donner ton feu vert pour validation.
 ${statsSummary} ${busSummary} Sois concise, humaine, structurée et précise. Ne répète pas les formulations déjà présentes dans l'historique.`;
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model, input: [{ role: 'developer', content: system }, ...memory.slice(-10).map(item => ({ role: item.role === 'assistant' ? 'assistant' : 'user', content: item.content })), { role: 'user', content: prompt }], text: { format: { type: 'text' }, verbosity: 'medium' }, reasoning: { effort: 'medium', summary: 'auto' }, tools: [], store: true })
+      body: JSON.stringify({
+        model,
+        temperature: 0.5,
+        max_tokens: 550,
+        messages: [
+          { role: 'system', content: system },
+          ...memory.slice(-8).map(item => ({ role: item.role === 'assistant' ? 'assistant' : 'user', content: item.content })),
+          { role: 'user', content: prompt }
+        ]
+      })
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) return res.status(200).json({ reply: 'Ney fonctionne en mode sécurisé local. Le fournisseur IA avancé a refusé cette demande.', model: 'local', local: true, providerError: true, providerStatus: response.status, providerMessage: data.error?.message || 'OpenAI a refusé la demande.' });
-    const reply = data.output_text || data.output?.flatMap(item => item.content || []).map(item => item.text || '').join('') || 'Aucune réponse.';
+    const reply = data.choices?.[0]?.message?.content?.trim() || 'Aucune réponse.';
     if (admin.apps.length) {
       await admin.firestore().collection('ney_admin_memory').add({ userId: user.uid, prompt, reply, model, language, createdAt: admin.firestore.FieldValue.serverTimestamp() });
     }

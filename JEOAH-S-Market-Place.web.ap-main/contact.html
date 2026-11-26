@@ -444,27 +444,41 @@
                 if (!neyVoiceEnabled) return;
                 const cleanText = cleanNeySpeechText(text);
                 if (!cleanText) return;
+                window.__neySpeechToken = (window.__neySpeechToken || 0) + 1;
+                const myToken = window.__neySpeechToken;
+                if (window.__neyActiveAudio) {
+                    try { window.__neyActiveAudio.pause(); window.__neyActiveAudio.currentTime = 0; } catch (_) {}
+                    window.__neyActiveAudio = null;
+                }
                 stopNeySpeech();
                 const selectedLang = lang || currentLang || 'fr';
                 const locale = (neyVoiceLabels[selectedLang] || neyVoiceLabels.fr).locale;
 
                 try {
-                    const res = await fetch('/api/tts.js', {
+                    const res = await fetch('/api/tts', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ text: cleanText, persona: 'ney', language: selectedLang })
                     });
+                    if (myToken !== window.__neySpeechToken) return;
                     const contentType = res.headers.get('content-type') || '';
                     if (res.ok && contentType.includes('audio/')) {
                         const blob = await res.blob();
+                        if (myToken !== window.__neySpeechToken) return;
                         const url = URL.createObjectURL(blob);
+                        if ('speechSynthesis' in window) { try { window.speechSynthesis.cancel(); } catch (_) {} }
                         neyCurrentAudio = new Audio(url);
-                        neyCurrentAudio.onended = () => URL.revokeObjectURL(url);
+                        window.__neyActiveAudio = neyCurrentAudio;
+                        neyCurrentAudio.onended = () => {
+                            URL.revokeObjectURL(url);
+                            if (window.__neyActiveAudio === neyCurrentAudio) window.__neyActiveAudio = null;
+                        };
                         await neyCurrentAudio.play();
                         return;
                     }
                 } catch (_) {}
 
+                if (myToken !== window.__neySpeechToken) return;
                 speakNeyBrowserFeminine(cleanText, locale);
             }
 

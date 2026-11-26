@@ -29,7 +29,7 @@ async function getAdminUser(req) {
 
 function selectModel(task) {
   const complex = /refactor|architecture|security|migration|performance|database|deploy|bug|test/i.test(task || '');
-  return complex ? (process.env.JACK_COMPLEX_MODEL || 'gpt-5.6-sol') : (process.env.JACK_FAST_MODEL || 'gpt-5.6-sol');
+  return complex ? (process.env.JACK_COMPLEX_MODEL || 'gpt-4o') : (process.env.JACK_FAST_MODEL || 'gpt-4o');
 }
 
 function assertSafeWorkflow({ environment, testsPassed, action }) {
@@ -59,22 +59,22 @@ module.exports = async (req, res) => {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) return res.status(200).json({ reply: 'Jack est configuré en mode sécurisé. Ajoutez OPENAI_API_KEY pour activer son analyse IA.', model: 'local', workflow });
 
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model,
-        input: [{ role: 'developer', content: system }, { role: 'user', content: prompt }],
-        text: { format: { type: 'text' }, verbosity: 'medium' },
-        reasoning: { effort: 'medium', summary: 'auto' },
-        tools: [],
-        store: true,
-        include: ['reasoning.encrypted_content', 'web_search_call.action.sources']
+        temperature: 0.3,
+        max_tokens: 600,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: prompt }
+        ]
       })
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) return res.status(502).json({ error: 'Moteur Jack indisponible.', providerStatus: response.status });
-    const reply = data.output_text || data.output?.flatMap(item => item.content || []).map(item => item.text || '').join('') || 'Aucune analyse disponible.';
+    const reply = data.choices?.[0]?.message?.content?.trim() || 'Aucune analyse disponible.';
     if (admin.apps.length) {
       await admin.firestore().collection('jack_technical_memory').add({ userId: user.uid, prompt, reply, model, environment, workflow, testsPassed, createdAt: admin.firestore.FieldValue.serverTimestamp() });
     }

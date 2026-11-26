@@ -10,7 +10,7 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 && !admin.apps.length) {
   }
 }
 
-const modelFor = prompt => /analyse|rapport|formation|publicit[eé]|traduction|description|complexe/i.test(prompt || '') ? (process.env.JEOAH_COMPLEX_MODEL || 'gpt-4o') : (process.env.JEOAH_MODEL || 'gpt-4o-mini');
+const modelFor = prompt => /analyse|rapport|formation|publicit[eé]|traduction|description|complexe/i.test(prompt || '') ? (process.env.JEOAH_COMPLEX_MODEL || 'gpt-4o') : (process.env.JEOAH_MODEL || 'gpt-4o');
 const languageNames = { auto: 'la langue utilisee dans le dernier message de l utilisateur', fr: 'francais', ht: 'kreyol ayisyen', en: 'anglais', es: 'espagnol', zh: 'chinois simplifie' };
 const unavailableReplies = {
   fr: 'Je peux vous guider maintenant en mode intégré. Demandez-moi votre inscription, votre vitrine, un produit, une suggestion publicitaire ou votre parcours.',
