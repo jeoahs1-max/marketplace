@@ -247,6 +247,10 @@
                 return;
             }
 
+            const CURRENCY_TO_USD = { USD: 1, HTG: 1 / 131, EUR: 1.09, CAD: 0.73, DOP: 1 / 60, MXN: 1 / 17.5 };
+            const currency = document.getElementById('product-currency')?.value || 'USD';
+            const priceUsd = +(price * (CURRENCY_TO_USD[currency] || 1)).toFixed(2);
+
             const account = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
             const internal = isInternalEmail(account?.email);
             const prodId = editingProductId || `vendor-${Date.now()}`;
@@ -256,8 +260,10 @@
                 slogan,
                 category,
                 description,
-                price,
-                priceUsd: price,
+                price: priceUsd,
+                priceUsd,
+                currency,
+                originalPrice: price,
                 stock,
                 images: photos,
                 imageUrl,
@@ -299,10 +305,76 @@
                     if (subStatus.active && !internal) await setDoc(doc(db, `artifacts/${appId}/public/data/products`, prodId), productData, { merge: true });
                 } catch (_) {}
             }
+            if (account?.email) {
+                fetch('/api/user-sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: account.email, vendorProducts: [productData] })
+                }).catch(() => {});
+            }
 
-            showCustomModal("Succès", `Le produit "${name}" (${photos.length} photo(s)) a été enregistré dans votre vitrine !`);
+            showCustomModal("Succès", `Le produit "${name}" (${photos.length} photo(s) · ${price} ${currency} ≈ $${priceUsd} USD) a été enregistré dans votre vitrine !`);
             resetForm();
         }
+
+        const VENDOR_CURRENCY_TO_USD = { USD: 1, HTG: 1 / 131, EUR: 1.09, CAD: 0.73, DOP: 1 / 60, MXN: 1 / 17.5 };
+        function updateVendorPricePreview() {
+            const val = parseFloat(document.getElementById('product-price')?.value || '0');
+            const cur = document.getElementById('product-currency')?.value || 'USD';
+            const out = document.getElementById('product-price-usd-preview');
+            if (!out) return;
+            if (!val || val <= 0 || cur === 'USD') { out.textContent = ''; return; }
+            const usd = (val * (VENDOR_CURRENCY_TO_USD[cur] || 1)).toFixed(2);
+            out.textContent = `≈ $${usd} USD affiché aux acheteurs internationaux`;
+        }
+        document.getElementById('product-price')?.addEventListener('input', updateVendorPricePreview);
+        document.getElementById('product-currency')?.addEventListener('change', updateVendorPricePreview);
+
+        window.askJeoahToFillFromPhoto = async function () {
+            const statusEl = document.getElementById('jeoah-photo-ai-status');
+            const btn = document.getElementById('jeoah-analyze-photo-btn');
+            const firstPhoto = currentVendorPhotos[0] || document.getElementById('product-image-url-1')?.value?.trim() || '';
+            if (!firstPhoto) {
+                showCustomModal('Ajoutez d\'abord une photo', 'Téléchargez une photo ou prenez-en une avec la caméra, puis cliquez sur « Analyser ma photo avec JEOAH IA ».');
+                return;
+            }
+            if (statusEl) {
+                statusEl.textContent = '✨ JEOAH observe votre photo et prépare le Titre, le Slogan et la Description...';
+                statusEl.classList.remove('hidden');
+            }
+            if (btn) btn.disabled = true;
+            try {
+                const lang = (localStorage.getItem('jeoahs-lang') || 'fr').slice(0, 2);
+                const acc = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null') || {};
+                const res = await fetch('/api/jeoah', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: 'Regarde attentivement cette photo de produit vendeur et reponds UNIQUEMENT au format strict en 3 lignes sans markdown ni asterisques:\nTITRE: <titre vendeur court et precis>\nSLOGAN: <slogan accrocheur court>\nDESCRIPTION: <description professionnelle de 2 phrases mettant en valeur qualite et usage>',
+                        language: lang,
+                        role: 'vendeur',
+                        email: acc.email || '',
+                        isTester: Boolean(acc.testAccount),
+                        imageDataUrl: firstPhoto.startsWith('data:image/') ? firstPhoto : ''
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                const reply = String(data.reply || '');
+                const titleM = reply.match(/TITRE\s*:\s*(.+)/i);
+                const sloganM = reply.match(/SLOGAN\s*:\s*(.+)/i);
+                const descM = reply.match(/DESCRIPTION\s*:\s*([\s\S]+)/i);
+                if (titleM?.[1]) document.getElementById('product-name').value = titleM[1].replace(/[*_#`]+/g, '').trim();
+                if (sloganM?.[1]) document.getElementById('product-slogan').value = sloganM[1].replace(/[*_#`]+/g, '').trim();
+                if (descM?.[1]) document.getElementById('product-description').value = descM[1].replace(/[*_#`]+/g, '').trim();
+                if (statusEl) {
+                    statusEl.textContent = '✅ JEOAH a pré-rempli votre Titre, Slogan et Description d\'après votre photo ! Vérifiez les champs, ajoutez votre prix et cliquez sur « Ajouter le Produit » si vous êtes d\'accord.';
+                }
+            } catch (e) {
+                if (statusEl) statusEl.textContent = 'Impossible d\'analyser la photo pour le moment. Réessayez dans un instant.';
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        };
 
         window.deleteVendorProduct = async function (prodId) {
             if (!confirm("Voulez-vous vraiment supprimer ce produit ?")) return;
@@ -472,10 +544,22 @@
                         <textarea id="product-description" rows="3" placeholder="Description complète et attractive pour les acheteurs." required></textarea>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
-                            <label for="product-price" class="block text-sm font-medium text-gray-700 mb-1">Prix ($ USD) (*)</label>
-                            <input type="number" id="product-price" step="0.01" min="0.01" placeholder="22.00" required>
+                            <label for="product-price" class="block text-sm font-medium text-gray-700 mb-1">Prix du Produit (*)</label>
+                            <input type="number" id="product-price" step="0.01" min="0.01" placeholder="Ex: 22.00 ou 3000" required>
+                            <p id="product-price-usd-preview" class="text-[11px] font-semibold text-indigo-700 mt-1"></p>
+                        </div>
+                        <div>
+                            <label for="product-currency" class="block text-sm font-medium text-gray-700 mb-1">Devise / Monnaie (*)</label>
+                            <select id="product-currency" class="w-full p-3 border border-gray-300 rounded-lg bg-white font-semibold">
+                                <option value="USD">USD ($ Dollar US)</option>
+                                <option value="HTG">HTG (Gourdes Haïtiennes)</option>
+                                <option value="EUR">EUR (€ Euro)</option>
+                                <option value="CAD">CAD ($ Canadien)</option>
+                                <option value="DOP">DOP (Pesos Dominicains)</option>
+                                <option value="MXN">MXN (Pesos Mexicains)</option>
+                            </select>
                         </div>
                         <div>
                             <label for="product-stock" class="block text-sm font-medium text-gray-700 mb-1">Quantité en Stock (*)</label>
@@ -507,7 +591,11 @@
                                     <i class="fas fa-camera"></i> Prendre une photo (Caméra)
                                     <input type="file" id="product-photos-camera" accept="image/*" capture="environment" class="hidden">
                                 </label>
+                                <button type="button" id="jeoah-analyze-photo-btn" onclick="askJeoahToFillFromPhoto()" class="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xs font-extrabold rounded-xl shadow transition">
+                                    <i class="fas fa-wand-magic-sparkles"></i> Analyser ma photo avec JEOAH IA
+                                </button>
                             </div>
+                            <p id="jeoah-photo-ai-status" class="hidden text-xs font-semibold text-purple-800 bg-purple-50 border border-purple-200 rounded-xl px-3.5 py-2.5"></p>
 
                             <div class="flex gap-2 items-center text-xs">
                                 <input type="url" id="product-manual-url" placeholder="Ou coller une URL d'image (https://...)" class="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-xs">

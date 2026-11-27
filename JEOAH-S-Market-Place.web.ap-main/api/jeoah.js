@@ -31,8 +31,8 @@ const OFFICIAL_TESTER_EMAILS = new Set([
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
-  const { prompt, language = 'fr', role = 'visiteur', plan = 'Basic', email = '', isTester = false, memory = [] } = req.body || {};
-  if (!prompt) return res.status(400).json({ error: 'Question manquante.' });
+  const { prompt, language = 'fr', role = 'visiteur', plan = 'Basic', email = '', isTester = false, memory = [], imageDataUrl = '' } = req.body || {};
+  if (!prompt && !imageDataUrl) return res.status(400).json({ error: 'Question manquante.' });
   const cleanEmail = String(email || '').trim().toLowerCase();
   const isCeoAdmin = cleanEmail === 'jeoahs1@gmail.com';
   const isCeoTester = cleanEmail === 'jjeanlouis96@gmail.com';
@@ -57,16 +57,22 @@ Tes responsabilites essentielles :
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return res.status(200).json({ reply: unavailableReplies[selectedLanguage], model: 'local', local: true });
   try {
+    const userMessageContent = (imageDataUrl && String(imageDataUrl).startsWith('data:image/'))
+      ? [
+          { type: 'text', text: prompt || 'Analyse cette image (produit ou preuve de paiement) et aide-moi.' },
+          { type: 'image_url', image_url: { url: imageDataUrl } }
+        ]
+      : prompt;
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model,
-        max_completion_tokens: 450,
+        max_completion_tokens: 500,
         messages: [
           { role: 'system', content: system },
           ...memory.slice(-8).map(item => ({ role: item.role === 'assistant' ? 'assistant' : 'user', content: item.content })),
-          { role: 'user', content: prompt }
+          { role: 'user', content: userMessageContent }
         ]
       })
     });
