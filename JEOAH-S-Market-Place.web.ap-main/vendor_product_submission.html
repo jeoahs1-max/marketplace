@@ -334,27 +334,46 @@
         document.getElementById('product-price')?.addEventListener('input', updateVendorPricePreview);
         document.getElementById('product-currency')?.addEventListener('change', updateVendorPricePreview);
 
-        window.askJeoahToFillFromPhoto = async function () {
+        let jeoahProposalCount = 0;
+        const JEOAH_ANGLES = [
+            'style élégant et rassurant',
+            'style émotionnel et chaleureux qui donne envie d\'acheter tout de suite',
+            'style premium / haut de gamme mettant en valeur la qualité',
+            'style moderne, dynamique et percutant pour les réseaux sociaux',
+            'style pratique axé sur les bénéfices concrets au quotidien'
+        ];
+
+        window.askJeoahToFillFromPhoto = async function (regenerate = false) {
             const statusEl = document.getElementById('jeoah-photo-ai-status');
             const btn = document.getElementById('jeoah-analyze-photo-btn');
+            const regenBtn = document.getElementById('jeoah-regen-btn');
             const firstPhoto = currentVendorPhotos[0] || document.getElementById('product-image-url-1')?.value?.trim() || '';
             if (!firstPhoto) {
                 showCustomModal('Ajoutez d\'abord une photo', 'Téléchargez une photo ou prenez-en une avec la caméra, puis cliquez sur « Analyser ma photo avec JEOAH IA ».');
                 return;
             }
+            if (regenerate) jeoahProposalCount++;
+            const angle = JEOAH_ANGLES[jeoahProposalCount % JEOAH_ANGLES.length];
+            const prevSlogan = document.getElementById('product-slogan')?.value?.trim() || '';
             if (statusEl) {
-                statusEl.textContent = '✨ JEOAH observe votre photo et prépare le Titre, le Slogan et la Description...';
+                statusEl.textContent = regenerate
+                    ? `🔄 JEOAH prépare une nouvelle proposition originale (${angle})...`
+                    : '✨ JEOAH observe votre photo et prépare Titre, Catégorie, Couleurs, Slogan et Description...';
                 statusEl.classList.remove('hidden');
             }
             if (btn) btn.disabled = true;
+            if (regenBtn) regenBtn.disabled = true;
             try {
                 const lang = (localStorage.getItem('jeoahs-lang') || 'fr').slice(0, 2);
                 const acc = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null') || {};
+                const extraRegen = regenerate && prevSlogan
+                    ? ` IMPORTANT: Propose un NOUVEAU slogan et une NOUVELLE description completement differents de "${prevSlogan}", avec un ${angle}.`
+                    : ` Adopte un ${angle}.`;
                 const res = await fetch('/api/jeoah', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        prompt: 'Regarde attentivement cette photo de produit vendeur et reponds UNIQUEMENT au format strict en 5 lignes sans markdown ni asterisques:\nTITRE: <titre vendeur court et precis>\nCATEGORIE: <choisis exactement UNE option parmi: Beauté & Soins | Mode & Accessoires | Électronique | Maison & Décoration | Alimentation & Boissons>\nCOULEURS: <couleurs principales visibles, ex: Bleu royal, Doré>\nSLOGAN: <slogan accrocheur court>\nDESCRIPTION: <description professionnelle de 2 phrases mettant en valeur qualite et usage>',
+                        prompt: `Regarde attentivement cette photo de produit vendeur et reponds UNIQUEMENT au format strict en 5 lignes sans markdown ni asterisques:${extraRegen}\nTITRE: <titre vendeur court et precis>\nCATEGORIE: <choisis exactement UNE option parmi: Beauté & Soins | Mode & Accessoires | Électronique | Maison & Décoration | Alimentation & Boissons>\nCOULEURS: <couleurs principales visibles, ex: Bleu royal, Doré>\nSLOGAN: <slogan accrocheur court et original>\nDESCRIPTION: <description professionnelle de 2 phrases mettant en valeur qualite et usage>`,
                         language: lang,
                         role: 'vendeur',
                         email: acc.email || '',
@@ -380,27 +399,28 @@
                 }
                 if (colM?.[1]) {
                     const colEl = document.getElementById('product-colors');
-                    if (colEl && !colEl.value.trim()) colEl.value = colM[1].replace(/[*_#`]+/g, '').trim();
+                    if (colEl && (!colEl.value.trim() || !regenerate)) colEl.value = colM[1].replace(/[*_#`]+/g, '').trim();
                 }
                 if (sloganM?.[1]) document.getElementById('product-slogan').value = sloganM[1].replace(/[*_#`]+/g, '').trim();
                 if (descM?.[1]) document.getElementById('product-description').value = descM[1].replace(/[*_#`]+/g, '').trim();
                 if (statusEl) {
-                    statusEl.textContent = '✅ JEOAH a pré-rempli Titre, Catégorie, Couleur, Slogan et Description d\'après votre photo ! Vérifiez, ajustez les tailles/prix puis cliquez sur « Ajouter le Produit ».';
+                    statusEl.textContent = '✅ Proposition JEOAH prête ! Si vous voulez un autre style de slogan ou de description, cliquez sur « 🔄 Autre proposition JEOAH » autant de fois que vous voulez.';
                 }
             } catch (e) {
                 if (statusEl) statusEl.textContent = 'Impossible d\'analyser la photo pour le moment. Réessayez dans un instant.';
             } finally {
                 if (btn) btn.disabled = false;
+                if (regenBtn) regenBtn.disabled = false;
             }
         };
 
-        // Générateur de petite vidéo produit par JEOAH (depuis les photos du vendeur, sans aucun montage manuel)
+        // Générateur de petite vidéo produit cinématique par JEOAH (4 scènes ~10-12s même avec 1 seule photo !)
         window.generateJeoahProductMiniVideo = async function () {
             const statusEl = document.getElementById('jeoah-video-gen-status');
             const btn = document.getElementById('jeoah-gen-video-btn');
             const photos = currentVendorPhotos.length ? currentVendorPhotos : [document.getElementById('product-image-url-1')?.value?.trim()].filter(Boolean);
             if (!photos.length) {
-                showCustomModal('Ajoutez au moins 1 photo', 'Importez ou prenez au moins 1 photo de votre produit pour que JEOAH puisse générer votre petite vidéo produit automatiquement.');
+                showCustomModal('Ajoutez au moins 1 photo', 'Importez ou prenez au moins 1 photo de votre produit pour que JEOAH puisse créer un beau montage vidéo produit (~10 secondes).');
                 return;
             }
             if (typeof MediaRecorder === 'undefined') {
@@ -408,7 +428,7 @@
                 return;
             }
             if (statusEl) {
-                statusEl.textContent = '🎬 JEOAH assemble votre petite vidéo produit avec vos photos, titre, slogan et prix (environ 6 secondes)...';
+                statusEl.textContent = '🎬 JEOAH réalise un montage vidéo cinématique en 4 scènes (~10 secondes) à partir de votre photo...';
                 statusEl.classList.remove('hidden');
             }
             if (btn) btn.disabled = true;
@@ -428,62 +448,133 @@
                 canvas.width = 720;
                 canvas.height = 720;
                 const ctx = canvas.getContext('2d');
-                const stream = canvas.captureStream(24);
+                const stream = canvas.captureStream(25);
                 const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm';
-                const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 1200000 });
+                const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 1600000 });
                 const chunks = [];
                 recorder.ondataavailable = ev => { if (ev.data.size > 0) chunks.push(ev.data); };
 
                 const title = (document.getElementById('product-name')?.value?.trim() || 'Nouveau produit JEOAH\'S').slice(0, 42);
-                const slogan = (document.getElementById('product-slogan')?.value?.trim() || 'Disponible maintenant sur JEOAH\'S').slice(0, 56);
+                const slogan = (document.getElementById('product-slogan')?.value?.trim() || 'Qualité sélectionnée sur JEOAH\'S').slice(0, 54);
                 const priceVal = document.getElementById('product-price')?.value?.trim() || '';
                 const curVal = document.getElementById('product-currency')?.value || 'USD';
                 const priceBadge = priceVal ? `${priceVal} ${curVal}` : '';
                 const colorsVal = document.getElementById('product-colors')?.value?.trim() || '';
+                const sizesVal = document.getElementById('product-sizes')?.value?.trim() || '';
 
                 const donePromise = new Promise(resolve => { recorder.onstop = resolve; });
                 recorder.start();
 
-                const framesPerPhoto = 48; // ~2s par photo
-                for (let pIdx = 0; pIdx < validImgs.length; pIdx++) {
-                    const img = validImgs[pIdx];
-                    for (let f = 0; f < framesPerPhoto; f++) {
-                        const progress = f / framesPerPhoto;
-                        const zoom = 1 + progress * 0.08;
-                        ctx.fillStyle = '#0f172a';
+                // 4 scènes cinématiques (~2.5s chacune = ~10 secondes minimum même avec 1 seule photo !)
+                const scenes = [
+                    { type: 'intro', img: validImgs[0], label: 'NOUVEAUTÉ JEOAH\'S' },
+                    { type: 'detail', img: validImgs[1 % validImgs.length], label: 'QUALITÉ & DÉTAILS' },
+                    { type: 'specs', img: validImgs[2 % validImgs.length], label: 'OPTIONS DISPONIBLES' },
+                    { type: 'outro', img: validImgs[3 % validImgs.length], label: 'COMMANDEZ EN SÉCURITÉ' }
+                ];
+                const framesPerScene = 60; // 60 * 42ms ≈ 2.5s par scène -> ~10 secondes totales
+
+                for (let sIdx = 0; sIdx < scenes.length; sIdx++) {
+                    const sc = scenes[sIdx];
+                    const img = sc.img;
+                    for (let f = 0; f < framesPerScene; f++) {
+                        const p = f / framesPerScene;
+                        ctx.fillStyle = '#0b1120';
                         ctx.fillRect(0, 0, 720, 720);
-                        const ratio = Math.max(720 / img.width, 720 / img.height) * zoom;
-                        const dw = img.width * ratio;
-                        const dh = img.height * ratio;
-                        ctx.drawImage(img, (720 - dw) / 2, (720 - dh) / 2, dw, dh);
 
-                        // Bandeau bas élégant JEOAH'S
-                        const grad = ctx.createLinearGradient(0, 480, 0, 720);
-                        grad.addColorStop(0, 'rgba(15,23,42,0)');
-                        grad.addColorStop(0.55, 'rgba(15,23,42,0.82)');
-                        grad.addColorStop(1, 'rgba(15,23,42,0.96)');
-                        ctx.fillStyle = grad;
-                        ctx.fillRect(0, 480, 720, 240);
+                        if (sc.type === 'outro') {
+                            // Scène 4 : Carte finale premium avec produit en médaillon centré
+                            const bgGrad = ctx.createLinearGradient(0, 0, 720, 720);
+                            bgGrad.addColorStop(0, '#072147');
+                            bgGrad.addColorStop(1, '#4c1d95');
+                            ctx.fillStyle = bgGrad;
+                            ctx.fillRect(0, 0, 720, 720);
 
-                        ctx.fillStyle = '#ffffff';
-                        ctx.font = 'bold 30px Arial';
-                        ctx.fillText(title, 34, 595);
-                        ctx.fillStyle = '#fde047';
-                        ctx.font = 'bold 21px Arial';
-                        ctx.fillText(slogan, 34, 635);
-                        if (colorsVal) {
-                            ctx.fillStyle = '#e2e8f0';
-                            ctx.font = '18px Arial';
-                            ctx.fillText(`Couleurs : ${colorsVal.slice(0, 40)}`, 34, 672);
-                        }
-                        if (priceBadge) {
-                            ctx.fillStyle = '#7c3aed';
-                            ctx.fillRect(500, 34, 186, 52);
+                            const cardScale = 0.92 + p * 0.08;
+                            const boxSize = Math.round(330 * cardScale);
+                            const bx = Math.round((720 - boxSize) / 2);
                             ctx.fillStyle = '#ffffff';
-                            ctx.font = 'bold 24px Arial';
-                            ctx.fillText(priceBadge, 518, 69);
+                            ctx.fillRect(bx - 10, 80 - 10, boxSize + 20, boxSize + 20);
+                            const r = Math.max(boxSize / img.width, boxSize / img.height);
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.rect(bx, 80, boxSize, boxSize);
+                            ctx.clip();
+                            ctx.drawImage(img, bx + (boxSize - img.width * r) / 2, 80 + (boxSize - img.height * r) / 2, img.width * r, img.height * r);
+                            ctx.restore();
+
+                            ctx.textAlign = 'center';
+                            ctx.fillStyle = '#fde047';
+                            ctx.font = 'bold 28px Arial';
+                            ctx.fillText(title, 360, 485);
+                            if (priceBadge) {
+                                ctx.fillStyle = '#10b981';
+                                ctx.fillRect(240, 512, 240, 54);
+                                ctx.fillStyle = '#ffffff';
+                                ctx.font = 'bold 28px Arial';
+                                ctx.fillText(priceBadge, 360, 549);
+                            }
+                            ctx.fillStyle = '#e2e8f0';
+                            ctx.font = 'bold 20px Arial';
+                            ctx.fillText('Paiement sécurisé sur JEOAH\'S Market Place', 360, 622);
+                            ctx.fillStyle = '#c4b5fd';
+                            ctx.font = '18px Arial';
+                            ctx.fillText('www.jeoahs.com', 360, 658);
+                            ctx.textAlign = 'left';
+                        } else {
+                            // Scènes 1, 2, 3 : Effets Ken Burns (zoom + panoramique fluide)
+                            let zoom = 1.0 + p * 0.14;
+                            let panX = 0;
+                            let panY = 0;
+                            if (sc.type === 'detail') {
+                                zoom = 1.24;
+                                panX = (p - 0.5) * 90;
+                                panY = -20;
+                            } else if (sc.type === 'specs') {
+                                zoom = 1.14 - p * 0.10;
+                            }
+                            const ratio = Math.max(720 / img.width, 720 / img.height) * zoom;
+                            const dw = img.width * ratio;
+                            const dh = img.height * ratio;
+                            ctx.drawImage(img, (720 - dw) / 2 + panX, (720 - dh) / 2 + panY, dw, dh);
+
+                            // Badge haut gauche
+                            ctx.fillStyle = 'rgba(124, 58, 237, 0.92)';
+                            ctx.fillRect(28, 28, 280, 42);
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 18px Arial';
+                            ctx.fillText(sc.label, 44, 56);
+
+                            // Badge prix haut droite
+                            if (priceBadge) {
+                                ctx.fillStyle = 'rgba(16, 185, 129, 0.94)';
+                                ctx.fillRect(500, 28, 192, 46);
+                                ctx.fillStyle = '#ffffff';
+                                ctx.font = 'bold 24px Arial';
+                                ctx.fillText(priceBadge, 520, 60);
+                            }
+
+                            // Bandeau bas élégant
+                            const grad = ctx.createLinearGradient(0, 470, 0, 720);
+                            grad.addColorStop(0, 'rgba(15,23,42,0)');
+                            grad.addColorStop(0.5, 'rgba(15,23,42,0.85)');
+                            grad.addColorStop(1, 'rgba(15,23,42,0.97)');
+                            ctx.fillStyle = grad;
+                            ctx.fillRect(0, 470, 720, 250);
+
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 30px Arial';
+                            ctx.fillText(title, 34, 580);
+                            ctx.fillStyle = '#fde047';
+                            ctx.font = 'bold 21px Arial';
+                            ctx.fillText(sc.type === 'specs' && (colorsVal || sizesVal)
+                                ? `${colorsVal ? 'Couleurs : ' + colorsVal.slice(0, 26) : ''}${colorsVal && sizesVal ? ' · ' : ''}${sizesVal ? 'Tailles : ' + sizesVal.slice(0, 18) : ''}`
+                                : slogan, 34, 624);
+                            ctx.fillStyle = '#cbd5e1';
+                            ctx.font = '17px Arial';
+                            ctx.fillText('JEOAH\'S Market Place · Livraison & Séquestre protégé', 34, 668);
                         }
-                        await new Promise(r => setTimeout(r, 40));
+                        await new Promise(r => setTimeout(r, 42));
                     }
                 }
 
@@ -496,7 +587,7 @@
                 if (urlInput) urlInput.value = blobUrl;
                 renderVendorMediaPreviews();
                 if (statusEl) {
-                    statusEl.textContent = '✅ Petite vidéo produit générée par JEOAH ! Regardez l\'aperçu ci-dessous puis cliquez sur « Ajouter le Produit » si vous l\'approuvez.';
+                    statusEl.textContent = '✅ Montage vidéo produit de ~10 secondes (4 scènes) créé par JEOAH ! Regardez l\'aperçu ci-dessous puis cliquez sur « Ajouter le Produit » si vous l\'approuvez.';
                 }
             } catch (err) {
                 console.error('Erreur génération vidéo JEOAH:', err);
@@ -732,8 +823,11 @@
                                     <i class="fas fa-camera"></i> Prendre une photo (Caméra)
                                     <input type="file" id="product-photos-camera" accept="image/*" capture="environment" class="hidden">
                                 </label>
-                                <button type="button" id="jeoah-analyze-photo-btn" onclick="askJeoahToFillFromPhoto()" class="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xs font-extrabold rounded-xl shadow transition">
+                                <button type="button" id="jeoah-analyze-photo-btn" onclick="askJeoahToFillFromPhoto(false)" class="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xs font-extrabold rounded-xl shadow transition">
                                     <i class="fas fa-wand-magic-sparkles"></i> Analyser ma photo avec JEOAH IA
+                                </button>
+                                <button type="button" id="jeoah-regen-btn" onclick="askJeoahToFillFromPhoto(true)" class="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-300 text-xs font-extrabold rounded-xl transition">
+                                    <i class="fas fa-rotate"></i> Autre proposition JEOAH
                                 </button>
                             </div>
                             <p id="jeoah-photo-ai-status" class="hidden text-xs font-semibold text-purple-800 bg-purple-50 border border-purple-200 rounded-xl px-3.5 py-2.5"></p>

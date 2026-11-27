@@ -818,9 +818,10 @@
                             storeData.hours = sf.hours || storeData.hours;
                             try { localStorage.setItem('jeoahs_custom_storefront', JSON.stringify(storeData)); } catch (_) {}
                         }
-                        const mergedAff = Array.isArray(syncJson.data.affiliateProducts) ? syncJson.data.affiliateProducts : [];
-                        const mergedVen = Array.isArray(syncJson.data.vendorProducts) ? syncJson.data.vendorProducts : [];
-                        emailSyncProds = [...mergedAff, ...mergedVen];
+            const isVendorView = (urlParams.get('role') || storeData.role || authUser?.role || 'affilie').toLowerCase() === 'vendeur';
+            const mergedAff = Array.isArray(syncJson?.data?.affiliateProducts) ? syncJson.data.affiliateProducts : [];
+            const mergedVen = Array.isArray(syncJson?.data?.vendorProducts) ? syncJson.data.vendorProducts : [];
+            emailSyncProds = isVendorView ? [...mergedVen] : [...mergedAff];
                         if (mergedAff.length) {
                             try { localStorage.setItem('jeoahs_affiliate_products', JSON.stringify(mergedAff)); } catch (_) {}
                         }
@@ -840,23 +841,28 @@
 
             applyStoreHeaderData();
 
-            let userAddedProds = [...emailSyncProds, ...profileCloudProds];
-            try {
-                if (storeId) {
-                    const pSnap = await getDocs(query(collection(db, `artifacts/${appId}/public/data/affiliate_products`), where('affiliateId', '==', storeId)));
-                    const existingCloud = new Set(userAddedProds.map(item => String(item.id)));
-                    pSnap.docs.forEach(d => {
-                        if (!existingCloud.has(String(d.id))) {
-                            userAddedProds.push({ id: d.id, ...d.data() });
-                            existingCloud.add(String(d.id));
-                        }
-                    });
-                }
-            } catch (_) {}
+            const isVendorRoleView = (urlParams.get('role') || storeData.role || authUser?.role || 'affilie').toLowerCase() === 'vendeur';
+            let userAddedProds = isVendorRoleView ? [...emailSyncProds] : [...emailSyncProds, ...profileCloudProds];
+            if (!isVendorRoleView) {
+                try {
+                    if (storeId) {
+                        const pSnap = await getDocs(query(collection(db, `artifacts/${appId}/public/data/affiliate_products`), where('affiliateId', '==', storeId)));
+                        const existingCloud = new Set(userAddedProds.map(item => String(item.id)));
+                        pSnap.docs.forEach(d => {
+                            if (!existingCloud.has(String(d.id))) {
+                                userAddedProds.push({ id: d.id, ...d.data() });
+                                existingCloud.add(String(d.id));
+                            }
+                        });
+                    }
+                } catch (_) {}
+            }
 
             const vendorProds = JSON.parse(localStorage.getItem('jeoahs_vendor_products') || '[]');
             const affiliateProds = JSON.parse(localStorage.getItem('jeoahs_affiliate_products') || '[]');
-            const combinedLocal = [...(Array.isArray(vendorProds) ? vendorProds : []), ...(Array.isArray(affiliateProds) ? affiliateProds : [])];
+            const combinedLocal = isVendorRoleView
+                ? (Array.isArray(vendorProds) ? vendorProds : [])
+                : (Array.isArray(affiliateProds) ? affiliateProds : []);
             const existingIds = new Set(userAddedProds.map(item => String(item.id)));
             combinedLocal.forEach(item => {
                 if (!existingIds.has(String(item.id))) {
