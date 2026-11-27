@@ -49,6 +49,51 @@ module.exports = async (req, res) => {
 
   try {
     if (req.method === 'GET') {
+      if (req.query?.scope === 'central') {
+        const allMap = new Map();
+        const storesMap = new Map();
+        try {
+          const syncSnaps = await db.collection('user_sync_by_email').get();
+          syncSnaps.forEach(docSnap => {
+            const d = docSnap.data() || {};
+            const sf = d.storefront || {};
+            const storeName = sf.storeName || d.email?.split('@')[0] || 'Boutique JEOAH\'S';
+            const list = [...(Array.isArray(d.affiliateProducts) ? d.affiliateProducts : []), ...(Array.isArray(d.vendorProducts) ? d.vendorProducts : [])];
+            list.forEach(p => {
+              if (!p || !p.id) return;
+              const enriched = { ...p, storeName: p.storeName || storeName, storeAvatar: sf.profilePictureUrl || '' };
+              const key = String(p.name || p.title || p.id).trim().toLowerCase();
+              const prev = allMap.get(key);
+              if (!prev || String(p.createdAt || '') >= String(prev.createdAt || '')) {
+                allMap.set(key, enriched);
+              }
+            });
+            if (sf.storeName || list.length) {
+              storesMap.set(d.email || docSnap.id, {
+                id: docSnap.id,
+                name: storeName,
+                category: sf.category || 'Boutique & Sélection',
+                avatar: sf.profilePictureUrl || '',
+                productsCount: list.length
+              });
+            }
+          });
+        } catch (_) {}
+        try {
+          const pubSnaps = await db.collection('artifacts/jeoahs1-max-03326376-49b27/public/data/products').get();
+          pubSnaps.forEach(docSnap => {
+            const p = { id: docSnap.id, ...docSnap.data() };
+            const key = String(p.name || p.title || p.id).trim().toLowerCase();
+            if (!allMap.has(key)) allMap.set(key, p);
+          });
+        } catch (_) {}
+        return res.status(200).json({
+          ok: true,
+          products: Array.from(allMap.values()),
+          stores: Array.from(storesMap.values())
+        });
+      }
+
       const emailKey = normalizeEmailKey(req.query?.email);
       if (!emailKey) return res.status(400).json({ ok: false, error: 'Email requis' });
       const snap = await db.collection('user_sync_by_email').doc(emailKey).get();

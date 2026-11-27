@@ -12,12 +12,15 @@
   <meta property="og:url" content="https://www.jeoahs.com/showcase.html">
   <meta property="og:title" content="JEOAH'S Market Place — Vitrine Centrale">
   <meta property="og:description" content="Achetez local, Vendez global ! Paiement sécurisé en séquestre et comparateur multi-marchands.">
-  <meta property="og:image" content="https://www.jeoahs.com/public/assets/logo.png">
-  <meta property="og:image:secure_url" content="https://www.jeoahs.com/public/assets/logo.png">
+  <meta property="og:image" content="https://www.jeoahs.com/public/assets/og-share-card.jpg">
+  <meta property="og:image:secure_url" content="https://www.jeoahs.com/public/assets/og-share-card.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="JEOAH'S Market Place — Vitrine Centrale">
   <meta name="twitter:description" content="Achetez local, Vendez global ! Paiement sécurisé en séquestre et comparateur multi-marchands.">
-  <meta name="twitter:image" content="https://www.jeoahs.com/public/assets/logo.png">
+  <meta name="twitter:image" content="https://www.jeoahs.com/public/assets/og-share-card.jpg">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="/firebase-config.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -628,6 +631,14 @@
       try {
         const localCentral = JSON.parse(localStorage.getItem('jeoahs_central_products') || '[]').filter(hasActivePlan);
         localCentral.forEach(p => byId.set(String(p.id), p));
+      } catch (_) {}
+      // Chargement serveur public universel (identique sur jeoahs.com ET jeoahsmarketplace.com)
+      try {
+        const centralRes = await fetch('/api/user-sync?scope=central');
+        const centralJson = await centralRes.json().catch(() => null);
+        if (centralJson?.ok && Array.isArray(centralJson.products)) {
+          centralJson.products.filter(hasActivePlan).forEach(p => byId.set(String(p.id), p));
+        }
       } catch (_) {}
       try {
         const config = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : null;
