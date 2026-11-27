@@ -158,8 +158,17 @@
 
     const authUser = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
     const userPlan = authUser?.selectedPlan || authUser?.plan || 'free';
-    if (authUser && authUser.role) {
-      roleBadge.textContent = authUser.role.toUpperCase();
+    const pathLower = (window.location.pathname || '').toLowerCase();
+    const urlRoleParam = new URLSearchParams(window.location.search).get('role');
+    const pageContextRole = urlRoleParam === 'vendeur'
+      ? 'vendeur'
+      : pathLower.includes('vendor')
+        ? 'vendeur'
+        : pathLower.includes('affiliate')
+          ? 'affilie'
+          : (authUser?.role || '');
+    if (pageContextRole) {
+      roleBadge.textContent = pageContextRole === 'affilie' ? 'AFFILIÉ' : pageContextRole.toUpperCase();
       roleBadge.style.display = 'inline-block';
     } else {
       roleBadge.style.display = 'none';
@@ -298,12 +307,14 @@
     });
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
     let isMicListening = false;
     let micSilenceTimer = null;
     if (SpeechRecognition) {
       recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
+      // Sur Android Chrome, continuous=true + interimResults=true duplique les mots ("bonsoir bonsoir...")
+      recognition.continuous = !isMobileDevice;
+      recognition.interimResults = !isMobileDevice;
       recognition.maxAlternatives = 1;
       recognition.onstart = () => {
         isMicListening = true;
@@ -315,16 +326,29 @@
         micButton.setAttribute('aria-pressed', 'true');
       };
       recognition.onresult = event => {
-        const transcript = Array.from(event.results).map(result => result[0].transcript).join(' ').replace(/\s+/g, ' ').trim();
-        input.value = transcript;
-        lastInputWasVoice = true;
-        // Laisser 2.2 secondes de pause naturelle avant d'envoyer la phrase complète
-        if (micSilenceTimer) clearTimeout(micSilenceTimer);
-        micSilenceTimer = setTimeout(() => {
-          if (isMicListening) {
-            try { recognition.stop(); } catch (_) {}
+        let finalText = '';
+        let interimText = '';
+        for (let i = 0; i < event.results.length; i++) {
+          const res = event.results[i];
+          const chunk = (res[0]?.transcript || '').trim();
+          if (!chunk) continue;
+          if (res.isFinal) {
+            finalText = isMobileDevice ? chunk : (finalText ? `${finalText} ${chunk}` : chunk);
+          } else {
+            interimText = chunk;
           }
-        }, 2200);
+        }
+        const combined = `${finalText} ${interimText}`.replace(/\s+/g, ' ').trim();
+        if (combined) input.value = combined;
+        lastInputWasVoice = true;
+        if (!isMobileDevice) {
+          if (micSilenceTimer) clearTimeout(micSilenceTimer);
+          micSilenceTimer = setTimeout(() => {
+            if (isMicListening) {
+              try { recognition.stop(); } catch (_) {}
+            }
+          }, 2200);
+        }
       };
       recognition.onerror = (ev) => {
         isMicListening = false;
@@ -339,7 +363,7 @@
         micButton.style.background = '#fff';
         micButton.style.color = '#7c3aed';
         micButton.setAttribute('aria-pressed', 'false');
-        if (input.value.trim()) {
+        if (input.value.trim() && !window.__jeoahIsSending) {
           lastInputWasVoice = true;
           form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true }));
         }
@@ -425,10 +449,10 @@
       const selectedLanguage = (!language || language === 'auto') ? (localStorage.getItem('jeoahs-lang') || 'fr') : language;
       const locale = (languageConfig[selectedLanguage] || languageConfig.fr).locale;
 
-      // Voix professionnelle unique OpenAI HD (/api/tts) avec timeout 5s pour ne jamais bloquer
+      // Voix professionnelle unique OpenAI HD (/api/tts) avec timeout 12s (évite la voix féminine Android sur 4G)
       try {
         const ctrl = new AbortController();
-        const ttsTimeout = setTimeout(() => ctrl.abort(), 5000);
+        const ttsTimeout = setTimeout(() => ctrl.abort(), 12000);
         const res = await fetch('/api/tts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -545,8 +569,10 @@
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (window.__jeoahIsSending) return;
       const prompt = input.value.trim();
       if (!prompt) return;
+      window.__jeoahIsSending = true;
 
       const shouldSpeak = voiceEnabled || lastInputWasVoice || /\b(parle|voix|audio|pale|speak|voice|habla)\b/i.test(prompt);
       if (shouldSpeak) enableVoiceAutomatically();
@@ -557,7 +583,7 @@
       memory.push({ role: 'user', content: prompt });
       input.value = '';
       const currentLang = langSelect.value;
-      const currentRole = authUser?.role || 'visiteur';
+      const currentRole = pageContextRole || authUser?.role || 'visiteur';
 
       const loadingId = 'jeoah-loading-' + Date.now();
       const loadingDiv = document.createElement('div');
@@ -588,7 +614,7 @@
           body: JSON.stringify({
             prompt,
             language: currentLang,
-            role: freshUser.role || currentRole,
+            role: currentRole,
             plan: isOfficialFree ? 'tester' : userPlan,
             email: userEmail,
             isTester: isOfficialFree,
@@ -619,6 +645,8 @@
         if (shouldSpeak) speak(smartReply, currentLang);
         memory.push({ role: 'assistant', content: smartReply });
         reportToInternalAiBus(`Demande ${currentRole} (hors-ligne)`, prompt);
+      } finally {
+        window.__jeoahIsSending = false;
       }
     });
   })();
