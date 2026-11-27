@@ -250,6 +250,8 @@
             const CURRENCY_TO_USD = { USD: 1, HTG: 1 / 131, EUR: 1.09, CAD: 0.73, DOP: 1 / 60, MXN: 1 / 17.5 };
             const currency = document.getElementById('product-currency')?.value || 'USD';
             const priceUsd = +(price * (CURRENCY_TO_USD[currency] || 1)).toFixed(2);
+            const colors = document.getElementById('product-colors')?.value?.trim() || '';
+            const sizes = document.getElementById('product-sizes')?.value?.trim() || '';
 
             const account = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
             const internal = isInternalEmail(account?.email);
@@ -264,6 +266,8 @@
                 priceUsd,
                 currency,
                 originalPrice: price,
+                colors,
+                sizes,
                 stock,
                 images: photos,
                 imageUrl,
@@ -350,7 +354,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        prompt: 'Regarde attentivement cette photo de produit vendeur et reponds UNIQUEMENT au format strict en 3 lignes sans markdown ni asterisques:\nTITRE: <titre vendeur court et precis>\nSLOGAN: <slogan accrocheur court>\nDESCRIPTION: <description professionnelle de 2 phrases mettant en valeur qualite et usage>',
+                        prompt: 'Regarde attentivement cette photo de produit vendeur et reponds UNIQUEMENT au format strict en 5 lignes sans markdown ni asterisques:\nTITRE: <titre vendeur court et precis>\nCATEGORIE: <choisis exactement UNE option parmi: Beauté & Soins | Mode & Accessoires | Électronique | Maison & Décoration | Alimentation & Boissons>\nCOULEURS: <couleurs principales visibles, ex: Bleu royal, Doré>\nSLOGAN: <slogan accrocheur court>\nDESCRIPTION: <description professionnelle de 2 phrases mettant en valeur qualite et usage>',
                         language: lang,
                         role: 'vendeur',
                         email: acc.email || '',
@@ -361,16 +365,142 @@
                 const data = await res.json().catch(() => ({}));
                 const reply = String(data.reply || '');
                 const titleM = reply.match(/TITRE\s*:\s*(.+)/i);
+                const catM = reply.match(/CATEGORIE\s*:\s*(.+)/i);
+                const colM = reply.match(/COULEURS?\s*:\s*(.+)/i);
                 const sloganM = reply.match(/SLOGAN\s*:\s*(.+)/i);
                 const descM = reply.match(/DESCRIPTION\s*:\s*([\s\S]+)/i);
                 if (titleM?.[1]) document.getElementById('product-name').value = titleM[1].replace(/[*_#`]+/g, '').trim();
+                if (catM?.[1]) {
+                    const rawCat = catM[1].replace(/[*_#`]+/g, '').trim().toLowerCase();
+                    const catSel = document.getElementById('product-category');
+                    if (catSel) {
+                        const matchOpt = Array.from(catSel.options).find(opt => rawCat.includes(opt.value.toLowerCase().slice(0, 6)) || opt.value.toLowerCase().includes(rawCat.slice(0, 6)));
+                        if (matchOpt) catSel.value = matchOpt.value;
+                    }
+                }
+                if (colM?.[1]) {
+                    const colEl = document.getElementById('product-colors');
+                    if (colEl && !colEl.value.trim()) colEl.value = colM[1].replace(/[*_#`]+/g, '').trim();
+                }
                 if (sloganM?.[1]) document.getElementById('product-slogan').value = sloganM[1].replace(/[*_#`]+/g, '').trim();
                 if (descM?.[1]) document.getElementById('product-description').value = descM[1].replace(/[*_#`]+/g, '').trim();
                 if (statusEl) {
-                    statusEl.textContent = '✅ JEOAH a pré-rempli votre Titre, Slogan et Description d\'après votre photo ! Vérifiez les champs, ajoutez votre prix et cliquez sur « Ajouter le Produit » si vous êtes d\'accord.';
+                    statusEl.textContent = '✅ JEOAH a pré-rempli Titre, Catégorie, Couleur, Slogan et Description d\'après votre photo ! Vérifiez, ajustez les tailles/prix puis cliquez sur « Ajouter le Produit ».';
                 }
             } catch (e) {
                 if (statusEl) statusEl.textContent = 'Impossible d\'analyser la photo pour le moment. Réessayez dans un instant.';
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        };
+
+        // Générateur de petite vidéo produit par JEOAH (depuis les photos du vendeur, sans aucun montage manuel)
+        window.generateJeoahProductMiniVideo = async function () {
+            const statusEl = document.getElementById('jeoah-video-gen-status');
+            const btn = document.getElementById('jeoah-gen-video-btn');
+            const photos = currentVendorPhotos.length ? currentVendorPhotos : [document.getElementById('product-image-url-1')?.value?.trim()].filter(Boolean);
+            if (!photos.length) {
+                showCustomModal('Ajoutez au moins 1 photo', 'Importez ou prenez au moins 1 photo de votre produit pour que JEOAH puisse générer votre petite vidéo produit automatiquement.');
+                return;
+            }
+            if (typeof MediaRecorder === 'undefined') {
+                showCustomModal('Navigateur non compatible', 'Votre navigateur ne supporte pas la génération vidéo directe. Vous pouvez filmer avec le bouton Caméra juste à côté.');
+                return;
+            }
+            if (statusEl) {
+                statusEl.textContent = '🎬 JEOAH assemble votre petite vidéo produit avec vos photos, titre, slogan et prix (environ 6 secondes)...';
+                statusEl.classList.remove('hidden');
+            }
+            if (btn) btn.disabled = true;
+
+            try {
+                const loadedImgs = await Promise.all(photos.slice(0, 5).map(src => new Promise((resolve) => {
+                    const im = new Image();
+                    im.crossOrigin = 'anonymous';
+                    im.onload = () => resolve(im);
+                    im.onerror = () => resolve(null);
+                    im.src = src;
+                })));
+                const validImgs = loadedImgs.filter(Boolean);
+                if (!validImgs.length) throw new Error('Aucune image chargée');
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 720;
+                canvas.height = 720;
+                const ctx = canvas.getContext('2d');
+                const stream = canvas.captureStream(24);
+                const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm';
+                const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 1200000 });
+                const chunks = [];
+                recorder.ondataavailable = ev => { if (ev.data.size > 0) chunks.push(ev.data); };
+
+                const title = (document.getElementById('product-name')?.value?.trim() || 'Nouveau produit JEOAH\'S').slice(0, 42);
+                const slogan = (document.getElementById('product-slogan')?.value?.trim() || 'Disponible maintenant sur JEOAH\'S').slice(0, 56);
+                const priceVal = document.getElementById('product-price')?.value?.trim() || '';
+                const curVal = document.getElementById('product-currency')?.value || 'USD';
+                const priceBadge = priceVal ? `${priceVal} ${curVal}` : '';
+                const colorsVal = document.getElementById('product-colors')?.value?.trim() || '';
+
+                const donePromise = new Promise(resolve => { recorder.onstop = resolve; });
+                recorder.start();
+
+                const framesPerPhoto = 48; // ~2s par photo
+                for (let pIdx = 0; pIdx < validImgs.length; pIdx++) {
+                    const img = validImgs[pIdx];
+                    for (let f = 0; f < framesPerPhoto; f++) {
+                        const progress = f / framesPerPhoto;
+                        const zoom = 1 + progress * 0.08;
+                        ctx.fillStyle = '#0f172a';
+                        ctx.fillRect(0, 0, 720, 720);
+                        const ratio = Math.max(720 / img.width, 720 / img.height) * zoom;
+                        const dw = img.width * ratio;
+                        const dh = img.height * ratio;
+                        ctx.drawImage(img, (720 - dw) / 2, (720 - dh) / 2, dw, dh);
+
+                        // Bandeau bas élégant JEOAH'S
+                        const grad = ctx.createLinearGradient(0, 480, 0, 720);
+                        grad.addColorStop(0, 'rgba(15,23,42,0)');
+                        grad.addColorStop(0.55, 'rgba(15,23,42,0.82)');
+                        grad.addColorStop(1, 'rgba(15,23,42,0.96)');
+                        ctx.fillStyle = grad;
+                        ctx.fillRect(0, 480, 720, 240);
+
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = 'bold 30px Arial';
+                        ctx.fillText(title, 34, 595);
+                        ctx.fillStyle = '#fde047';
+                        ctx.font = 'bold 21px Arial';
+                        ctx.fillText(slogan, 34, 635);
+                        if (colorsVal) {
+                            ctx.fillStyle = '#e2e8f0';
+                            ctx.font = '18px Arial';
+                            ctx.fillText(`Couleurs : ${colorsVal.slice(0, 40)}`, 34, 672);
+                        }
+                        if (priceBadge) {
+                            ctx.fillStyle = '#7c3aed';
+                            ctx.fillRect(500, 34, 186, 52);
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 24px Arial';
+                            ctx.fillText(priceBadge, 518, 69);
+                        }
+                        await new Promise(r => setTimeout(r, 40));
+                    }
+                }
+
+                recorder.stop();
+                await donePromise;
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                const blobUrl = URL.createObjectURL(blob);
+                currentVendorVideo = blobUrl;
+                const urlInput = document.getElementById('product-video-url');
+                if (urlInput) urlInput.value = blobUrl;
+                renderVendorMediaPreviews();
+                if (statusEl) {
+                    statusEl.textContent = '✅ Petite vidéo produit générée par JEOAH ! Regardez l\'aperçu ci-dessous puis cliquez sur « Ajouter le Produit » si vous l\'approuvez.';
+                }
+            } catch (err) {
+                console.error('Erreur génération vidéo JEOAH:', err);
+                if (statusEl) statusEl.textContent = 'Impossible de générer la vidéo depuis cette image. Vérifiez que la photo provient bien de votre appareil.';
             } finally {
                 if (btn) btn.disabled = false;
             }
@@ -567,6 +697,17 @@
                         </div>
                     </div>
 
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="product-colors" class="block text-sm font-medium text-gray-700 mb-1">Couleurs disponibles <span class="text-xs text-slate-400">(optionnel)</span></label>
+                            <input type="text" id="product-colors" placeholder="Ex: Bleu royal, Doré, Blanc, Noir">
+                        </div>
+                        <div>
+                            <label for="product-sizes" class="block text-sm font-medium text-gray-700 mb-1">Tailles / Dimensions (Sizes) <span class="text-xs text-slate-400">(optionnel)</span></label>
+                            <input type="text" id="product-sizes" placeholder="Ex: S, M, L, XL ou 140×260 cm">
+                        </div>
+                    </div>
+
                     <!-- 2. MÉDIAS DU PRODUIT (Photos 1 à 5 + Caméra directe + Vidéo) -->
                     <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
                         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
@@ -622,11 +763,11 @@
                             <input type="text" id="product-image-url-5">
                         </div>
 
-                        <!-- VIDÉO DU PRODUIT -->
+                        <!-- VIDÉO DU PRODUIT (Style Amazon — distincte des pubs réseaux sociaux) -->
                         <div class="pt-4 border-t border-slate-200 space-y-3">
-                            <div class="flex items-center justify-between">
-                                <label class="block text-sm font-bold text-slate-800">Vidéo du Produit (Optionnel)</label>
-                                <span class="text-[11px] text-slate-500">Fichier, caméra ou lien YouTube / TikTok</span>
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <label class="block text-sm font-bold text-slate-800">Petite Vidéo Produit (Optionnel — pour la fiche produit)</label>
+                                <span class="text-[11px] text-slate-500">Distincte des vidéos publicitaires réseaux sociaux</span>
                             </div>
 
                             <div class="flex flex-wrap items-center gap-3">
@@ -638,7 +779,11 @@
                                     <i class="fas fa-video-slash"></i> Enregistrer avec la caméra
                                     <input type="file" id="product-video-camera" accept="video/*" capture="environment" class="hidden">
                                 </label>
+                                <button type="button" id="jeoah-gen-video-btn" onclick="generateJeoahProductMiniVideo()" class="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-extrabold rounded-xl shadow transition">
+                                    <i class="fas fa-film"></i> Créer ma petite vidéo avec JEOAH (depuis mes photos)
+                                </button>
                             </div>
+                            <p id="jeoah-video-gen-status" class="hidden text-xs font-semibold text-indigo-800 bg-indigo-50 border border-indigo-200 rounded-xl px-3.5 py-2"></p>
 
                             <input type="url" id="product-video-url" placeholder="Lien vidéo optionnel (https://...)" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs">
 
