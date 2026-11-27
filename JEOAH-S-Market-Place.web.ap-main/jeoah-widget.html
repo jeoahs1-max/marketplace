@@ -151,7 +151,7 @@
       div.innerHTML = htmlText || '';
       return (div.textContent || div.innerText || '')
         .replace(/^(JEOAH|Ney)\s*:\s*/i, '')
-        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}✦✨💬🔊🔇🎤]/gu, '')
+        .replace(/[*_`#~>•]+/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
     }
@@ -298,12 +298,15 @@
     });
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let isMicListening = false;
+    let micSilenceTimer = null;
     if (SpeechRecognition) {
       recognition = new SpeechRecognition();
-      recognition.continuous = false;
+      recognition.continuous = true;
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
       recognition.onstart = () => {
+        isMicListening = true;
         stopAllSpeech();
         lastInputWasVoice = true;
         enableVoiceAutomatically();
@@ -312,15 +315,27 @@
         micButton.setAttribute('aria-pressed', 'true');
       };
       recognition.onresult = event => {
-        const transcript = Array.from(event.results).map(result => result[0].transcript).join('');
+        const transcript = Array.from(event.results).map(result => result[0].transcript).join(' ').replace(/\s+/g, ' ').trim();
         input.value = transcript;
         lastInputWasVoice = true;
+        // Laisser 2.2 secondes de pause naturelle avant d'envoyer la phrase complète
+        if (micSilenceTimer) clearTimeout(micSilenceTimer);
+        micSilenceTimer = setTimeout(() => {
+          if (isMicListening) {
+            try { recognition.stop(); } catch (_) {}
+          }
+        }, 2200);
       };
-      recognition.onerror = () => {
+      recognition.onerror = (ev) => {
+        isMicListening = false;
+        if (micSilenceTimer) clearTimeout(micSilenceTimer);
+        if (ev?.error === 'aborted' || ev?.error === 'no-speech') return;
         lastInputWasVoice = false;
         appendMessage('JEOAH', 'Je n’ai pas pu entendre votre demande. Vérifiez l’autorisation du microphone et réessayez.', false);
       };
       recognition.onend = () => {
+        isMicListening = false;
+        if (micSilenceTimer) clearTimeout(micSilenceTimer);
         micButton.style.background = '#fff';
         micButton.style.color = '#7c3aed';
         micButton.setAttribute('aria-pressed', 'false');
@@ -330,10 +345,15 @@
         }
       };
       micButton.addEventListener('click', () => {
+        if (isMicListening) {
+          try { recognition.stop(); } catch (_) {}
+          return;
+        }
         lastInputWasVoice = true;
         enableVoiceAutomatically();
-        const selectedLanguage = langSelect.value === 'auto' ? (localStorage.getItem('jeoahs-lang') || 'fr') : langSelect.value;
-        recognition.lang = (languageConfig[selectedLanguage] || languageConfig.fr).locale;
+        const selectedLanguage = (!langSelect.value || langSelect.value === 'auto') ? (localStorage.getItem('jeoahs-lang') || 'fr') : langSelect.value;
+        recognition.lang = (languageConfig[selectedLanguage] || languageConfig.fr).locale || 'fr-FR';
+        input.value = '';
         try { recognition.start(); } catch (_) { }
       });
     } else {

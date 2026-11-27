@@ -7,7 +7,7 @@ function cleanTextForSpeech(rawText) {
     .replace(/<button\b[^>]*>.*?<\/button>/gi, ' ')
     .replace(/<[^>]+>/g, ' ')
     .replace(/^(JEOAH|Ney)\s*:\s*/i, '')
-    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}✦✨💬🔊🎤]/gu, '')
+    .replace(/[*_`#~>]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
