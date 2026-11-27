@@ -79,14 +79,20 @@
             db = getFirestore(app);
 
             onAuthStateChanged(auth, async (user) => {
-                if (!user) {
+                const savedAcc = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+                if (!user && !savedAcc?.email) {
                     window.location.href = '/public/auth.html';
                     return;
                 }
-                userId = user.uid;
-                const savedAcc = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null') || {};
-                const siteCode = savedAcc.accountCode || `JEOAH-${String(savedAcc.uid || userId).slice(0, 8).toUpperCase()}`;
-                document.getElementById('user-id-display').textContent = `Code JEOAH'S : ${siteCode}`;
+                userId = user?.uid || savedAcc?.uid || 'local-vendor';
+                const siteCode = savedAcc?.accountCode || `JEOAH-${String(savedAcc?.uid || userId).slice(0, 8).toUpperCase()}`;
+                const idEl = document.getElementById('user-id-display');
+                if (idEl) idEl.textContent = `Code JEOAH'S : ${siteCode}`;
+
+                if (!user) {
+                    updateUI(DEFAULT_PROFILE);
+                    return;
+                }
 
                 // Charger les données du vendeur en temps réel
                 const vendorDocRef = doc(db, `artifacts/${appId}/users/${userId}/vendor_data/profile`);
