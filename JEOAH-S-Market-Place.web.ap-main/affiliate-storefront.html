@@ -325,6 +325,25 @@
                             await setDoc(doc(db, 'profiles', authUser.uid), { storefront: cloudPayload }, { merge: true });
                         } catch (_) {}
                     }
+                    if (authUser?.email) {
+                        fetch('/api/user-sync', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                email: authUser.email,
+                                storefront: {
+                                    storeName: storeData.name,
+                                    bio: storeData.bio,
+                                    aboutDetails: storeData.aboutDetails,
+                                    category: storeData.category,
+                                    location: storeData.location,
+                                    hours: storeData.hours,
+                                    profilePictureUrl: storeData.avatar,
+                                    heroImageUrl: storeData.heroImage
+                                }
+                            })
+                        }).catch(() => {});
+                    }
                 } catch (_) {}
                 applyStoreHeaderData();
                 document.getElementById('store-customize-modal')?.remove();
@@ -342,6 +361,13 @@
 
             try { await deleteDoc(doc(db, `artifacts/${appId}/public/data/affiliate_products`, prodId)); } catch (_) {}
             try { await deleteDoc(doc(db, `artifacts/${appId}/public/data/products`, prodId)); } catch (_) {}
+            if (authUser?.email) {
+                fetch('/api/user-sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: authUser.email, deletedProductId: prodId })
+                }).catch(() => {});
+            }
 
             storeProducts = storeProducts.filter(p => p.id !== prodId);
             renderProductGrids();
@@ -754,13 +780,58 @@
                 }
             } catch (_) {}
 
+            // Synchronisation fiable Téléphone <-> Laptop par adresse e-mail via /api/user-sync (Firebase Admin)
+            let emailSyncProds = [];
+            try {
+                if (authUser?.email && !requestedStoreName) {
+                    const localAff = JSON.parse(localStorage.getItem('jeoahs_affiliate_products') || '[]');
+                    const localVen = JSON.parse(localStorage.getItem('jeoahs_vendor_products') || '[]');
+                    const syncRes = await fetch('/api/user-sync', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: authUser.email,
+                            affiliateProducts: Array.isArray(localAff) ? localAff : [],
+                            vendorProducts: Array.isArray(localVen) ? localVen : []
+                        })
+                    });
+                    const syncJson = await syncRes.json().catch(() => null);
+                    if (syncJson?.ok && syncJson.data) {
+                        const sf = syncJson.data.storefront;
+                        if (sf) {
+                            storeData.name = sf.storeName || storeData.name;
+                            storeData.bio = sf.bio || storeData.bio;
+                            storeData.aboutDetails = sf.aboutDetails || storeData.bio;
+                            storeData.avatar = sf.profilePictureUrl || storeData.avatar;
+                            storeData.heroImage = sf.heroImageUrl || storeData.heroImage;
+                            storeData.location = sf.location || storeData.location;
+                            storeData.category = sf.category || storeData.category;
+                            storeData.hours = sf.hours || storeData.hours;
+                            try { localStorage.setItem('jeoahs_custom_storefront', JSON.stringify(storeData)); } catch (_) {}
+                        }
+                        const mergedAff = Array.isArray(syncJson.data.affiliateProducts) ? syncJson.data.affiliateProducts : [];
+                        const mergedVen = Array.isArray(syncJson.data.vendorProducts) ? syncJson.data.vendorProducts : [];
+                        emailSyncProds = [...mergedAff, ...mergedVen];
+                        if (mergedAff.length) {
+                            try { localStorage.setItem('jeoahs_affiliate_products', JSON.stringify(mergedAff)); } catch (_) {}
+                        }
+                        if (mergedVen.length) {
+                            try { localStorage.setItem('jeoahs_vendor_products', JSON.stringify(mergedVen)); } catch (_) {}
+                        }
+                        if (Array.isArray(syncJson.data.affiliateLinks) && syncJson.data.affiliateLinks.length) {
+                            try { localStorage.setItem('jeoahs_affiliate_links', JSON.stringify(syncJson.data.affiliateLinks)); } catch (_) {}
+                        }
+                    }
+                }
+            } catch (_) {}
+
             if (storeData.bio && storeData.bio.includes('[ ]')) {
                 storeData.bio = 'Découvrez ma sélection d\'articles vérifiés sur JEOAH\'S Market Place.';
             }
 
             applyStoreHeaderData();
 
-            let userAddedProds = [...profileCloudProds];
+            let userAddedProds = [...emailSyncProds, ...profileCloudProds];
             try {
                 if (storeId) {
                     const pSnap = await getDocs(query(collection(db, `artifacts/${appId}/public/data/affiliate_products`), where('affiliateId', '==', storeId)));
@@ -965,6 +1036,7 @@
                 <img id="store-hero-showcase-img"
                     src="/public/assets/logo.png"
                     alt="Vitrine JEOAH'S"
+                    onerror="this.onerror=null;this.src='/public/assets/logo.png'"
                     class="h-44 sm:h-52 w-auto object-contain rounded-2xl shadow-2xl border-2 border-white/25 bg-white/95 p-3">
             </div>
 

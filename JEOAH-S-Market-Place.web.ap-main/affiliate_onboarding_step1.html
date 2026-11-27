@@ -105,6 +105,15 @@
                     }
                 } catch (_) {}
             }
+            if ((!savedCloud || !savedCloud.length) && account?.email) {
+                try {
+                    const r = await fetch(`/api/user-sync?email=${encodeURIComponent(account.email)}`);
+                    const j = await r.json().catch(() => null);
+                    if (j?.ok && Array.isArray(j.data?.affiliateLinks) && j.data.affiliateLinks.length) {
+                        savedCloud = j.data.affiliateLinks;
+                    }
+                } catch (_) {}
+            }
 
             const sourceLinks = (Array.isArray(savedCloud) && savedCloud.some(l => l.base_link && l.base_link.trim()))
                 ? savedCloud
@@ -247,6 +256,19 @@
                     }, { merge: true });
                 } catch (_) {}
             }
+            try {
+                const syncAcc = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+                if (syncAcc?.email) {
+                    await fetch('/api/user-sync', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: syncAcc.email,
+                            affiliateLinks: completedLinks.map(l => ({ name: l.name, base_link: l.base_link }))
+                        })
+                    }).catch(() => {});
+                }
+            } catch (_) {}
             if (isRoleUpgrade) {
                 localStorage.setItem('jeoahs_affiliate_enabled', 'true');
                 window.location.href = 'affiliate-storefront.html';

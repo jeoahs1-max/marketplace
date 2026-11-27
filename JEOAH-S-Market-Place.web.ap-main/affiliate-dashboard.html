@@ -585,7 +585,7 @@
                 } catch (error) {
                     console.warn('Publication Firestore ignorée, conservation locale active.', error);
                 }
-                // Synchronisation multi-appareils (Téléphone <-> Laptop) via profiles/{uid}
+                // Synchronisation multi-appareils (Téléphone <-> Laptop) via profiles/{uid} + /api/user-sync par email
                 try {
                     await setDoc(doc(db, 'profiles', userId), {
                         affiliateProducts: affiliateProducts.slice(0, 50),
@@ -593,6 +593,16 @@
                     }, { merge: true });
                 } catch (_) {}
             }
+            try {
+                const syncAcc = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
+                if (syncAcc?.email) {
+                    fetch('/api/user-sync', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: syncAcc.email, affiliateProducts: [prod] })
+                    }).catch(() => {});
+                }
+            } catch (_) {}
             if (typeof window.renderAffiliateJeoahStudio === 'function') window.renderAffiliateJeoahStudio();
 
             // Vider proprement les champs pour ne pas laisser l'ancien lien affiché
