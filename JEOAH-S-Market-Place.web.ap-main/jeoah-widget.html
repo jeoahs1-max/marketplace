@@ -405,13 +405,17 @@
       const selectedLanguage = (!language || language === 'auto') ? (localStorage.getItem('jeoahs-lang') || 'fr') : language;
       const locale = (languageConfig[selectedLanguage] || languageConfig.fr).locale;
 
-      // Voix professionnelle unique OpenAI HD (/api/tts) — annule toute ancienne lecture si un nouveau message arrive
+      // Voix professionnelle unique OpenAI HD (/api/tts) avec timeout 5s pour ne jamais bloquer
       try {
+        const ctrl = new AbortController();
+        const ttsTimeout = setTimeout(() => ctrl.abort(), 5000);
         const res = await fetch('/api/tts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: cleanText, persona: 'jeoah', language: selectedLanguage })
+          body: JSON.stringify({ text: cleanText, persona: 'jeoah', language: selectedLanguage }),
+          signal: ctrl.signal
         });
+        clearTimeout(ttsTimeout);
         if (myToken !== window.__jeoahSpeechToken) return;
         const contentType = res.headers.get('content-type') || '';
         if (res.ok && contentType.includes('audio/')) {

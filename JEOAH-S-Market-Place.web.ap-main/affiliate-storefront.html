@@ -786,14 +786,23 @@
                 if (authUser?.email && !requestedStoreName) {
                     const localAff = JSON.parse(localStorage.getItem('jeoahs_affiliate_products') || '[]');
                     const localVen = JSON.parse(localStorage.getItem('jeoahs_vendor_products') || '[]');
+                    const syncPayload = {
+                        email: authUser.email,
+                        affiliateProducts: Array.isArray(localAff) ? localAff : [],
+                        vendorProducts: Array.isArray(localVen) ? localVen : []
+                    };
+                    const hasCustomHero = storeData.heroImage && !storeData.heroImage.includes('/public/assets/logo.png');
+                    const hasCustomAvatar = storeData.avatar && !storeData.avatar.includes('/public/assets/logo.png');
+                    if (hasCustomHero || hasCustomAvatar) {
+                        syncPayload.storefront = {
+                            ...(hasCustomHero ? { heroImageUrl: storeData.heroImage } : {}),
+                            ...(hasCustomAvatar ? { profilePictureUrl: storeData.avatar } : {})
+                        };
+                    }
                     const syncRes = await fetch('/api/user-sync', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            email: authUser.email,
-                            affiliateProducts: Array.isArray(localAff) ? localAff : [],
-                            vendorProducts: Array.isArray(localVen) ? localVen : []
-                        })
+                        body: JSON.stringify(syncPayload)
                     });
                     const syncJson = await syncRes.json().catch(() => null);
                     if (syncJson?.ok && syncJson.data) {

@@ -88,8 +88,7 @@ ${statsSummary} ${busSummary} Sois concise, humaine, structurée et précise. Ne
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model,
-        temperature: 0.5,
-        max_tokens: 550,
+        max_completion_tokens: 550,
         messages: [
           { role: 'system', content: system },
           ...memory.slice(-8).map(item => ({ role: item.role === 'assistant' ? 'assistant' : 'user', content: item.content })),

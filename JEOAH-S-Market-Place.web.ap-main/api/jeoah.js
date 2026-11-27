@@ -61,8 +61,7 @@ Tes responsabilites essentielles :
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model,
-        temperature: 0.6,
-        max_tokens: 450,
+        max_completion_tokens: 450,
         messages: [
           { role: 'system', content: system },
           ...memory.slice(-8).map(item => ({ role: item.role === 'assistant' ? 'assistant' : 'user', content: item.content })),

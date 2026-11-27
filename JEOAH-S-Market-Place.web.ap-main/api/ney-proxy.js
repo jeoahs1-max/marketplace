@@ -66,8 +66,7 @@ Sois concise (2 à 4 phrases fluides faciles à écouter à l'oral) et ne répè
       },
       body: JSON.stringify({
         model,
-        temperature: 0.6,
-        max_tokens: 400,
+        max_completion_tokens: 400,
         messages: [
           { role: 'system', content: system },
           ...memory.slice(-8).map(item => ({

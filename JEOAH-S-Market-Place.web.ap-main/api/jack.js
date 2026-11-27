@@ -64,8 +64,7 @@ module.exports = async (req, res) => {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model,
-        temperature: 0.3,
-        max_tokens: 600,
+        max_completion_tokens: 600,
         messages: [
           { role: 'system', content: system },
           { role: 'user', content: prompt }
