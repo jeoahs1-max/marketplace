@@ -41,8 +41,26 @@
             <div class="lg:w-1/3 mt-8 lg:mt-0 bg-white p-6 rounded-xl shadow-lg h-fit">
                 <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Résumé de la Commande</h2>
 
+                <div class="space-y-3 mb-4 pb-4 border-b border-gray-200">
+                    <div>
+                        <label for="cartShippingZone" class="block text-xs font-bold text-gray-700 mb-1">Zone de livraison :</label>
+                        <select id="cartShippingZone" onchange="renderCart()" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-800">
+                            <option value="0">Retrait sur place ($0.00)</option>
+                            <option value="3.5" selected>Livraison locale Haïti (+$3.50)</option>
+                            <option value="12">Diaspora → Haïti (+$12.00)</option>
+                            <option value="18">Expédition Internationale (+$18.00)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="cartShippingAddress" class="block text-xs font-bold text-gray-700 mb-1">Adresse &amp; Téléphone de livraison :</label>
+                        <input id="cartShippingAddress" type="text" placeholder="Ex: Delmas 33, Port-au-Prince • +509..." class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800">
+                    </div>
+                </div>
+
                 <div id="cartSummary" class="space-y-2 text-gray-700">
                     <div class="flex justify-between"><span>Total Articles:</span> <span id="summarySubtotal">--</span>
+                    </div>
+                    <div class="flex justify-between"><span>Frais de livraison:</span> <span id="summaryShipping">--</span>
                     </div>
                     <div class="flex justify-between"><span>Frais JEOAH'S (3%):</span> <span id="summaryFees">--</span>
                     </div>
@@ -51,11 +69,11 @@
                     </div>
                 </div>
 
-                <p class="text-sm text-red-500 mt-4">Les frais JEOAH'S (3%) sont ajoutés à l'acheteur.</p>
+                <p class="text-xs text-slate-500 mt-4">Protection Séquestre JEOAH'S (3%) + livraison calculés avant le paiement. Vous pouvez régler en USD, Gourdes (MonCash/NatCash), PayPal ou Carte.</p>
 
                 <button id="checkoutButton"
-                    onclick="window.location.href='/payment.html?mode=cart'"
-                    class="w-full mt-6 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition">
+                    onclick="proceedCartCheckout()"
+                    class="w-full mt-5 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition">
                     Passer la Commande (Paiement Sécurisé)
                 </button>
             </div>
@@ -64,13 +82,20 @@
 
     <script src="/firebase-config.js"></script>
     <script>
+        let currentCartSubtotal = 0;
+        let currentCartShipping = 3.5;
+
         function renderCart() {
             const cart = JSON.parse(localStorage.getItem('jeoahs_cart') || '[]');
             const container = document.getElementById('cartItemsContainer');
             const btn = document.getElementById('checkoutButton');
+            const shipSel = document.getElementById('cartShippingZone');
+            currentCartShipping = Number(shipSel ? shipSel.value : 3.5) || 0;
+
             if (!cart.length) {
                 container.innerHTML = `<div class="bg-white rounded-xl p-8 text-center shadow-sm border border-slate-200"><p class="text-slate-600 font-semibold">Votre panier est vide pour le moment.</p><a href="/showcase.html" class="mt-4 inline-block rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-700">Explorer la Vitrine Centrale</a></div>`;
                 document.getElementById('summarySubtotal').textContent = '$0.00';
+                document.getElementById('summaryShipping').textContent = '$0.00';
                 document.getElementById('summaryFees').textContent = '$0.00';
                 document.getElementById('summaryTotal').textContent = '$0.00';
                 btn.disabled = true;
@@ -82,32 +107,74 @@
             let subtotal = 0;
             container.innerHTML = cart.map((item, idx) => {
                 const priceNum = Number(String(item.price || '0').replace(/[^0-9.]/g, '')) || 0;
-                const qty = Number(item.quantity || 1);
+                const qty = Math.max(1, Number(item.quantity || 1));
                 subtotal += priceNum * qty;
-                return `<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between gap-4">
+                return `<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
                     <div class="flex items-center gap-4">
                         <img src="${item.imageUrl || 'https://placehold.co/100x100/e2e8f0/334155?text=Produit'}" class="w-16 h-16 rounded-lg object-cover">
                         <div>
                             <h3 class="font-bold text-slate-900">${item.name || 'Produit JEOAH\'S'}</h3>
                             <p class="text-xs text-slate-500">Vendeur : ${item.storeName || 'Boutique JEOAH\'S'}</p>
-                            <p class="text-sm font-extrabold text-indigo-700 mt-1">$${priceNum.toFixed(2)} × ${qty}</p>
+                            <p class="text-sm font-extrabold text-indigo-700 mt-1">$${priceNum.toFixed(2)} × ${qty} = $${(priceNum * qty).toFixed(2)}</p>
                         </div>
                     </div>
-                    <button onclick="removeCartItem(${idx})" class="text-red-600 hover:bg-red-50 p-2 rounded-lg text-sm font-bold">Retirer</button>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center border border-slate-300 rounded-lg overflow-hidden bg-slate-50">
+                            <button type="button" onclick="updateCartQty(${idx}, -1)" class="px-3 py-1.5 font-extrabold text-slate-700 hover:bg-slate-200">−</button>
+                            <span class="px-3 py-1.5 text-sm font-bold text-slate-900 bg-white">${qty}</span>
+                            <button type="button" onclick="updateCartQty(${idx}, 1)" class="px-3 py-1.5 font-extrabold text-slate-700 hover:bg-slate-200">+</button>
+                        </div>
+                        <button type="button" onclick="removeCartItem(${idx})" class="text-red-600 hover:bg-red-50 p-2 rounded-lg text-sm font-bold">Retirer</button>
+                    </div>
                 </div>`;
             }).join('');
+            currentCartSubtotal = subtotal;
             const fees = subtotal * 0.03;
             document.getElementById('summarySubtotal').textContent = `$${subtotal.toFixed(2)}`;
+            document.getElementById('summaryShipping').textContent = currentCartShipping === 0 ? 'Gratuit ($0.00)' : `$${currentCartShipping.toFixed(2)}`;
             document.getElementById('summaryFees').textContent = `$${fees.toFixed(2)}`;
-            document.getElementById('summaryTotal').textContent = `$${(subtotal + fees).toFixed(2)}`;
+            document.getElementById('summaryTotal').textContent = `$${(subtotal + currentCartShipping + fees).toFixed(2)}`;
         }
+        window.updateCartQty = function (idx, delta) {
+            const cart = JSON.parse(localStorage.getItem('jeoahs_cart') || '[]');
+            if (!cart[idx]) return;
+            const nextQty = Number(cart[idx].quantity || 1) + delta;
+            if (nextQty <= 0) {
+                cart.splice(idx, 1);
+            } else {
+                cart[idx].quantity = nextQty;
+            }
+            localStorage.setItem('jeoahs_cart', JSON.stringify(cart));
+            renderCart();
+        };
         window.removeCartItem = function (idx) {
             const cart = JSON.parse(localStorage.getItem('jeoahs_cart') || '[]');
             cart.splice(idx, 1);
             localStorage.setItem('jeoahs_cart', JSON.stringify(cart));
             renderCart();
         };
-        document.addEventListener('DOMContentLoaded', renderCart);
+        window.proceedCartCheckout = function () {
+            const cart = JSON.parse(localStorage.getItem('jeoahs_cart') || '[]');
+            if (!cart.length) return;
+            const addr = (document.getElementById('cartShippingAddress')?.value || '').trim();
+            if (currentCartShipping > 0 && !addr) {
+                alert('Veuillez indiquer votre adresse et téléphone de livraison avant de passer au paiement.');
+                document.getElementById('cartShippingAddress')?.focus();
+                return;
+            }
+            try { localStorage.setItem('jeoahs_last_shipping_address', addr); } catch (_) {}
+            const label = cart.map(c => `${c.name || 'Produit'} (x${c.quantity || 1})`).join(', ').slice(0, 140);
+            window.location.href = `/payment.html?mode=cart&amount=${encodeURIComponent(currentCartSubtotal.toFixed(2))}&shipping=${encodeURIComponent(currentCartShipping.toFixed(2))}&item=${encodeURIComponent(label)}${addr ? '&address=' + encodeURIComponent(addr) : ''}`;
+        };
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                const savedAddr = localStorage.getItem('jeoahs_last_shipping_address');
+                if (savedAddr && document.getElementById('cartShippingAddress')) {
+                    document.getElementById('cartShippingAddress').value = savedAddr;
+                }
+            } catch (_) {}
+            renderCart();
+        });
     </script>
     <script src="/public/jeoah-loader.js" defer></script>
 </body>
