@@ -683,7 +683,15 @@
         loadingDiv.remove();
 
         if (res.ok && data.reply) {
-          appendMessage('JEOAH', data.reply, false);
+          if (imageToSend) {
+            try { localStorage.setItem('jeoahs_chat_last_photo', imageToSend); } catch (_) {}
+          }
+          const lastSavedPhoto = localStorage.getItem('jeoahs_chat_last_photo') || '';
+          const wantsVendorDraft = (currentRole === 'vendeur' || /fiche|produit|drap|rideau|vendre|boutique|oui|d'accord/i.test(prompt)) && Boolean(lastSavedPhoto);
+          const actionBtnHtml = wantsVendorDraft
+            ? `<div style="margin-top:8px"><a href="/vendor_product_submission.html?autofill=1" style="display:inline-block;padding:7px 12px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;font-size:11px;font-weight:800;text-decoration:none">🚀 Ouvrir &amp; Pré-remplir ma fiche produit maintenant</a></div>`
+            : '';
+          appendMessage('JEOAH', data.reply + actionBtnHtml, false);
           if (shouldSpeak) speak(data.reply, currentLang);
           memory.push({ role: 'assistant', content: data.reply });
           reportToInternalAiBus(`Demande ${currentRole}`, `${prompt} -> ${data.reply}`);

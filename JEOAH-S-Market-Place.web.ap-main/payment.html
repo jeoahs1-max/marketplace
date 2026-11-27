@@ -642,8 +642,9 @@
         function getCurrentPaymentAmountUsd() {
             if (mode === 'cart') {
                 const cart = JSON.parse(localStorage.getItem('jeoahs_cart') || '[]');
-                const subtotal = cart.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 1)), 0) || Number(params.get('amount') || 25);
-                return +(subtotal * 1.03).toFixed(2);
+                const subtotal = Number(params.get('amount')) || cart.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 1)), 0) || 25;
+                const shipping = Number(params.get('shipping') || 0);
+                return +(subtotal * 1.03 + shipping).toFixed(2);
             } else {
                 const chosen = PLANS[planCode] || PLANS.pro;
                 return +chosen.price.toFixed(2);
@@ -810,13 +811,17 @@
                 document.getElementById('page-subheading').textContent = t.subCart;
 
                 const cart = JSON.parse(localStorage.getItem('jeoahs_cart') || '[]');
-                const subtotal = cart.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 1)), 0) || Number(params.get('amount') || 25);
-                const fee = subtotal * 0.03;
-                const total = subtotal + fee;
+                const subtotal = Number(params.get('amount')) || cart.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 1)), 0) || 25;
+                const shipping = Number(params.get('shipping') || 0);
+                const fee = +(subtotal * 0.03).toFixed(2);
+                const total = +(subtotal + shipping + fee).toFixed(2);
+                const itemLabel = params.get('item') || `${cart.length || 1} article(s)`;
                 document.getElementById('summary-type').textContent = t.typeCart;
-                document.getElementById('summary-plan').textContent = `${cart.length || 1} article(s)`;
+                document.getElementById('summary-plan').textContent = itemLabel;
                 document.getElementById('summary-subtotal').textContent = `$${subtotal.toFixed(2)} USD`;
-                document.getElementById('summary-fee').textContent = `$${fee.toFixed(2)} USD (3%)`;
+                document.getElementById('summary-fee').textContent = shipping > 0
+                    ? `$${fee.toFixed(2)} (3 %) + $${shipping.toFixed(2)} livraison`
+                    : `$${fee.toFixed(2)} USD (3 %)`;
                 document.getElementById('summary-total-usd').textContent = `$${total.toFixed(2)} USD`;
                 document.getElementById('summary-total-htg').textContent = `≈ ${Math.round(total * 131)} HTG`;
                 document.getElementById('pay-btn-text').textContent = t.payCartBtn(total.toFixed(2));

@@ -334,6 +334,20 @@
         document.getElementById('product-price')?.addEventListener('input', updateVendorPricePreview);
         document.getElementById('product-currency')?.addEventListener('change', updateVendorPricePreview);
 
+        // Si JEOAH redirige depuis le chat avec ?autofill=1, charger automatiquement la photo envoyée et pré-remplir la fiche
+        if (new URLSearchParams(window.location.search).get('autofill') === '1') {
+            setTimeout(() => {
+                const chatPhoto = localStorage.getItem('jeoahs_chat_last_photo');
+                if (chatPhoto && !currentVendorPhotos.length) {
+                    currentVendorPhotos = [chatPhoto];
+                    renderVendorMediaPreviews();
+                    if (typeof window.askJeoahToFillFromPhoto === 'function') {
+                        window.askJeoahToFillFromPhoto(false);
+                    }
+                }
+            }, 600);
+        }
+
         let jeoahProposalCount = 0;
         const JEOAH_ANGLES = [
             'style élégant et rassurant',
