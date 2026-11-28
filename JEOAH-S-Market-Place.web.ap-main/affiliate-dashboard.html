@@ -465,8 +465,12 @@
                         <p class="text-[11px] opacity-90"><i class="fas fa-layer-group mr-1"></i> ${trendAdvice.multiNote}</p>
                     </div>
                     <div class="relative aspect-[16/9] max-h-72 w-full overflow-hidden bg-slate-100 flex items-center justify-center">
-                        <img src="${productImage}" alt="${productName.replace(/"/g, '&quot;')}" class="h-full w-full object-contain bg-white" onerror="this.src='/public/assets/logo.png'">
+                        <img id="pending-preview-img" src="${productImage}" alt="${productName.replace(/"/g, '&quot;')}" class="h-full w-full object-contain bg-white" onerror="this.src='/public/assets/logo.png'">
                         <span class="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-xs font-bold text-indigo-700 shadow">${sourcePlatform}</span>
+                        <label class="absolute right-4 bottom-3 cursor-pointer inline-flex items-center gap-1.5 rounded-xl bg-slate-900/85 hover:bg-purple-700 text-white px-3 py-1.5 text-xs font-bold shadow transition">
+                            <i class="fas fa-camera"></i> Importer / Changer la photo
+                            <input type="file" accept="image/*" onchange="replacePendingAffiliateImage(this)" class="hidden">
+                        </label>
                     </div>
                     <div class="p-5 sm:p-6">
                         <p class="text-sm font-bold uppercase tracking-wide text-indigo-700">${productHook}</p>
@@ -494,6 +498,40 @@
                     </div>
                 </div>
             `;
+        };
+
+        window.replacePendingAffiliateImage = function (inputEl) {
+            const file = inputEl?.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const raw = ev.target?.result;
+                if (typeof raw !== 'string') return;
+                const im = new Image();
+                im.onload = () => {
+                    const maxDim = 800;
+                    let w = im.width, h = im.height;
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
+                        else { w = Math.round(w * (maxDim / h)); h = maxDim; }
+                    }
+                    const c = document.createElement('canvas');
+                    c.width = w; c.height = h;
+                    c.getContext('2d').drawImage(im, 0, 0, w, h);
+                    let finalImg = raw;
+                    try { finalImg = c.toDataURL('image/jpeg', 0.82); } catch (_) {}
+                    const imgEl = document.getElementById('pending-preview-img');
+                    if (imgEl) imgEl.src = finalImg;
+                    if (pendingProductDraft) {
+                        pendingProductDraft.imageUrl = finalImg;
+                        if (Array.isArray(pendingProductDraft.offers) && pendingProductDraft.offers[0]) {
+                            pendingProductDraft.offers[0].imageUrl = finalImg;
+                        }
+                    }
+                };
+                im.src = raw;
+            };
+            reader.readAsDataURL(file);
         };
 
         window.togglePendingOffer = function (idx, checked) {

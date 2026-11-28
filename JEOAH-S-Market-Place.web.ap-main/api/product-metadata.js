@@ -139,24 +139,22 @@ module.exports = async (req, res) => {
       redirect: 'follow'
     });
 
-    if (!response.ok) {
-      return res.status(200).json({
-        name: '',
-        description: '',
-        image: '',
-        price: '',
-        source: target.hostname
-      });
-    }
-
-    const finalUrl = (response.url || target.href).toLowerCase();
+    const finalUrlRaw = response.url || target.href;
+    const finalUrl = finalUrlRaw.toLowerCase();
     const isAmazon = finalUrl.includes('amazon.') || target.hostname.includes('amazon') || target.hostname.includes('a.co') || target.hostname.includes('amzn');
 
-    const html = await response.text();
-    const jsonLd = getJsonLdProduct(html);
-    const amazonImg = isAmazon ? getAmazonProductImage(html) : '';
-    const amazonPrice = isAmazon ? getAmazonPrice(html) : '';
-    const metaImg = getMeta(html, ['og:image', 'twitter:image']);
+    const asinMatch = finalUrlRaw.match(/\/(?:dp|gp\/product|product)\/([A-Z0-9]{10})/i);
+    const asin = asinMatch ? asinMatch[1].toUpperCase() : '';
+    const slugMatch = finalUrlRaw.match(/amazon\.[^/]+\/([^/]+)\/(?:dp|gp\/product)\//i);
+    const urlSlugTitle = slugMatch?.[1] && !/^(dp|gp|product|s|b)$/i.test(slugMatch[1])
+      ? decodeURIComponent(slugMatch[1]).replace(/[-_+]+/g, ' ').trim()
+      : '';
+
+    const html = response.ok ? await response.text() : '';
+    const jsonLd = html ? getJsonLdProduct(html) : {};
+    const amazonImg = (html && isAmazon) ? getAmazonProductImage(html) : '';
+    const amazonPrice = (html && isAmazon) ? getAmazonPrice(html) : '';
+    const metaImg = html ? getMeta(html, ['og:image', 'twitter:image']) : '';
 
     let finalImg = '';
     if (amazonImg && isValidProductImage(amazonImg)) {
@@ -167,15 +165,37 @@ module.exports = async (req, res) => {
       finalImg = metaImg;
     }
 
-    const title = decodeEntities(getTitle(html) || jsonLd.name || getMeta(html, ['og:title', 'twitter:title']));
-    const desc = decodeEntities(jsonLd.description || getMeta(html, ['og:description', 'description', 'twitter:description']));
-    const price = amazonPrice || jsonLd.price || getMeta(html, ['product:price:amount', 'og:price:amount']);
+    // Fallback image officiel Amazon par ASIN si la page HTML était protégée anti-bot
+    if (!finalImg && isAmazon && asin) {
+      const asinImgCandidates = [
+        `https://images-na.ssl-images-amazon.com/images/P/${asin}.01.LZZZZZZZ.jpg`,
+        `https://ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&ASIN=${asin}&Format=_SL500_&ID=AsinImage&MarketPlace=US&ServiceVersion=20070822`
+      ];
+      for (const cand of asinImgCandidates) {
+        try {
+          const headRes = await fetch(cand, { method: 'HEAD', timeout: 4000 });
+          const len = Number(headRes.headers.get('content-length') || 0);
+          if (headRes.ok && len > 2500) {
+            finalImg = cand;
+            break;
+          }
+        } catch (_) {}
+      }
+    }
+
+    let title = decodeEntities((html ? getTitle(html) : '') || jsonLd.name || (html ? getMeta(html, ['og:title', 'twitter:title']) : ''));
+    if (!title || /^(amazon\.com|robot check|sorry!|page not found|503|access denied)$/i.test(title.trim())) {
+      title = urlSlugTitle || '';
+    }
+    const desc = decodeEntities(jsonLd.description || (html ? getMeta(html, ['og:description', 'description', 'twitter:description']) : ''));
+    const price = amazonPrice || jsonLd.price || (html ? getMeta(html, ['product:price:amount', 'og:price:amount']) : '');
 
     return res.status(200).json({
       name: title,
       description: desc,
       image: finalImg,
       price: price,
+      asin: asin || undefined,
       source: target.hostname
     });
   } catch (error) {
