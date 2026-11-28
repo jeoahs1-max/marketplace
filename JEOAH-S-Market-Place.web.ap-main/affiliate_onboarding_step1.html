@@ -67,14 +67,27 @@
 
         const initialMerchants = [
             { name: "Amazon", base_link: "", icon_svg: getPlatformSvg("Amazon"), placeholder: "Votre ID de suivi Amazon (ex: jeoahs-20)", required: false },
-            { name: "Temu", base_link: "", icon_svg: getPlatformSvg("Temu"), placeholder: "Votre ID ou lien affilié Temu", required: false },
             { name: "Shein", base_link: "", icon_svg: getPlatformSvg("Shein"), placeholder: "Votre code ou lien affilié Shein", required: false },
             { name: "AliExpress", base_link: "", icon_svg: getPlatformSvg("AliExpress"), placeholder: "Votre lien ou ID partenaire AliExpress", required: false },
-            { name: "Walmart", base_link: "", icon_svg: getPlatformSvg("Walmart"), placeholder: "Votre clé ou lien affilié Walmart", required: false },
-            { name: "Ebay", base_link: "", icon_svg: getPlatformSvg("Ebay"), placeholder: "ID du réseau partenaire Ebay", required: false }
+            { name: "Temu", base_link: "", icon_svg: getPlatformSvg("Temu"), placeholder: "Votre ID ou lien affilié Temu", required: false },
+            { name: "Walmart", base_link: "", icon_svg: getPlatformSvg("Walmart"), placeholder: "Votre clé ou lien affilié Walmart / eBay", required: false }
         ];
 
-        const MAX_LINKS = 10;
+        function resolveAffiliateMaxLinks() {
+            const sub = JSON.parse(localStorage.getItem('jeoahs_affiliate_subscription') || 'null') || {};
+            const acc = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null') || {};
+            const plan = String(sub.plan || acc.plan || 'starter').toLowerCase();
+            if (plan.includes('premium') || plan.includes('annual') || plan.includes('annuel') || plan.includes('founder') || plan.includes('tester') || acc.testAccount) {
+                return { max: 5, label: 'Premium / Annuel (jusqu’à 5 ID)' };
+            }
+            if (plan.includes('pro')) {
+                return { max: 3, label: 'Forfait Pro (jusqu’à 3 ID)' };
+            }
+            return { max: 2, label: 'Forfait Starter (jusqu’à 2 ID)' };
+        }
+
+        const PLAN_QUOTA = resolveAffiliateMaxLinks();
+        const MAX_LINKS = PLAN_QUOTA.max;
 
         document.addEventListener('DOMContentLoaded', () => {
             initFirebase();
@@ -121,7 +134,7 @@
 
             if (sourceLinks) {
                 // Fusionner les liens sauvegardés avec les marchands de base pour ne rien perdre
-                const merged = sourceLinks.map(l => ({ ...l, icon_svg: getPlatformSvg(l.name) }));
+                const merged = sourceLinks.map(l => ({ ...l, icon_svg: getPlatformSvg(l.name) })).slice(0, MAX_LINKS);
                 initialMerchants.forEach(def => {
                     if (!merged.some(m => (m.name || '').trim().toLowerCase() === def.name.toLowerCase()) && merged.length < MAX_LINKS) {
                         merged.push({ ...def });
@@ -130,9 +143,11 @@
                 affiliateLinks = merged;
                 localStorage.setItem('jeoahs_affiliate_links', JSON.stringify(affiliateLinks));
             } else {
-                affiliateLinks = initialMerchants.map(link => ({ ...link }));
+                affiliateLinks = initialMerchants.slice(0, MAX_LINKS).map(link => ({ ...link }));
             }
 
+            const planBadgeEl = document.getElementById('affiliate-plan-quota-badge');
+            if (planBadgeEl) planBadgeEl.textContent = PLAN_QUOTA.label;
             renderAffiliateLinks();
             document.getElementById('loading-indicator').classList.add('hidden');
             document.getElementById('onboarding-content').classList.remove('hidden');
@@ -246,6 +261,10 @@
                 showCustomModal('Ajoutez au moins un lien', "Vous pouvez commencer avec Amazon, Shein ou n'importe quelle plateforme.");
                 return;
             }
+            if (completedLinks.length > MAX_LINKS) {
+                showCustomModal('Limite de votre forfait atteinte', `Votre forfait actuel (${PLAN_QUOTA.label}) autorise jusqu'à ${MAX_LINKS} ID d'affiliation. Supprimez un lien ou passez au forfait supérieur pour en activer jusqu'à 5.`);
+                return;
+            }
             // Sauvegarder tous les liens configurés (sans bloquer si certaines plateformes optionnelles restent vides)
             localStorage.setItem('jeoahs_affiliate_links', JSON.stringify(affiliateLinks));
             if (db && userId) {
@@ -333,8 +352,10 @@
                 <p class="mt-3 max-w-2xl text-gray-600" data-i18n="affiliateProgramsText">Indiquez les plateformes sur
                     lesquelles vous êtes affilié. JEOAH'S affichera ensuite les offres correspondantes sur votre
                     vitrine.</p>
-                <p class="mt-3 text-sm font-semibold text-gray-700">Plateformes configurées : <span id="link-count">0 /
-                        10</span></p>
+                <p class="mt-3 text-sm font-semibold text-gray-700 flex flex-wrap items-center gap-2">
+                    <span>Plateformes configurées : <span id="link-count">0 / 5</span></span>
+                    <span id="affiliate-plan-quota-badge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800"></span>
+                </p>
                 <div class="mt-4 rounded-2xl border border-blue-200 bg-blue-50/80 p-4 text-xs text-blue-950 space-y-1.5">
                     <p class="font-extrabold text-blue-900"><i class="fas fa-robot mr-1.5 text-blue-600"></i> Guide JEOAH — Quoi mettre dans la case « Votre ID/Lien de base » ?</p>
                     <ul class="list-disc list-inside space-y-1 text-blue-900/90">
