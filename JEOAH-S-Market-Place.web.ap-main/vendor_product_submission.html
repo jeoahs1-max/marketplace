@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ajouter / Gérer mes Produits Vendeur — JEOAH'S</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
     <script src="/firebase-config.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
@@ -106,21 +107,51 @@
             renderVendorMediaPreviews();
         };
 
-        function addPhotoFiles(fileList) {
+        async function addPhotoFiles(fileList) {
             const files = Array.from(fileList || []).slice(0, 5 - currentVendorPhotos.length);
             if (!files.length) return;
-            let loaded = 0;
-            files.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    if (typeof ev.target?.result === 'string' && currentVendorPhotos.length < 5) {
-                        currentVendorPhotos.push(ev.target.result);
+            for (const file of files) {
+                if (currentVendorPhotos.length >= 5) break;
+                let sourceBlob = file;
+                const fname = String(file?.name || '').toLowerCase();
+                const ftype = String(file?.type || '').toLowerCase();
+                if ((fname.endsWith('.heic') || fname.endsWith('.heif') || ftype.includes('heic') || ftype.includes('heif')) && typeof window.heic2any === 'function') {
+                    try {
+                        const converted = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+                        sourceBlob = Array.isArray(converted) ? converted[0] : converted;
+                    } catch (heicErr) {
+                        console.warn('Conversion HEIC échouée:', heicErr);
                     }
-                    loaded++;
-                    if (loaded === files.length) renderVendorMediaPreviews();
-                };
-                reader.readAsDataURL(file);
-            });
+                }
+                const dataUrl = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        const raw = ev.target?.result;
+                        if (typeof raw !== 'string') return resolve('');
+                        const img = new Image();
+                        img.onload = () => {
+                            const maxDim = 900;
+                            let w = img.width, h = img.height;
+                            if (w > maxDim || h > maxDim) {
+                                if (w > h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
+                                else { w = Math.round(w * (maxDim / h)); h = maxDim; }
+                            }
+                            const c = document.createElement('canvas');
+                            c.width = w; c.height = h;
+                            c.getContext('2d').drawImage(img, 0, 0, w, h);
+                            try { resolve(c.toDataURL('image/jpeg', 0.82)); } catch (_) { resolve(raw); }
+                        };
+                        img.onerror = () => resolve(raw);
+                        img.src = raw;
+                    };
+                    reader.onerror = () => resolve('');
+                    reader.readAsDataURL(sourceBlob);
+                });
+                if (dataUrl && currentVendorPhotos.length < 5) {
+                    currentVendorPhotos.push(dataUrl);
+                }
+            }
+            renderVendorMediaPreviews();
         }
 
         function setVideoFile(file) {
@@ -428,13 +459,30 @@
             }
         };
 
-        // Générateur de petite vidéo produit cinématique par JEOAH (4 scènes ~10-12s même avec 1 seule photo !)
-        window.generateJeoahProductMiniVideo = async function () {
+        // Studio Vidéo Commerciale Pro JEOAH : 5 scènes animées (~16-20s) + Voix off IA (/api/tts) + Musique de fond douce + 3 styles échangeables
+        const JEOAH_VIDEO_STYLES = [
+            { id: 'luxe', name: 'Luxe & Élégant', primary: '#4c1d95', accent: '#f59e0b', badgeBg: 'rgba(88, 28, 135, 0.92)', bgStart: '#071b3c', bgEnd: '#3b0764', chords: [[220, 277.18, 329.63], [196, 246.94, 293.66], [174.61, 220, 261.63], [164.81, 207.65, 246.94]] },
+            { id: 'promo', name: 'Dynamique & Promo', primary: '#be185d', accent: '#fde047', badgeBg: 'rgba(219, 39, 119, 0.94)', bgStart: '#1e1b4b', bgEnd: '#831843', chords: [[261.63, 329.63, 392], [293.66, 369.99, 440], [329.63, 392, 493.88], [261.63, 329.63, 392]] },
+            { id: 'moderne', name: 'Moderne & Studio', primary: '#0f766e', accent: '#38bdf8', badgeBg: 'rgba(15, 118, 110, 0.92)', bgStart: '#0f172a', bgEnd: '#134e4a', chords: [[196, 246.94, 293.66], [220, 261.63, 329.63], [174.61, 220, 261.63], [196, 246.94, 329.66]] }
+        ];
+
+        window.generateJeoahProductMiniVideo = async function (cycleNextStyle = false) {
             const statusEl = document.getElementById('jeoah-video-gen-status');
             const btn = document.getElementById('jeoah-gen-video-btn');
+            const regenBtn = document.getElementById('jeoah-regen-video-btn');
+            const styleSel = document.getElementById('jeoah-video-style');
+            const useVoice = document.getElementById('jeoah-video-voice')?.checked !== false;
+            const useMusic = document.getElementById('jeoah-video-music')?.checked !== false;
+
+            if (cycleNextStyle && styleSel) {
+                const nextIdx = (styleSel.selectedIndex + 1) % JEOAH_VIDEO_STYLES.length;
+                styleSel.selectedIndex = nextIdx;
+            }
+            const theme = JEOAH_VIDEO_STYLES.find(s => s.id === (styleSel?.value || 'luxe')) || JEOAH_VIDEO_STYLES[0];
+
             const photos = currentVendorPhotos.length ? currentVendorPhotos : [document.getElementById('product-image-url-1')?.value?.trim()].filter(Boolean);
             if (!photos.length) {
-                showCustomModal('Ajoutez au moins 1 photo', 'Importez ou prenez au moins 1 photo de votre produit pour que JEOAH puisse créer un beau montage vidéo produit (~10 secondes).');
+                showCustomModal('Ajoutez au moins 1 photo', 'Importez ou prenez au moins 1 photo de votre produit pour que JEOAH puisse créer votre vidéo professionnelle avec voix off et musique.');
                 return;
             }
             if (typeof MediaRecorder === 'undefined') {
@@ -442,11 +490,13 @@
                 return;
             }
             if (statusEl) {
-                statusEl.textContent = '🎬 JEOAH réalise un montage vidéo cinématique en 4 scènes (~10 secondes) à partir de votre photo...';
+                statusEl.textContent = `🎬 Studio JEOAH (${theme.name}) : préparation de la voix off IA, de la musique de fond et du montage pro (~16-20s)...`;
                 statusEl.classList.remove('hidden');
             }
             if (btn) btn.disabled = true;
+            if (regenBtn) regenBtn.disabled = true;
 
+            let audioCtx = null;
             try {
                 const loadedImgs = await Promise.all(photos.slice(0, 5).map(src => new Promise((resolve) => {
                     const im = new Image();
@@ -458,137 +508,268 @@
                 const validImgs = loadedImgs.filter(Boolean);
                 if (!validImgs.length) throw new Error('Aucune image chargée');
 
-                const canvas = document.createElement('canvas');
-                canvas.width = 720;
-                canvas.height = 720;
-                const ctx = canvas.getContext('2d');
-                const stream = canvas.captureStream(25);
-                const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm';
-                const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 1600000 });
-                const chunks = [];
-                recorder.ondataavailable = ev => { if (ev.data.size > 0) chunks.push(ev.data); };
-
-                const title = (document.getElementById('product-name')?.value?.trim() || 'Nouveau produit JEOAH\'S').slice(0, 42);
-                const slogan = (document.getElementById('product-slogan')?.value?.trim() || 'Qualité sélectionnée sur JEOAH\'S').slice(0, 54);
+                const title = (document.getElementById('product-name')?.value?.trim() || 'Nouveau produit JEOAH\'S').slice(0, 44);
+                const slogan = (document.getElementById('product-slogan')?.value?.trim() || 'Qualité sélectionnée sur JEOAH\'S').slice(0, 58);
+                const descRaw = (document.getElementById('product-description')?.value?.trim() || 'Un produit soigneusement sélectionné pour vous offrir qualité, fiabilité et style au quotidien.');
+                const descHighlight = descRaw.split(/[.!?]/)[0].trim().slice(0, 74) || slogan;
                 const priceVal = document.getElementById('product-price')?.value?.trim() || '';
                 const curVal = document.getElementById('product-currency')?.value || 'USD';
                 const priceBadge = priceVal ? `${priceVal} ${curVal}` : '';
                 const colorsVal = document.getElementById('product-colors')?.value?.trim() || '';
                 const sizesVal = document.getElementById('product-sizes')?.value?.trim() || '';
 
+                // 1. Préparer la piste audio (Voix off OpenAI /api/tts + Musique de fond douce Web Audio API)
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                let audioTracks = [];
+                let voiceBuffer = null;
+                let audioDest = null;
+
+                if (AudioContextClass && (useVoice || useMusic)) {
+                    try {
+                        audioCtx = new AudioContextClass();
+                        if (audioCtx.state === 'suspended') await audioCtx.resume().catch(() => {});
+                        audioDest = audioCtx.createMediaStreamDestination();
+                        audioTracks = audioDest.stream.getAudioTracks();
+
+                        if (useVoice) {
+                            const voiceScript = `Découvrez ${title}. ${slogan}. ${descHighlight}. ${colorsVal ? 'Disponible en ' + colorsVal + '. ' : ''}${priceBadge ? 'Proposé à ' + priceBadge + '. ' : ''}Commandez en toute sécurité sur JEOAH'S Market Place.`;
+                            try {
+                                const ttsRes = await fetch('/api/tts', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ text: voiceScript, voice: 'nova' })
+                                });
+                                if (ttsRes.ok) {
+                                    const arrBuf = await ttsRes.arrayBuffer();
+                                    voiceBuffer = await audioCtx.decodeAudioData(arrBuf.slice(0));
+                                }
+                            } catch (ttsErr) {
+                                console.warn('Voix off indisponible, montage avec musique seule:', ttsErr);
+                            }
+                        }
+                    } catch (aErr) {
+                        console.warn('AudioContext indisponible:', aErr);
+                    }
+                }
+
+                const totalDurationSec = voiceBuffer
+                    ? Math.max(15, Math.min(24, Math.ceil(voiceBuffer.duration + 2.5)))
+                    : 16;
+
+                // Lancer la voix off + la musique de fond dans le flux d'enregistrement
+                if (audioCtx && audioDest) {
+                    const startAt = audioCtx.currentTime + 0.15;
+                    if (voiceBuffer) {
+                        const vSrc = audioCtx.createBufferSource();
+                        vSrc.buffer = voiceBuffer;
+                        const vGain = audioCtx.createGain();
+                        vGain.gain.value = 1.0;
+                        vSrc.connect(vGain);
+                        vGain.connect(audioDest);
+                        vSrc.start(startAt + 0.35);
+                    }
+                    if (useMusic) {
+                        const chords = theme.chords;
+                        const beatDur = 2.0;
+                        const totalSteps = Math.ceil(totalDurationSec / beatDur);
+                        for (let step = 0; step < totalSteps; step++) {
+                            const chord = chords[step % chords.length];
+                            const t0 = startAt + step * beatDur;
+                            chord.forEach((freq, i) => {
+                                const osc = audioCtx.createOscillator();
+                                const g = audioCtx.createGain();
+                                osc.type = i === 0 ? 'sine' : 'triangle';
+                                osc.frequency.setValueAtTime(freq, t0);
+                                const peak = voiceBuffer ? 0.032 : 0.065;
+                                g.gain.setValueAtTime(0.0001, t0);
+                                g.gain.linearRampToValueAtTime(peak, t0 + 0.35);
+                                g.gain.exponentialRampToValueAtTime(0.0001, t0 + beatDur - 0.05);
+                                osc.connect(g);
+                                g.connect(audioDest);
+                                osc.start(t0);
+                                osc.stop(t0 + beatDur);
+                            });
+                        }
+                    }
+                }
+
+                // 2. Combiner flux vidéo Canvas + flux audio (voix + musique)
+                const canvas = document.createElement('canvas');
+                canvas.width = 720;
+                canvas.height = 720;
+                const ctx = canvas.getContext('2d');
+                const videoStream = canvas.captureStream(24);
+                const combinedStream = new MediaStream([
+                    ...videoStream.getVideoTracks(),
+                    ...audioTracks
+                ]);
+
+                const preferredMimes = [
+                    'video/webm;codecs=vp9,opus',
+                    'video/webm;codecs=vp8,opus',
+                    'video/webm'
+                ];
+                const mime = preferredMimes.find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
+                const recorder = new MediaRecorder(combinedStream, { mimeType: mime, videoBitsPerSecond: 1800000 });
+                const chunks = [];
+                recorder.ondataavailable = ev => { if (ev.data.size > 0) chunks.push(ev.data); };
+
                 const donePromise = new Promise(resolve => { recorder.onstop = resolve; });
                 recorder.start();
 
-                // 4 scènes cinématiques (~2.5s chacune = ~10 secondes minimum même avec 1 seule photo !)
                 const scenes = [
-                    { type: 'intro', img: validImgs[0], label: 'NOUVEAUTÉ JEOAH\'S' },
-                    { type: 'detail', img: validImgs[1 % validImgs.length], label: 'QUALITÉ & DÉTAILS' },
-                    { type: 'specs', img: validImgs[2 % validImgs.length], label: 'OPTIONS DISPONIBLES' },
-                    { type: 'outro', img: validImgs[3 % validImgs.length], label: 'COMMANDEZ EN SÉCURITÉ' }
+                    { type: 'intro', img: validImgs[0], label: 'NOUVEAUTÉ JEOAH\'S', caption: slogan },
+                    { type: 'detail', img: validImgs[1 % validImgs.length], label: 'POINTS FORTS', caption: descHighlight },
+                    { type: 'zoom', img: validImgs[2 % validImgs.length], label: 'FINITION & QUALITÉ', caption: descRaw.slice(0, 74) },
+                    { type: 'specs', img: validImgs[3 % validImgs.length], label: 'OPTIONS & DISPONIBILITÉ', caption: (colorsVal || sizesVal) ? `${colorsVal ? 'Couleurs : ' + colorsVal.slice(0, 26) : ''}${colorsVal && sizesVal ? ' · ' : ''}${sizesVal ? 'Tailles : ' + sizesVal.slice(0, 20) : ''}` : slogan },
+                    { type: 'outro', img: validImgs[4 % validImgs.length], label: 'COMMANDEZ EN SÉCURITÉ', caption: 'Paiement Séquestre JEOAH\'S' }
                 ];
-                const framesPerScene = 60; // 60 * 42ms ≈ 2.5s par scène -> ~10 secondes totales
+
+                const fps = 24;
+                const totalFrames = Math.round(totalDurationSec * fps);
+                const framesPerScene = Math.max(48, Math.floor(totalFrames / scenes.length));
+                const frameDelayMs = Math.round(1000 / fps);
+
+                const drawWrappedText = (text, x, y, maxWidth, lineHeight, maxLines = 2) => {
+                    const words = String(text || '').split(/\s+/);
+                    let line = '';
+                    let lineNum = 0;
+                    for (let i = 0; i < words.length; i++) {
+                        const test = line ? line + ' ' + words[i] : words[i];
+                        if (ctx.measureText(test).width > maxWidth && line) {
+                            ctx.fillText(line, x, y + lineNum * lineHeight);
+                            line = words[i];
+                            lineNum++;
+                            if (lineNum >= maxLines) return;
+                        } else {
+                            line = test;
+                        }
+                    }
+                    if (line && lineNum < maxLines) ctx.fillText(line, x, y + lineNum * lineHeight);
+                };
 
                 for (let sIdx = 0; sIdx < scenes.length; sIdx++) {
                     const sc = scenes[sIdx];
                     const img = sc.img;
+                    const prevImg = sIdx > 0 ? scenes[sIdx - 1].img : null;
+
                     for (let f = 0; f < framesPerScene; f++) {
                         const p = f / framesPerScene;
                         ctx.fillStyle = '#0b1120';
                         ctx.fillRect(0, 0, 720, 720);
 
                         if (sc.type === 'outro') {
-                            // Scène 4 : Carte finale premium avec produit en médaillon centré
                             const bgGrad = ctx.createLinearGradient(0, 0, 720, 720);
-                            bgGrad.addColorStop(0, '#072147');
-                            bgGrad.addColorStop(1, '#4c1d95');
+                            bgGrad.addColorStop(0, theme.bgStart);
+                            bgGrad.addColorStop(1, theme.bgEnd);
                             ctx.fillStyle = bgGrad;
                             ctx.fillRect(0, 0, 720, 720);
 
-                            const cardScale = 0.92 + p * 0.08;
-                            const boxSize = Math.round(330 * cardScale);
+                            const cardScale = 0.90 + p * 0.10;
+                            const boxSize = Math.round(320 * cardScale);
                             const bx = Math.round((720 - boxSize) / 2);
                             ctx.fillStyle = '#ffffff';
-                            ctx.fillRect(bx - 10, 80 - 10, boxSize + 20, boxSize + 20);
+                            ctx.fillRect(bx - 10, 72 - 10, boxSize + 20, boxSize + 20);
                             const r = Math.max(boxSize / img.width, boxSize / img.height);
                             ctx.save();
                             ctx.beginPath();
-                            ctx.rect(bx, 80, boxSize, boxSize);
+                            ctx.rect(bx, 72, boxSize, boxSize);
                             ctx.clip();
-                            ctx.drawImage(img, bx + (boxSize - img.width * r) / 2, 80 + (boxSize - img.height * r) / 2, img.width * r, img.height * r);
+                            ctx.drawImage(img, bx + (boxSize - img.width * r) / 2, 72 + (boxSize - img.height * r) / 2, img.width * r, img.height * r);
                             ctx.restore();
 
                             ctx.textAlign = 'center';
-                            ctx.fillStyle = '#fde047';
+                            ctx.fillStyle = theme.accent;
                             ctx.font = 'bold 28px Arial';
-                            ctx.fillText(title, 360, 485);
+                            ctx.fillText(title, 360, 472);
                             if (priceBadge) {
                                 ctx.fillStyle = '#10b981';
-                                ctx.fillRect(240, 512, 240, 54);
+                                ctx.fillRect(230, 498, 260, 54);
                                 ctx.fillStyle = '#ffffff';
                                 ctx.font = 'bold 28px Arial';
-                                ctx.fillText(priceBadge, 360, 549);
+                                ctx.fillText(priceBadge, 360, 535);
                             }
-                            ctx.fillStyle = '#e2e8f0';
+                            ctx.fillStyle = '#f1f5f9';
                             ctx.font = 'bold 20px Arial';
-                            ctx.fillText('Paiement sécurisé sur JEOAH\'S Market Place', 360, 622);
+                            ctx.fillText('Paiement sécurisé sur JEOAH\'S Market Place', 360, 610);
                             ctx.fillStyle = '#c4b5fd';
                             ctx.font = '18px Arial';
-                            ctx.fillText('www.jeoahs.com', 360, 658);
+                            ctx.fillText('www.jeoahs.com', 360, 648);
                             ctx.textAlign = 'left';
                         } else {
-                            // Scènes 1, 2, 3 : Effets Ken Burns (zoom + panoramique fluide)
-                            let zoom = 1.0 + p * 0.14;
+                            let zoom = 1.02 + p * 0.14;
                             let panX = 0;
                             let panY = 0;
                             if (sc.type === 'detail') {
-                                zoom = 1.24;
-                                panX = (p - 0.5) * 90;
-                                panY = -20;
+                                zoom = 1.22;
+                                panX = (p - 0.5) * 95;
+                                panY = -18;
+                            } else if (sc.type === 'zoom') {
+                                zoom = 1.18 - p * 0.12;
+                                panY = (p - 0.5) * 40;
                             } else if (sc.type === 'specs') {
-                                zoom = 1.14 - p * 0.10;
+                                zoom = 1.08 + p * 0.10;
+                                panX = (0.5 - p) * 65;
                             }
-                            const ratio = Math.max(720 / img.width, 720 / img.height) * zoom;
-                            const dw = img.width * ratio;
-                            const dh = img.height * ratio;
-                            ctx.drawImage(img, (720 - dw) / 2 + panX, (720 - dh) / 2 + panY, dw, dh);
 
-                            // Badge haut gauche
-                            ctx.fillStyle = 'rgba(124, 58, 237, 0.92)';
-                            ctx.fillRect(28, 28, 280, 42);
+                            const drawPhoto = (photo, alpha = 1) => {
+                                ctx.save();
+                                ctx.globalAlpha = alpha;
+                                const ratio = Math.max(720 / photo.width, 720 / photo.height) * zoom;
+                                const dw = photo.width * ratio;
+                                const dh = photo.height * ratio;
+                                ctx.drawImage(photo, (720 - dw) / 2 + panX, (720 - dh) / 2 + panY, dw, dh);
+                                ctx.restore();
+                            };
+
+                            if (prevImg && f < 10) {
+                                drawPhoto(prevImg, 1);
+                                drawPhoto(img, f / 10);
+                            } else {
+                                drawPhoto(img, 1);
+                            }
+
+                            // Badge animé haut gauche
+                            const slideX = Math.min(0, -140 + f * 18);
+                            ctx.fillStyle = theme.badgeBg;
+                            ctx.fillRect(28 + slideX, 28, 300, 42);
                             ctx.fillStyle = '#ffffff';
-                            ctx.font = 'bold 18px Arial';
-                            ctx.fillText(sc.label, 44, 56);
+                            ctx.font = 'bold 17px Arial';
+                            ctx.fillText(sc.label, 44 + slideX, 55);
 
                             // Badge prix haut droite
                             if (priceBadge) {
-                                ctx.fillStyle = 'rgba(16, 185, 129, 0.94)';
-                                ctx.fillRect(500, 28, 192, 46);
+                                ctx.fillStyle = 'rgba(16, 185, 129, 0.95)';
+                                ctx.fillRect(492, 28, 200, 46);
                                 ctx.fillStyle = '#ffffff';
-                                ctx.font = 'bold 24px Arial';
-                                ctx.fillText(priceBadge, 520, 60);
+                                ctx.font = 'bold 23px Arial';
+                                ctx.fillText(priceBadge, 512, 59);
                             }
 
-                            // Bandeau bas élégant
-                            const grad = ctx.createLinearGradient(0, 470, 0, 720);
+                            // Bandeau bas explicatif animé
+                            const grad = ctx.createLinearGradient(0, 455, 0, 720);
                             grad.addColorStop(0, 'rgba(15,23,42,0)');
-                            grad.addColorStop(0.5, 'rgba(15,23,42,0.85)');
-                            grad.addColorStop(1, 'rgba(15,23,42,0.97)');
+                            grad.addColorStop(0.42, 'rgba(15,23,42,0.88)');
+                            grad.addColorStop(1, 'rgba(15,23,42,0.98)');
                             ctx.fillStyle = grad;
-                            ctx.fillRect(0, 470, 720, 250);
+                            ctx.fillRect(0, 455, 720, 265);
 
                             ctx.fillStyle = '#ffffff';
-                            ctx.font = 'bold 30px Arial';
-                            ctx.fillText(title, 34, 580);
-                            ctx.fillStyle = '#fde047';
-                            ctx.font = 'bold 21px Arial';
-                            ctx.fillText(sc.type === 'specs' && (colorsVal || sizesVal)
-                                ? `${colorsVal ? 'Couleurs : ' + colorsVal.slice(0, 26) : ''}${colorsVal && sizesVal ? ' · ' : ''}${sizesVal ? 'Tailles : ' + sizesVal.slice(0, 18) : ''}`
-                                : slogan, 34, 624);
-                            ctx.fillStyle = '#cbd5e1';
-                            ctx.font = '17px Arial';
-                            ctx.fillText('JEOAH\'S Market Place · Livraison & Séquestre protégé', 34, 668);
+                            ctx.font = 'bold 29px Arial';
+                            ctx.fillText(title, 34, 558);
+
+                            ctx.fillStyle = theme.accent;
+                            ctx.font = 'bold 20px Arial';
+                            drawWrappedText(sc.caption, 34, 596, 652, 26, 2);
+
+                            // Barre de progression vidéo
+                            const totalProgress = (sIdx * framesPerScene + f) / (scenes.length * framesPerScene);
+                            ctx.fillStyle = 'rgba(255,255,255,0.22)';
+                            ctx.fillRect(34, 686, 652, 6);
+                            ctx.fillStyle = theme.accent;
+                            ctx.fillRect(34, 686, Math.round(652 * totalProgress), 6);
                         }
-                        await new Promise(r => setTimeout(r, 42));
+                        await new Promise(r => setTimeout(r, frameDelayMs));
                     }
                 }
 
@@ -601,13 +782,15 @@
                 if (urlInput) urlInput.value = blobUrl;
                 renderVendorMediaPreviews();
                 if (statusEl) {
-                    statusEl.textContent = '✅ Montage vidéo produit de ~10 secondes (4 scènes) créé par JEOAH ! Regardez l\'aperçu ci-dessous puis cliquez sur « Ajouter le Produit » si vous l\'approuvez.';
+                    statusEl.textContent = `✅ Vidéo pro (${theme.name}, ~${totalDurationSec}s${voiceBuffer ? ' + Voix off IA' : ''}${useMusic ? ' + Musique de fond' : ''}) prête ! Regardez l'aperçu avec le son — si vous voulez un autre style, cliquez sur « Changer de montage ».`;
                 }
             } catch (err) {
                 console.error('Erreur génération vidéo JEOAH:', err);
                 if (statusEl) statusEl.textContent = 'Impossible de générer la vidéo depuis cette image. Vérifiez que la photo provient bien de votre appareil.';
             } finally {
+                if (audioCtx) { try { audioCtx.close(); } catch (_) {} }
                 if (btn) btn.disabled = false;
+                if (regenBtn) regenBtn.disabled = false;
             }
         };
 
@@ -831,12 +1014,24 @@
                             <div class="flex flex-wrap items-center gap-3">
                                 <label class="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition">
                                     <i class="fas fa-folder-open"></i> Télécharger photo(s)
-                                    <input type="file" id="product-photos-file" accept="image/*" multiple class="hidden">
+                                    <input type="file" id="product-photos-file" accept="image/*,.heic,.heif" multiple class="hidden">
                                 </label>
                                 <label class="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition">
                                     <i class="fas fa-camera"></i> Prendre une photo (Caméra)
-                                    <input type="file" id="product-photos-camera" accept="image/*" capture="environment" class="hidden">
+                                    <input type="file" id="product-photos-camera" accept="image/*,.heic,.heif" capture="environment" class="hidden">
                                 </label>
+                            </div>
+
+                            <div class="flex gap-2 items-center text-xs">
+                                <input type="url" id="product-manual-url" placeholder="Ou coller une URL d'image (https://...)" class="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-xs">
+                                <button type="button" id="product-add-url-btn" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl transition">Ajouter URL</button>
+                            </div>
+                        </div>
+
+                        <!-- Assistant JEOAH IA (TOUJOURS visible même à 5/5 photos sur téléphone & ordinateur) -->
+                        <div class="pt-3 border-t border-purple-200/70 space-y-2.5">
+                            <p class="text-xs font-extrabold text-purple-900"><i class="fas fa-robot mr-1 text-purple-600"></i> Assistant JEOAH IA — Titre, Catégorie, Couleurs, Slogan &amp; Description</p>
+                            <div class="flex flex-wrap items-center gap-2.5">
                                 <button type="button" id="jeoah-analyze-photo-btn" onclick="askJeoahToFillFromPhoto(false)" class="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xs font-extrabold rounded-xl shadow transition">
                                     <i class="fas fa-wand-magic-sparkles"></i> Analyser ma photo avec JEOAH IA
                                 </button>
@@ -845,21 +1040,16 @@
                                 </button>
                             </div>
                             <p id="jeoah-photo-ai-status" class="hidden text-xs font-semibold text-purple-800 bg-purple-50 border border-purple-200 rounded-xl px-3.5 py-2.5"></p>
+                        </div>
 
-                            <div class="flex gap-2 items-center text-xs">
-                                <input type="url" id="product-manual-url" placeholder="Ou coller une URL d'image (https://...)" class="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-xs">
-                                <button type="button" id="product-add-url-btn" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl transition">Ajouter URL</button>
-                            </div>
-
-                            <!-- Guide Photo JEOAH (Éclairage & Positionnement) -->
-                            <div class="rounded-xl bg-amber-50 border border-amber-200 p-3.5 text-xs text-amber-950 space-y-1">
-                                <p class="font-extrabold text-amber-900"><i class="fas fa-lightbulb text-amber-500 mr-1.5"></i> Guide Photo JEOAH (Éclairage &amp; Positionnement)</p>
-                                <ul class="list-disc list-inside text-[11px] space-y-0.5 text-amber-900/90">
-                                    <li><strong>Éclairage :</strong> placez votre produit face à une fenêtre (lumière naturelle du jour) et évitez le contre-jour ou le flash direct.</li>
-                                    <li><strong>Positionnement :</strong> centrez l'article bien droit sur un fond uni/propre (table claire ou mur neutre), à 30–50 cm de la caméra.</li>
-                                    <li><strong>Angles conseillés :</strong> 1 photo de face, 1 photo de côté/dos, 1 gros plan sur la matière ou l'étiquette (jusqu'à 5 photos).</li>
-                                </ul>
-                            </div>
+                        <!-- Guide Photo JEOAH (Éclairage & Positionnement) -->
+                        <div class="rounded-xl bg-amber-50 border border-amber-200 p-3.5 text-xs text-amber-950 space-y-1">
+                            <p class="font-extrabold text-amber-900"><i class="fas fa-lightbulb text-amber-500 mr-1.5"></i> Guide Photo JEOAH (Éclairage &amp; Positionnement)</p>
+                            <ul class="list-disc list-inside text-[11px] space-y-0.5 text-amber-900/90">
+                                <li><strong>Éclairage :</strong> placez votre produit face à une fenêtre (lumière naturelle du jour) et évitez le contre-jour ou le flash direct.</li>
+                                <li><strong>Positionnement :</strong> centrez l'article bien droit sur un fond uni/propre (table claire ou mur neutre), à 30–50 cm de la caméra.</li>
+                                <li><strong>Angles conseillés :</strong> 1 photo de face, 1 photo de côté/dos, 1 gros plan sur la matière ou l'étiquette (jusqu'à 5 photos).</li>
+                            </ul>
                         </div>
 
                         <!-- Champs masqués de compatibilité -->
@@ -887,9 +1077,35 @@
                                     <i class="fas fa-video-slash"></i> Enregistrer avec la caméra
                                     <input type="file" id="product-video-camera" accept="video/*" capture="environment" class="hidden">
                                 </label>
-                                <button type="button" id="jeoah-gen-video-btn" onclick="generateJeoahProductMiniVideo()" class="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-extrabold rounded-xl shadow transition">
-                                    <i class="fas fa-film"></i> Créer ma petite vidéo avec JEOAH (depuis mes photos)
-                                </button>
+                            </div>
+                            <!-- Studio Vidéo Pro JEOAH : Style + Voix off IA + Musique de fond + Refaire -->
+                            <div class="w-full rounded-xl bg-indigo-50/70 border border-indigo-200 p-3.5 space-y-2.5 text-xs">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <span class="font-extrabold text-indigo-950"><i class="fas fa-clapperboard mr-1 text-purple-600"></i> Studio Montage Vidéo Pro JEOAH (~16–20s)</span>
+                                    <select id="jeoah-video-style" class="rounded-lg border border-indigo-300 bg-white px-2.5 py-1 text-xs font-bold text-indigo-900">
+                                        <option value="luxe">Style : Luxe &amp; Élégant</option>
+                                        <option value="promo">Style : Dynamique &amp; Promo</option>
+                                        <option value="moderne">Style : Moderne &amp; Studio</option>
+                                    </select>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-4 text-[11px] font-bold text-slate-700">
+                                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                                        <input type="checkbox" id="jeoah-video-voice" checked class="w-4 h-4 accent-purple-700">
+                                        <span>🎙️ Voix off explicative JEOAH IA</span>
+                                    </label>
+                                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                                        <input type="checkbox" id="jeoah-video-music" checked class="w-4 h-4 accent-purple-700">
+                                        <span>🎵 Musique de fond douce</span>
+                                    </label>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-2.5">
+                                    <button type="button" id="jeoah-gen-video-btn" onclick="generateJeoahProductMiniVideo(false)" class="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-extrabold rounded-xl shadow transition">
+                                        <i class="fas fa-film"></i> Créer ma vidéo pro avec JEOAH
+                                    </button>
+                                    <button type="button" id="jeoah-regen-video-btn" onclick="generateJeoahProductMiniVideo(true)" class="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-indigo-100 text-indigo-800 border border-indigo-300 text-xs font-extrabold rounded-xl transition">
+                                        <i class="fas fa-rotate"></i> Changer de montage / Refaire
+                                    </button>
+                                </div>
                             </div>
                             <p id="jeoah-video-gen-status" class="hidden text-xs font-semibold text-indigo-800 bg-indigo-50 border border-indigo-200 rounded-xl px-3.5 py-2"></p>
 
