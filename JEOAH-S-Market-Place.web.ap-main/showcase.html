@@ -727,7 +727,7 @@
 
               <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
                 <span class="text-slate-500">Vendeur : <strong class="text-slate-800">${esc(prod.storeName || 'Boutique JEOAH\'S')}</strong></span>
-                <a href="/messages.html?to=${encodeURIComponent(prod.storeName || 'Vendeur')}" class="font-bold text-purple-700 hover:underline"><i class="fas fa-comments mr-1"></i> Chat Acheteur–Vendeur</a>
+                <a href="/messages.html?to=${encodeURIComponent(prod.storeName || 'Vendeur')}&product=${encodeURIComponent(prod.name || '')}&price=${encodeURIComponent(baseUsd.toFixed(2))}" class="font-bold text-purple-700 hover:underline"><i class="fas fa-comments mr-1"></i> Chat Acheteur–Vendeur</a>
               </div>
 
               <!-- Avis clients vérifiés après livraison -->

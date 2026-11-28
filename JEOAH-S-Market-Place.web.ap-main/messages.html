@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messagerie Sécurisée Acheteur–Vendeur - JEOAH'S Market Place</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f8f7fc; color: #0f172a; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- En-tête -->
+  <header class="bg-white border-b border-purple-100 sticky top-0 z-20 shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <a href="/showcase.html" class="flex items-center gap-2.5">
+        <img src="/public/assets/logo.png" alt="JEOAH'S" class="w-9 h-9 rounded-xl object-cover">
+        <div>
+          <span class="font-black text-purple-900 text-sm sm:text-base block leading-none">JEOAH'S Messagerie</span>
+          <span class="text-[10px] font-bold text-emerald-700">Chat Sécurisé Acheteur ↔ Vendeur</span>
+        </div>
+      </a>
+      <div class="flex items-center gap-2">
+        <a href="/showcase.html" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold">Vitrine Centrale</a>
+        <a href="/panier.html" class="px-3 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold"><i class="fas fa-shopping-cart mr-1"></i> Panier</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl w-full mx-auto px-3 sm:px-6 py-5 flex-1 flex flex-col gap-4">
+
+    <!-- Bannière Confidentialité & Livraison -->
+    <div class="rounded-2xl bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-800 text-white p-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="space-y-1">
+        <p class="text-xs sm:text-sm font-extrabold flex items-center gap-2">
+          <i class="fas fa-shield-alt text-amber-300"></i> Protection Séquestre &amp; Confidentialité JEOAH'S
+        </p>
+        <p class="text-[11px] text-purple-100 leading-relaxed">
+          Accordez-vous ici sur les frais de transport (ex. <strong>Delmas → Port-de-Paix</strong>). <strong>Aucun numéro de téléphone</strong> n’est autorisé avant paiement. Dès que la commande est payée sur JEOAH'S, le <strong>Bon de Livraison sécurisé</strong> (adresse + téléphone du client pour le chauffeur/motard + code PIN à 4 chiffres) est débloqué automatiquement.
+        </p>
+      </div>
+      <span id="room-status-pill" class="shrink-0 self-start sm:self-center px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-amber-400/20 border border-amber-300/40 text-amber-200">
+        🔒 Avant paiement (Coordonnées masquées)
+      </span>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+
+      <!-- Colonne Gauche : Zone de Chat -->
+      <section class="lg:col-span-8 bg-white rounded-2xl border border-purple-100 shadow-sm flex flex-col overflow-hidden min-h-[460px]">
+        <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2 bg-slate-50/70">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-full bg-purple-700 text-white font-black text-sm flex items-center justify-center" id="vendor-avatar-letter">V</div>
+            <div>
+              <h1 id="chat-vendor-title" class="text-sm font-extrabold text-slate-900">Boutique Vendeur</h1>
+              <p id="chat-product-sub" class="text-[11px] text-slate-500">Discussion livraison &amp; commande sécurisée</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="toggleQuotePanel()" class="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 text-[11px] font-extrabold transition">
+              <i class="fas fa-truck mr-1"></i> Proposer frais de livraison
+            </button>
+          </div>
+        </div>
+
+        <!-- Panneau Vendeur : Proposer un Devis Livraison -->
+        <div id="shipping-quote-panel" class="hidden px-4 py-3 bg-amber-50 border-b border-amber-200 space-y-2.5">
+          <p class="text-xs font-extrabold text-amber-950"><i class="fas fa-motorcycle mr-1"></i> Envoyer un Devis Livraison officiel (payable directement sur JEOAH'S)</p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <input id="quote-route" type="text" placeholder="Trajet (ex: Delmas → Port-de-Paix)" class="px-3 py-2 rounded-xl border border-amber-300 bg-white text-xs font-semibold">
+            <div class="flex gap-1.5">
+              <input id="quote-amount" type="number" step="0.01" min="0" placeholder="Montant" class="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white text-xs font-bold">
+              <select id="quote-currency" class="px-2 py-2 rounded-xl border border-amber-300 bg-white text-xs font-bold">
+                <option value="USD">USD</option>
+                <option value="HTG">HTG</option>
+              </select>
+            </div>
+            <button type="button" onclick="sendShippingQuote()" class="px-3 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-extrabold">Envoyer le devis</button>
+          </div>
+        </div>
+
+        <!-- Fil des messages -->
+        <div id="messages-list" class="flex-1 p-4 space-y-3 overflow-y-auto max-h-[420px] bg-[#faf9fd]">
+          <div class="text-center text-xs text-slate-400 py-8">Chargement de la conversation sécurisée…</div>
+        </div>
+
+        <!-- Alerte filtre anti-numéro -->
+        <div id="filter-warning" class="hidden px-4 py-2 bg-red-50 border-t border-red-200 text-[11px] font-bold text-red-700">
+          <i class="fas fa-ban mr-1"></i> Les numéros de téléphone, liens WhatsApp et e-mails sont automatiquement masqués avant paiement pour protéger votre transaction sur JEOAH'S.
+        </div>
+
+        <!-- Zone de saisie -->
+        <form id="chat-form" class="p-3 border-t border-slate-100 bg-white flex items-center gap-2">
+          <input id="chat-input" type="text" autocomplete="off" placeholder="Écrivez votre message (ville de livraison, couleur, taille, question)..." class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:border-purple-600">
+          <button type="submit" class="px-4 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs sm:text-sm font-extrabold shadow-sm">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </form>
+      </section>
+
+      <!-- Colonne Droite : Bon de Livraison Sécurisé (après paiement) & Validation PIN -->
+      <aside class="lg:col-span-4 space-y-4">
+        <div class="bg-white rounded-2xl border border-purple-100 shadow-sm p-4 space-y-3">
+          <h2 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+            <i class="fas fa-clipboard-check text-purple-700"></i> Bon de Livraison (Chauffeur / Motard)
+          </h2>
+
+          <!-- État AVANT paiement -->
+          <div id="slip-locked-box" class="space-y-3 text-xs text-slate-600">
+            <div class="rounded-xl bg-slate-50 border border-slate-200 p-3 space-y-1.5">
+              <p class="font-bold text-slate-800">🔒 Coordonnées protégées avant paiement</p>
+              <p>Le numéro du vendeur reste confidentiel. Une fois la commande payée sur JEOAH'S, le vendeur reçoit le <strong>téléphone et l’adresse du client</strong> uniquement pour le chauffeur/motard.</p>
+            </div>
+            <div class="space-y-2 pt-1 border-t border-slate-100">
+              <p class="font-bold text-slate-800">Déjà payé votre commande ? Débloquez le Bon de Livraison :</p>
+              <input id="slip-buyer-name" type="text" placeholder="Nom complet du destinataire" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+              <input id="slip-buyer-phone" type="tel" placeholder="Téléphone du client pour le motard (+509...)" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+              <input id="slip-buyer-address" type="text" placeholder="Adresse exacte (ex: Port-de-Paix, Rue...)" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+              <button type="button" onclick="unlockDeliverySlip()" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-sm">
+                🔓 Confirmer mes infos de livraison (après paiement)
+              </button>
+            </div>
+          </div>
+
+          <!-- État APRÈS paiement -->
+          <div id="slip-unlocked-box" class="hidden space-y-3 text-xs">
+            <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 space-y-1.5 text-emerald-950">
+              <p class="font-extrabold text-emerald-800">✅ Bon de Livraison Actif (à remettre au motard)</p>
+              <p><strong>Client :</strong> <span id="slip-disp-name">—</span></p>
+              <p><strong>Téléphone client :</strong> <span id="slip-disp-phone" class="font-bold text-emerald-900">—</span></p>
+              <p><strong>Adresse :</strong> <span id="slip-disp-address">—</span></p>
+              <p class="pt-1 border-t border-emerald-200 text-[11px]">
+                <strong>Code PIN Acheteur :</strong> <span id="slip-disp-pin" class="inline-block px-2 py-0.5 rounded bg-emerald-700 text-white font-black tracking-widest">----</span>
+                <span class="block text-[10px] text-emerald-700 mt-0.5">L’acheteur donne ce code au chauffeur/vendeur uniquement à la réception du colis.</span>
+              </p>
+            </div>
+            <div id="pin-confirm-box" class="space-y-2 pt-2 border-t border-slate-100">
+              <p class="font-bold text-slate-800">Validation de remise du colis (Vendeur / Motard) :</p>
+              <div class="flex gap-2">
+                <input id="pin-verify-input" type="text" maxlength="4" placeholder="Code 4 chiffres" class="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold tracking-widest text-center">
+                <button type="button" onclick="confirmDeliveryPin()" class="px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-extrabold text-xs">Valider</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const vendorName = params.get('to') || 'Boutique Vendeur';
+    const productName = params.get('product') || '';
+    const productPriceUsd = Number(params.get('price') || 0) || 0;
+    const authUser = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null') || {};
+    const myEmail = (authUser.email || 'client@jeoahs.com').toLowerCase();
+    const myRole = (authUser.role || 'acheteur').toLowerCase() === 'vendeur' ? 'vendeur' : 'acheteur';
+    const myName = authUser.name || myEmail.split('@')[0] || 'Client JEOAH\'S';
+    const roomId = (params.get('room') || `${vendorName}_${myEmail}`).toLowerCase().replace(/[^a-z0-9_-]+/g, '_').slice(0, 96);
+    const localKey = `jeoahs_chat_${roomId}`;
+
+    document.getElementById('chat-vendor-title').textContent = vendorName;
+    document.getElementById('vendor-avatar-letter').textContent = vendorName.slice(0, 1).toUpperCase();
+    if (productName) {
+      document.getElementById('chat-product-sub').textContent = `Produit : ${productName}${productPriceUsd ? ' ($' + productPriceUsd.toFixed(2) + ')' : ''}`;
+    }
+
+    const esc = s => String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    function clientFilterContact(text) {
+      let clean = String(text || '');
+      let blocked = false;
+      const patterns = [
+        /(?:\+?\d[\s.\-()]*){7,}/g,
+        /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,
+        /(?:https?:\/\/)?(?:wa\.me|chat\.whatsapp\.com|api\.whatsapp\.com|t\.me|facebook\.com|fb\.me|instagram\.com)\/\S*/gi,
+        /\b(?:whatsapp|whatsap|watsap|moncash|natcash|appel(?:le|ez)?[\s-]?moi|mon\s+num[eé]ro)\b/gi
+      ];
+      for (const rx of patterns) {
+        if (rx.test(clean)) {
+          blocked = true;
+          clean = clean.replace(rx, ' [🔒 Masqué avant paiement JEOAH\'S] ');
+        }
+      }
+      return { text: clean.trim(), filtered: blocked };
+    }
+
+    let currentRoomMeta = { orderPaid: false, deliverySlip: null, deliveryStatus: '' };
+    let currentMessages = [];
+
+    function renderRoomState() {
+      const pill = document.getElementById('room-status-pill');
+      const locked = document.getElementById('slip-locked-box');
+      const unlocked = document.getElementById('slip-unlocked-box');
+      if (currentRoomMeta.orderPaid && currentRoomMeta.deliverySlip) {
+        pill.textContent = currentRoomMeta.deliveryStatus === 'delivered'
+          ? '✅ Colis livré & Paiement validé'
+          : '📦 Payé — Bon de Livraison débloqué';
+        pill.className = 'shrink-0 self-start sm:self-center px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-emerald-400/25 border border-emerald-300/50 text-emerald-100';
+        locked.classList.add('hidden');
+        unlocked.classList.remove('hidden');
+        document.getElementById('slip-disp-name').textContent = currentRoomMeta.deliverySlip.buyerName || '—';
+        document.getElementById('slip-disp-phone').textContent = currentRoomMeta.deliverySlip.buyerPhone || '—';
+        document.getElementById('slip-disp-address').textContent = currentRoomMeta.deliverySlip.buyerAddress || '—';
+        document.getElementById('slip-disp-pin').textContent = currentRoomMeta.deliverySlip.pinCode || '----';
+        if (currentRoomMeta.deliveryStatus === 'delivered') {
+          document.getElementById('pin-confirm-box').innerHTML = '<p class="text-emerald-700 font-extrabold text-xs">✅ Livraison confirmée par code PIN ! Fonds libérés au vendeur.</p>';
+        }
+      }
+    }
+
+    function renderMessages() {
+      const box = document.getElementById('messages-list');
+      if (!currentMessages.length) {
+        box.innerHTML = `<div class="rounded-2xl bg-white border border-purple-100 p-4 text-center text-xs text-slate-500 max-w-md mx-auto my-6">
+          <p class="font-bold text-slate-800 mb-1">Démarrez la discussion avec ${esc(vendorName)}</p>
+          <p>Indiquez votre ville (ex. <strong>Port-de-Paix</strong>, <strong>Delmas</strong>, <strong>Cap-Haïtien</strong>) pour convenir des frais de transport avant de payer sur JEOAH'S.</p>
+        </div>`;
+        return;
+      }
+      box.innerHTML = currentMessages.map(m => {
+        if (m.type === 'system') {
+          return `<div class="text-center"><span class="inline-block rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-[11px] font-bold px-3 py-1.5">${esc(m.text)}</span></div>`;
+        }
+        const mine = String(m.senderEmail || '').toLowerCase() === myEmail;
+        if (m.type === 'shipping_quote') {
+          const shipVal = Number(m.shippingUsd || 0);
+          const prodVal = Number(m.productPriceUsd || productPriceUsd || 0);
+          const payUrl = `/payment.html?mode=cart&amount=${encodeURIComponent(prodVal.toFixed(2))}&shipping=${encodeURIComponent(shipVal.toFixed(2))}&item=${encodeURIComponent(m.productName || productName || vendorName)}`;
+          return `<div class="flex ${mine ? 'justify-end' : 'justify-start'}">
+            <div class="max-w-xs sm:max-w-sm rounded-2xl border-2 border-amber-300 bg-amber-50 p-3.5 shadow-sm space-y-2">
+              <p class="text-[11px] font-extrabold uppercase text-amber-800"><i class="fas fa-truck mr-1"></i> Devis Livraison Officiel</p>
+              <p class="text-xs font-bold text-slate-800">${esc(m.text)}</p>
+              <p class="text-base font-black text-purple-900">Frais de livraison : $${shipVal.toFixed(2)} USD</p>
+              <a href="${payUrl}" class="block w-full text-center py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-extrabold shadow-sm">
+                ⚡ Payer sur JEOAH'S (+ 3 % séquestre)
+              </a>
+            </div>
+          </div>`;
+        }
+        return `<div class="flex ${mine ? 'justify-end' : 'justify-start'}">
+          <div class="max-w-[82%] rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm shadow-sm ${mine ? 'bg-purple-700 text-white rounded-br-sm' : 'bg-white border border-slate-200 text-slate-800 rounded-bl-sm'}">
+            <p class="text-[10px] font-bold mb-0.5 ${mine ? 'text-purple-200' : 'text-purple-700'}">${esc(m.senderName || 'Utilisateur')}</p>
+            <p class="leading-relaxed whitespace-pre-wrap">${esc(m.text)}</p>
+          </div>
+        </div>`;
+      }).join('');
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function loadMessages() {
+      try {
+        const localSaved = JSON.parse(localStorage.getItem(localKey) || 'null');
+        if (localSaved) {
+          currentMessages = localSaved.messages || [];
+          currentRoomMeta = localSaved.meta || currentRoomMeta;
+          renderRoomState();
+          renderMessages();
+        }
+      } catch (_) {}
+      try {
+        const res = await fetch(`/api/chat-messages?room=${encodeURIComponent(roomId)}`, { cache: 'no-store' });
+        const json = await res.json().catch(() => null);
+        if (json?.ok) {
+          if (json.room) currentRoomMeta = { ...currentRoomMeta, ...json.room };
+          if (Array.isArray(json.messages) && json.messages.length >= currentMessages.length) {
+            currentMessages = json.messages;
+          }
+          localStorage.setItem(localKey, JSON.stringify({ meta: currentRoomMeta, messages: currentMessages }));
+          renderRoomState();
+          renderMessages();
+        }
+      } catch (_) {}
+    }
+
+    window.toggleQuotePanel = function () {
+      document.getElementById('shipping-quote-panel')?.classList.toggle('hidden');
+    };
+
+    window.sendShippingQuote = async function () {
+      const route = (document.getElementById('quote-route')?.value || '').trim() || 'Livraison convenue';
+      const rawAmt = Number(document.getElementById('quote-amount')?.value || 0);
+      const cur = document.getElementById('quote-currency')?.value || 'USD';
+      if (!(rawAmt >= 0)) return;
+      const usdAmt = cur === 'HTG' ? +(rawAmt / 131).toFixed(2) : +rawAmt.toFixed(2);
+      const text = `${route} (${cur === 'HTG' ? rawAmt + ' HTG ≈ ' : ''}$${usdAmt.toFixed(2)} USD)`;
+      const msg = {
+        type: 'shipping_quote',
+        senderName: myName,
+        senderEmail: myEmail,
+        senderRole: 'vendeur',
+        text,
+        shippingUsd: usdAmt,
+        productPriceUsd,
+        productName,
+        createdAt: new Date().toISOString()
+      };
+      currentMessages.push(msg);
+      localStorage.setItem(localKey, JSON.stringify({ meta: currentRoomMeta, messages: currentMessages }));
+      renderMessages();
+      document.getElementById('shipping-quote-panel')?.classList.add('hidden');
+      try {
+        await fetch('/api/chat-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ room: roomId, vendorName, buyerEmail: myEmail, ...msg })
+        });
+      } catch (_) {}
+    };
+
+    window.unlockDeliverySlip = async function () {
+      const buyerName = (document.getElementById('slip-buyer-name')?.value || '').trim();
+      const buyerPhone = (document.getElementById('slip-buyer-phone')?.value || '').trim();
+      const buyerAddress = (document.getElementById('slip-buyer-address')?.value || '').trim();
+      if (!buyerName || !buyerPhone || !buyerAddress) {
+        alert('Remplissez votre nom, téléphone (pour le motard) et adresse complète de livraison.');
+        return;
+      }
+      let slip = {
+        buyerName,
+        buyerPhone,
+        buyerAddress,
+        pinCode: String(Math.floor(1000 + Math.random() * 9000))
+      };
+      try {
+        const res = await fetch('/api/chat-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'unlock_delivery_slip',
+            room: roomId,
+            vendorName,
+            buyerEmail: myEmail,
+            buyerName,
+            buyerPhone,
+            buyerAddress,
+            itemName: productName
+          })
+        });
+        const j = await res.json().catch(() => null);
+        if (j?.ok && j.deliverySlip) slip = j.deliverySlip;
+      } catch (_) {}
+      currentRoomMeta = { ...currentRoomMeta, orderPaid: true, deliveryStatus: 'ready_for_driver', deliverySlip: slip };
+      currentMessages.push({
+        type: 'system',
+        text: '🔒 Paiement confirmé ! Le Bon de Livraison sécurisé (adresse et téléphone du client pour le chauffeur/motard) est maintenant débloqué.'
+      });
+      localStorage.setItem(localKey, JSON.stringify({ meta: currentRoomMeta, messages: currentMessages }));
+      renderRoomState();
+      renderMessages();
+    };
+
+    window.confirmDeliveryPin = async function () {
+      const pin = (document.getElementById('pin-verify-input')?.value || '').trim();
+      if (!pin || pin.length !== 4) {
+        alert('Saisissez le code PIN à 4 chiffres remis par l’acheteur.');
+        return;
+      }
+      if (currentRoomMeta.deliverySlip?.pinCode && pin !== String(currentRoomMeta.deliverySlip.pinCode)) {
+        alert('Code PIN incorrect. Vérifiez les 4 chiffres avec l’acheteur.');
+        return;
+      }
+      try {
+        await fetch('/api/chat-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'confirm_pin', room: roomId, pin })
+        });
+      } catch (_) {}
+      currentRoomMeta.deliveryStatus = 'delivered';
+      currentMessages.push({
+        type: 'system',
+        text: '✅ Livraison confirmée par code PIN ! Le paiement séquestre est validé pour libération au vendeur.'
+      });
+      localStorage.setItem(localKey, JSON.stringify({ meta: currentRoomMeta, messages: currentMessages }));
+      renderRoomState();
+      renderMessages();
+    };
+
+    document.getElementById('chat-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('chat-input');
+      const raw = (input.value || '').trim();
+      if (!raw) return;
+      const checked = currentRoomMeta.orderPaid ? { text: raw, filtered: false } : clientFilterContact(raw);
+      document.getElementById('filter-warning')?.classList.toggle('hidden', !checked.filtered);
+      input.value = '';
+      const msg = {
+        type: 'text',
+        senderName: myName,
+        senderEmail: myEmail,
+        senderRole: myRole,
+        text: checked.text,
+        createdAt: new Date().toISOString()
+      };
+      currentMessages.push(msg);
+      localStorage.setItem(localKey, JSON.stringify({ meta: currentRoomMeta, messages: currentMessages }));
+      renderMessages();
+      try {
+        await fetch('/api/chat-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ room: roomId, vendorName, buyerEmail: myEmail, productName, ...msg })
+        });
+      } catch (_) {}
+    });
+
+    loadMessages();
+    setInterval(loadMessages, 8000);
+  </script>
+  <script src="/public/jeoah-loader.js" defer></script>
+</body>
+</html>

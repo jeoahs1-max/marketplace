@@ -704,6 +704,8 @@
             if (roleBadge) roleBadge.textContent = isAff ? 'Affilié vérifié' : 'Vendeur vérifié';
             const contactText = document.getElementById('store-contact-btn-text');
             if (contactText) contactText.textContent = isAff ? "Contacter l'affilié" : 'Contacter le vendeur';
+            const contactBtn = document.getElementById('store-contact-btn');
+            if (contactBtn) contactBtn.href = `/messages.html?to=${encodeURIComponent(storeData.name || 'Boutique Vendeur')}`;
 
             if (storeData.avatar && (storeData.avatar.startsWith('http') || storeData.avatar.startsWith('data:image/') || storeData.avatar.startsWith('/'))) {
                 document.getElementById('store-avatar-img').src = storeData.avatar;
