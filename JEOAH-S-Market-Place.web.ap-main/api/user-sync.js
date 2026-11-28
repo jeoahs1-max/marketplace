@@ -56,25 +56,51 @@ module.exports = async (req, res) => {
           const syncSnaps = await db.collection('user_sync_by_email').get();
           syncSnaps.forEach(docSnap => {
             const d = docSnap.data() || {};
-            const sf = d.storefront || {};
-            const storeName = sf.storeName || d.email?.split('@')[0] || 'Boutique JEOAH\'S';
-            const list = [...(Array.isArray(d.affiliateProducts) ? d.affiliateProducts : []), ...(Array.isArray(d.vendorProducts) ? d.vendorProducts : [])];
-            list.forEach(p => {
+            const sfLegacy = d.storefront || {};
+            const sfVen = d.storefront_vendeur || sfLegacy;
+            const sfAff = d.storefront_affilie || sfLegacy;
+            const venStoreName = sfVen.storeName || d.email?.split('@')[0] || 'Boutique Vendeur';
+            const affStoreName = sfAff.storeName || d.email?.split('@')[0] || 'Vitrine Affilié';
+            const affList = Array.isArray(d.affiliateProducts) ? d.affiliateProducts : [];
+            const venList = Array.isArray(d.vendorProducts) ? d.vendorProducts : [];
+
+            affList.forEach(p => {
               if (!p || !p.id) return;
-              const enriched = { ...p, storeName: p.storeName || storeName, storeAvatar: sf.profilePictureUrl || '' };
+              const enriched = { ...p, storeName: p.storeName || affStoreName, storeAvatar: sfAff.profilePictureUrl || '' };
               const key = String(p.name || p.title || p.id).trim().toLowerCase();
               const prev = allMap.get(key);
               if (!prev || String(p.createdAt || '') >= String(prev.createdAt || '')) {
                 allMap.set(key, enriched);
               }
             });
-            if (sf.storeName || list.length) {
-              storesMap.set(d.email || docSnap.id, {
+            venList.forEach(p => {
+              if (!p || !p.id) return;
+              const enriched = { ...p, storeName: p.storeName || venStoreName, storeAvatar: sfVen.profilePictureUrl || '' };
+              const key = String(p.name || p.title || p.id).trim().toLowerCase();
+              const prev = allMap.get(key);
+              if (!prev || String(p.createdAt || '') >= String(prev.createdAt || '')) {
+                allMap.set(key, enriched);
+              }
+            });
+
+            if (sfVen.storeName || venList.length) {
+              storesMap.set(`${d.email || docSnap.id}::vendeur`, {
                 id: docSnap.id,
-                name: storeName,
-                category: sf.category || 'Boutique & Sélection',
-                avatar: sf.profilePictureUrl || '',
-                productsCount: list.length
+                role: 'vendeur',
+                name: venStoreName,
+                category: sfVen.category || 'Boutique Vendeur',
+                avatar: sfVen.profilePictureUrl || '',
+                productsCount: venList.length
+              });
+            }
+            if (sfAff.storeName || affList.length) {
+              storesMap.set(`${d.email || docSnap.id}::affilie`, {
+                id: docSnap.id,
+                role: 'affilie',
+                name: affStoreName,
+                category: sfAff.category || 'Sélection Affilié',
+                avatar: sfAff.profilePictureUrl || '',
+                productsCount: affList.length
               });
             }
           });
@@ -104,7 +130,7 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === 'POST') {
-      const { email, storefront, affiliateLinks, affiliateProducts, vendorProducts, deletedProductId } = req.body || {};
+      const { email, storefront, storefrontRole, storefront_vendeur, storefront_affilie, affiliateLinks, affiliateProducts, vendorProducts, deletedProductId } = req.body || {};
       const emailKey = normalizeEmailKey(email);
       if (!emailKey) return res.status(400).json({ ok: false, error: 'Email requis' });
 
@@ -123,12 +149,41 @@ module.exports = async (req, res) => {
         updatedAt: new Date().toISOString()
       };
 
-      if (storefront && typeof storefront === 'object') {
-        payload.storefront = {
-          ...(existing.storefront || {}),
-          ...storefront,
+      const roleNorm = String(storefrontRole || '').toLowerCase();
+      if (storefront_vendeur && typeof storefront_vendeur === 'object') {
+        payload.storefront_vendeur = {
+          ...(existing.storefront_vendeur || {}),
+          ...storefront_vendeur,
           updatedAt: new Date().toISOString()
         };
+      }
+      if (storefront_affilie && typeof storefront_affilie === 'object') {
+        payload.storefront_affilie = {
+          ...(existing.storefront_affilie || {}),
+          ...storefront_affilie,
+          updatedAt: new Date().toISOString()
+        };
+      }
+      if (storefront && typeof storefront === 'object') {
+        if (roleNorm === 'vendeur') {
+          payload.storefront_vendeur = {
+            ...(existing.storefront_vendeur || {}),
+            ...storefront,
+            updatedAt: new Date().toISOString()
+          };
+        } else if (roleNorm === 'affilie') {
+          payload.storefront_affilie = {
+            ...(existing.storefront_affilie || {}),
+            ...storefront,
+            updatedAt: new Date().toISOString()
+          };
+        } else {
+          payload.storefront = {
+            ...(existing.storefront || {}),
+            ...storefront,
+            updatedAt: new Date().toISOString()
+          };
+        }
       }
 
       if (Array.isArray(affiliateLinks) && affiliateLinks.length) {

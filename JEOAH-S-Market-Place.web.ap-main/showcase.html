@@ -277,7 +277,7 @@
                 <option value="HTG">HTG (G)</option>
                 <option value="CAD">CAD ($)</option>
               </select>
-              <a href="#products" onclick="selectCategory('all'); return false;" class="text-xs font-bold text-purple-700 hover:underline">Voir tout →</a>
+              <button type="button" onclick="const ms=document.getElementById('market-search'); if(ms) ms.value=''; selectCategory('all'); document.getElementById('products-grid')?.scrollIntoView({behavior:'smooth'});" class="text-xs font-bold text-purple-700 hover:underline px-2 py-1 rounded-lg active:bg-purple-50">Voir tout →</button>
             </div>
           </div>
           <div id="products-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5"></div>

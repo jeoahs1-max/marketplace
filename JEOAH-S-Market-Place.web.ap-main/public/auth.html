@@ -110,9 +110,19 @@
         }
 
         function syncRoleSubscriptionsToLocal(profile, isPrivileged) {
+            const emailLow = String(profile?.email || '').trim().toLowerCase();
+            const isFounderOrAdmin = emailLow === 'jjeanlouis96@gmail.com' || emailLow === 'jeoahs1@gmail.com';
             const forever = '2099-12-31T23:59:59.000Z';
+            const sixMonthsFree = '2027-05-30T23:59:59.000Z';
             if (isPrivileged) {
-                const privSub = { plan: 'tester', status: 'active', active: true, expiresAt: forever };
+                const exp = isFounderOrAdmin ? forever : sixMonthsFree;
+                const stillActive = Date.now() < Date.parse(exp);
+                const privSub = {
+                    plan: isFounderOrAdmin ? 'founder_unlimited' : 'tester_6m',
+                    status: stillActive ? 'active' : 'expired',
+                    active: stillActive,
+                    expiresAt: exp
+                };
                 localStorage.setItem('jeoahs_vendor_subscription', JSON.stringify({ ...privSub, role: 'vendeur' }));
                 localStorage.setItem('jeoahs_affiliate_subscription', JSON.stringify({ ...privSub, role: 'affilie' }));
                 return { vendeur: { ...privSub, role: 'vendeur' }, affilie: { ...privSub, role: 'affilie' } };

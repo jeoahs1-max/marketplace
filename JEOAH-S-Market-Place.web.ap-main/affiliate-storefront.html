@@ -73,6 +73,9 @@
         const authUser = JSON.parse(localStorage.getItem('jeoahs_auth_user') || 'null');
         const targetId = storeId || authUser?.uid || 'guest';
         const isOwner = Boolean(!storeId || (authUser && authUser.uid && authUser.uid === targetId));
+        const currentPageRole = ((urlParams.get('role') || authUser?.role || 'affilie').toLowerCase() === 'vendeur') ? 'vendeur' : 'affilie';
+        const isVendorPage = currentPageRole === 'vendeur';
+        const localStoreKey = isVendorPage ? 'jeoahs_custom_storefront_vendeur' : 'jeoahs_custom_storefront_affilie';
 
         function isInternalAdminAccount(emailStr) {
             const clean = String(emailStr || authUser?.email || '').trim().toLowerCase();
@@ -82,13 +85,13 @@
         const DEFAULT_STORE_PRODUCTS = [];
 
         let storeData = {
-            name: requestedStoreName || (authUser?.email ? authUser.email.split('@')[0] : 'Ma Vitrine JEOAH\'S'),
-            bio: 'Bienvenue sur ma vitrine officielle JEOAH\'S Market Place.',
+            name: requestedStoreName || (isVendorPage ? 'Ma Boutique Vendeur' : 'Ma Vitrine Affilié'),
+            bio: isVendorPage ? 'Bienvenue sur ma boutique vendeur officielle JEOAH\'S Market Place.' : 'Bienvenue sur ma vitrine affiliée officielle JEOAH\'S Market Place.',
             aboutDetails: 'Découvrez ma sélection d\'articles vérifiés et recommandés sur JEOAH\'S Market Place.',
             avatar: '/public/assets/logo.png',
             heroImage: '/public/assets/logo.png',
-            role: (authUser?.role === 'vendeur') ? 'vendeur' : 'affilie',
-            category: 'Boutique & Sélection',
+            role: currentPageRole,
+            category: isVendorPage ? 'Boutique Vendeur' : 'Sélection Affilié',
             location: 'Haïti / International',
             responseTime: 'Répond en général en quelques heures',
             hours: 'Lun - Sam : 8h00 - 20h00',
@@ -129,6 +132,16 @@
                 navigator.clipboard.writeText(link);
                 alert('Lien de parrainage copié dans le presse-papiers !');
             }
+        };
+
+        window.showAllStoreProducts = function () {
+            activeCategory = 'all';
+            searchTerm = '';
+            const searchInput = document.getElementById('storefront-search-input');
+            if (searchInput) searchInput.value = '';
+            setCategory('all');
+            const sec = document.getElementById('all-products-section');
+            if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
         };
 
         window.setCategory = function (cat) {
@@ -723,47 +736,45 @@
         }
 
         async function loadStorefront() {
-            const customSaved = JSON.parse(localStorage.getItem('jeoahs_custom_storefront') || 'null');
-            const localVendorProfile = JSON.parse(localStorage.getItem('jeoahs_vendor_profile') || 'null');
-            const localAffiliateProfile = JSON.parse(localStorage.getItem('jeoahs_affiliate_profile') || 'null');
+            const customSaved = JSON.parse(localStorage.getItem(localStoreKey) || 'null');
+            const localRoleProfile = isVendorPage
+                ? JSON.parse(localStorage.getItem('jeoahs_vendor_profile') || 'null')
+                : JSON.parse(localStorage.getItem('jeoahs_affiliate_profile') || 'null');
 
             if (customSaved && !requestedStoreName) {
-                storeData = { ...storeData, ...customSaved };
-            } else if (localVendorProfile && !requestedStoreName) {
-                storeData.name = localVendorProfile.storeName || storeData.name;
-                storeData.bio = localVendorProfile.storeDescription || storeData.bio;
-                storeData.aboutDetails = localVendorProfile.aboutDetails || localVendorProfile.storeDescription || storeData.aboutDetails;
-                storeData.category = localVendorProfile.category || storeData.category;
-                storeData.location = localVendorProfile.location || storeData.location;
-                storeData.hours = localVendorProfile.hours || storeData.hours;
-                storeData.avatar = localVendorProfile.logoUrl || storeData.avatar;
-                storeData.heroImage = localVendorProfile.heroImageUrl || storeData.heroImage;
-            } else if (localAffiliateProfile && !requestedStoreName) {
-                storeData.name = localAffiliateProfile.username || storeData.name;
-                storeData.bio = localAffiliateProfile.bio || storeData.bio;
-                storeData.avatar = localAffiliateProfile.profilePictureUrl || storeData.avatar;
+                storeData = { ...storeData, ...customSaved, role: currentPageRole };
+            } else if (localRoleProfile && !requestedStoreName) {
+                if (isVendorPage) {
+                    storeData.name = localRoleProfile.storeName || storeData.name;
+                    storeData.bio = localRoleProfile.storeDescription || storeData.bio;
+                    storeData.aboutDetails = localRoleProfile.aboutDetails || localRoleProfile.storeDescription || storeData.aboutDetails;
+                    storeData.category = localRoleProfile.category || storeData.category;
+                    storeData.location = localRoleProfile.location || storeData.location;
+                    storeData.hours = localRoleProfile.hours || storeData.hours;
+                    storeData.avatar = localRoleProfile.logoUrl || storeData.avatar;
+                    storeData.heroImage = localRoleProfile.heroImageUrl || storeData.heroImage;
+                } else {
+                    storeData.name = localRoleProfile.username || storeData.name;
+                    storeData.bio = localRoleProfile.bio || storeData.bio;
+                    storeData.aboutDetails = localRoleProfile.aboutDetails || localRoleProfile.bio || storeData.aboutDetails;
+                    storeData.category = localRoleProfile.category || storeData.category;
+                    storeData.location = localRoleProfile.location || storeData.location;
+                    storeData.hours = localRoleProfile.hours || storeData.hours;
+                    storeData.avatar = localRoleProfile.profilePictureUrl || storeData.avatar;
+                    storeData.heroImage = localRoleProfile.heroImageUrl || storeData.heroImage;
+                }
             }
 
             let profileCloudProds = [];
             try {
                 if (storeId) {
-                    const snap = await getDoc(doc(db, `artifacts/${appId}/public/data/affiliates`, storeId));
-                    if (snap.exists()) {
-                        const data = snap.data();
-                        storeData.name = data.storeName || data.username || data.name || storeData.name;
-                        storeData.bio = data.bio || data.storeDescription || storeData.bio;
-                        storeData.aboutDetails = data.aboutDetails || storeData.bio;
-                        storeData.avatar = data.profilePictureUrl || storeData.avatar;
-                        storeData.heroImage = data.heroImageUrl || storeData.heroImage;
-                        storeData.location = data.location || storeData.location;
-                        storeData.category = data.category || storeData.category;
-                        storeData.hours = data.hours || storeData.hours;
-                    }
                     const profSnap = await getDoc(doc(db, 'profiles', storeId));
                     if (profSnap.exists()) {
                         const profData = profSnap.data();
-                        if (profData?.storefront) {
-                            const sf = profData.storefront;
+                        const sf = isVendorPage
+                            ? profData?.storefront_vendeur
+                            : (profData?.storefront_affilie || profData?.storefront);
+                        if (sf) {
                             storeData.name = sf.storeName || storeData.name;
                             storeData.bio = sf.bio || storeData.bio;
                             storeData.aboutDetails = sf.aboutDetails || storeData.bio;
@@ -780,33 +791,34 @@
                 }
             } catch (_) {}
 
-            // Synchronisation fiable Téléphone <-> Laptop par adresse e-mail via /api/user-sync (Firebase Admin)
+            // Synchronisation fiable Téléphone <-> Laptop par adresse e-mail via /api/user-sync (GET d'abord pour ne jamais écraser le cloud avec un ancien cache local !)
             let emailSyncProds = [];
             try {
                 if (authUser?.email && !requestedStoreName) {
+                    const getRes = await fetch(`/api/user-sync?email=${encodeURIComponent(authUser.email)}`, { cache: 'no-store' });
+                    const getJson = await getRes.json().catch(() => null);
+                    let cloudData = getJson?.ok ? getJson.data : null;
+
                     const localAff = JSON.parse(localStorage.getItem('jeoahs_affiliate_products') || '[]');
                     const localVen = JSON.parse(localStorage.getItem('jeoahs_vendor_products') || '[]');
-                    const syncPayload = {
-                        email: authUser.email,
-                        affiliateProducts: Array.isArray(localAff) ? localAff : [],
-                        vendorProducts: Array.isArray(localVen) ? localVen : []
-                    };
-                    const hasCustomHero = storeData.heroImage && !storeData.heroImage.includes('/public/assets/logo.png');
-                    const hasCustomAvatar = storeData.avatar && !storeData.avatar.includes('/public/assets/logo.png');
-                    if (hasCustomHero || hasCustomAvatar) {
-                        syncPayload.storefront = {
-                            ...(hasCustomHero ? { heroImageUrl: storeData.heroImage } : {}),
-                            ...(hasCustomAvatar ? { profilePictureUrl: storeData.avatar } : {})
-                        };
+                    if ((Array.isArray(localAff) && localAff.length) || (Array.isArray(localVen) && localVen.length)) {
+                        const syncRes = await fetch('/api/user-sync', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                email: authUser.email,
+                                affiliateProducts: Array.isArray(localAff) ? localAff : [],
+                                vendorProducts: Array.isArray(localVen) ? localVen : []
+                            })
+                        });
+                        const syncJson = await syncRes.json().catch(() => null);
+                        if (syncJson?.ok && syncJson.data) cloudData = syncJson.data;
                     }
-                    const syncRes = await fetch('/api/user-sync', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(syncPayload)
-                    });
-                    const syncJson = await syncRes.json().catch(() => null);
-                    if (syncJson?.ok && syncJson.data) {
-                        const sf = syncJson.data.storefront;
+
+                    if (cloudData) {
+                        const sf = isVendorPage
+                            ? cloudData.storefront_vendeur
+                            : (cloudData.storefront_affilie || cloudData.storefront);
                         if (sf) {
                             storeData.name = sf.storeName || storeData.name;
                             storeData.bio = sf.bio || storeData.bio;
@@ -816,20 +828,19 @@
                             storeData.location = sf.location || storeData.location;
                             storeData.category = sf.category || storeData.category;
                             storeData.hours = sf.hours || storeData.hours;
-                            try { localStorage.setItem('jeoahs_custom_storefront', JSON.stringify(storeData)); } catch (_) {}
+                            try { localStorage.setItem(localStoreKey, JSON.stringify(storeData)); } catch (_) {}
                         }
-            const isVendorView = (urlParams.get('role') || storeData.role || authUser?.role || 'affilie').toLowerCase() === 'vendeur';
-            const mergedAff = Array.isArray(syncJson?.data?.affiliateProducts) ? syncJson.data.affiliateProducts : [];
-            const mergedVen = Array.isArray(syncJson?.data?.vendorProducts) ? syncJson.data.vendorProducts : [];
-            emailSyncProds = isVendorView ? [...mergedVen] : [...mergedAff];
+                        const mergedAff = Array.isArray(cloudData.affiliateProducts) ? cloudData.affiliateProducts : [];
+                        const mergedVen = Array.isArray(cloudData.vendorProducts) ? cloudData.vendorProducts : [];
+                        emailSyncProds = isVendorPage ? [...mergedVen] : [...mergedAff];
                         if (mergedAff.length) {
                             try { localStorage.setItem('jeoahs_affiliate_products', JSON.stringify(mergedAff)); } catch (_) {}
                         }
                         if (mergedVen.length) {
                             try { localStorage.setItem('jeoahs_vendor_products', JSON.stringify(mergedVen)); } catch (_) {}
                         }
-                        if (Array.isArray(syncJson.data.affiliateLinks) && syncJson.data.affiliateLinks.length) {
-                            try { localStorage.setItem('jeoahs_affiliate_links', JSON.stringify(syncJson.data.affiliateLinks)); } catch (_) {}
+                        if (Array.isArray(cloudData.affiliateLinks) && cloudData.affiliateLinks.length) {
+                            try { localStorage.setItem('jeoahs_affiliate_links', JSON.stringify(cloudData.affiliateLinks)); } catch (_) {}
                         }
                     }
                 }
@@ -1091,7 +1102,7 @@
             <button type="button" class="store-tab-active py-3.5 flex items-center gap-2 whitespace-nowrap">
                 <i class="fas fa-home text-purple-700"></i> Accueil de la boutique
             </button>
-            <button type="button" onclick="location.href='#all-products-section'"
+            <button type="button" onclick="showAllStoreProducts()"
                 class="py-3.5 hover:text-purple-700 flex items-center gap-2 whitespace-nowrap">
                 <i class="fas fa-box-open"></i> Tous les produits
             </button>
@@ -1115,7 +1126,7 @@
                 <section>
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-lg font-extrabold text-slate-900">Produits en vedette</h2>
-                        <a href="#all-products-section" class="text-xs font-bold text-purple-700 hover:underline">Voir tout →</a>
+                        <button type="button" onclick="showAllStoreProducts()" class="text-xs font-bold text-purple-700 hover:underline px-2 py-1 rounded-lg active:bg-purple-50">Voir tout →</button>
                     </div>
                     <div id="featured-products-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4"></div>
                 </section>
