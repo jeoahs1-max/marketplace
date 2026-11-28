@@ -877,6 +877,109 @@
             `}).join('');
         }
 
+        // Studio Photo Pro JEOAH IA (retouche fond & éclairage avec accord explicite du vendeur)
+        let pendingEnhancedPhotoUrl = '';
+        window.enhanceProductPhotoWithJeoah = async function () {
+            const photo = currentVendorPhotos[0] || document.getElementById('product-image-url-1')?.value?.trim();
+            const statusEl = document.getElementById('jeoah-photo-ai-status');
+            const previewBox = document.getElementById('jeoah-photo-pro-preview');
+            if (!photo || !photo.startsWith('data:image/')) {
+                showCustomModal('Photo requise', 'Téléchargez d’abord une photo depuis votre appareil pour que JEOAH puisse améliorer le fond et l’éclairage.');
+                return;
+            }
+            const backdrop = document.getElementById('jeoah-photo-backdrop')?.value || 'studio_blanc';
+            const productName = document.getElementById('product-name')?.value?.trim() || 'Produit';
+            if (statusEl) {
+                statusEl.textContent = '✨ Studio Photo Pro JEOAH en cours (fond propre + éclairage professionnel ~15s)...';
+                statusEl.classList.remove('hidden');
+            }
+            try {
+                const res = await fetch('/api/jeoah-photo-pro', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageBase64: photo, productName, backdrop })
+                });
+                const json = await res.json().catch(() => null);
+                if (!json?.ok || !json.imageUrl) {
+                    if (statusEl) statusEl.textContent = json?.error || 'Retouche photo studio indisponible pour le moment.';
+                    return;
+                }
+                pendingEnhancedPhotoUrl = json.imageUrl;
+                const beforeImg = document.getElementById('jeoah-photo-before');
+                const afterImg = document.getElementById('jeoah-photo-after');
+                if (beforeImg) beforeImg.src = photo;
+                if (afterImg) afterImg.src = pendingEnhancedPhotoUrl;
+                previewBox?.classList.remove('hidden');
+                if (statusEl) statusEl.textContent = '✅ Photo Studio Pro prête ! Comparez Avant / Après ci-dessous et cliquez « Approuver » uniquement si vous la validez.';
+            } catch (err) {
+                if (statusEl) statusEl.textContent = 'Erreur réseau lors de la retouche photo studio.';
+            }
+        };
+
+        window.approveEnhancedPhoto = function () {
+            if (!pendingEnhancedPhotoUrl) return;
+            if (currentVendorPhotos.length) currentVendorPhotos[0] = pendingEnhancedPhotoUrl;
+            else currentVendorPhotos.push(pendingEnhancedPhotoUrl);
+            pendingEnhancedPhotoUrl = '';
+            document.getElementById('jeoah-photo-pro-preview')?.classList.add('hidden');
+            renderVendorMediaPreviews();
+            const statusEl = document.getElementById('jeoah-photo-ai-status');
+            if (statusEl) statusEl.textContent = '✅ Photo Studio Pro approuvée et appliquée comme Photo #1 !';
+        };
+
+        // Vraie Vidéo Publicitaire IA Réseaux Sociaux (Kling AI / fal.ai MP4 9:16)
+        window.generateSocialAdVideoWithJeoah = async function () {
+            const statusEl = document.getElementById('jeoah-video-gen-status');
+            const photo = currentVendorPhotos[0] || document.getElementById('product-image-url-1')?.value?.trim();
+            if (!photo) {
+                showCustomModal('Ajoutez une photo', 'Importez d’abord une photo de votre produit pour générer une vraie pub vidéo IA (TikTok / Reels MP4).');
+                return;
+            }
+            const productName = document.getElementById('product-name')?.value?.trim() || 'Produit JEOAH\'S';
+            const slogan = document.getElementById('product-slogan')?.value?.trim() || '';
+            const style = document.getElementById('jeoah-video-style')?.value || 'luxe';
+            if (statusEl) {
+                statusEl.textContent = '🚀 Lancement de la vraie génération Vidéo Pub IA Cinématique (TikTok / Reels MP4)...';
+                statusEl.classList.remove('hidden');
+            }
+            try {
+                const startRes = await fetch('/api/jeoah-video-ad', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageUrl: photo, productName, slogan, style, aspectRatio: '9:16' })
+                });
+                const startJson = await startRes.json().catch(() => null);
+                if (!startJson?.ok) {
+                    if (statusEl) statusEl.textContent = startJson?.error || 'Génération vidéo pub IA indisponible.';
+                    return;
+                }
+                const reqId = startJson.requestId;
+                if (statusEl) statusEl.textContent = '🎬 Caméra 3D & éclairage IA en cours de calcul (45 à 90 secondes)... ne fermez pas cette page.';
+                for (let attempt = 0; attempt < 30; attempt++) {
+                    await new Promise(r => setTimeout(r, 4000));
+                    const pollRes = await fetch(`/api/jeoah-video-ad?requestId=${encodeURIComponent(reqId)}`, { cache: 'no-store' });
+                    const pollJson = await pollRes.json().catch(() => null);
+                    if (pollJson?.status === 'COMPLETED' && pollJson.videoUrl) {
+                        currentVendorVideo = pollJson.videoUrl;
+                        const urlInput = document.getElementById('product-video-url');
+                        if (urlInput) urlInput.value = pollJson.videoUrl;
+                        renderVendorMediaPreviews();
+                        if (statusEl) {
+                            statusEl.innerHTML = `✅ Vraie Vidéo Pub IA Cinématique prête ! <a href="${pollJson.videoUrl}" target="_blank" download="pub-jeoahs.mp4" class="underline font-extrabold text-purple-800 ml-1">Télécharger le MP4 pour TikTok / Reels / Facebook</a>`;
+                        }
+                        return;
+                    }
+                    if (pollJson?.status === 'FAILED') {
+                        if (statusEl) statusEl.textContent = 'La génération vidéo IA a échoué. Réessayez avec une photo plus nette.';
+                        return;
+                    }
+                }
+                if (statusEl) statusEl.textContent = 'La génération prend plus de temps que prévu. Réessayez dans un instant.';
+            } catch (err) {
+                if (statusEl) statusEl.textContent = 'Erreur réseau lors de la génération vidéo pub IA.';
+            }
+        };
+
         window.showCustomModal = function (title, message) {
             const modalId = 'custom-alert-modal';
             document.getElementById(modalId)?.remove();
@@ -1038,8 +1141,34 @@
                                 <button type="button" id="jeoah-regen-btn" onclick="askJeoahToFillFromPhoto(true)" class="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-300 text-xs font-extrabold rounded-xl transition">
                                     <i class="fas fa-rotate"></i> Autre proposition JEOAH
                                 </button>
+                                <select id="jeoah-photo-backdrop" class="rounded-xl border border-purple-300 bg-white px-2.5 py-2 text-xs font-bold text-purple-900">
+                                    <option value="studio_blanc">Fond Studio Blanc Pro</option>
+                                    <option value="luxe_marbre">Fond Marbre Luxe</option>
+                                    <option value="salon_moderne">Fond Intérieur Moderne</option>
+                                </select>
+                                <button type="button" onclick="enhanceProductPhotoWithJeoah()" class="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold rounded-xl shadow transition">
+                                    <i class="fas fa-sparkles"></i> Améliorer la photo (Studio Pro)
+                                </button>
                             </div>
                             <p id="jeoah-photo-ai-status" class="hidden text-xs font-semibold text-purple-800 bg-purple-50 border border-purple-200 rounded-xl px-3.5 py-2.5"></p>
+                            <!-- Aperçu Avant / Après Studio Photo Pro avec accord explicite du vendeur -->
+                            <div id="jeoah-photo-pro-preview" class="hidden rounded-2xl border-2 border-amber-300 bg-white p-3.5 space-y-3 shadow-sm">
+                                <p class="text-xs font-extrabold text-slate-900">Comparaison Avant / Après — Validez-vous cette retouche Studio Pro ?</p>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="text-center space-y-1">
+                                        <span class="text-[10px] font-bold uppercase text-slate-500">Originale</span>
+                                        <img id="jeoah-photo-before" src="" alt="Avant" class="w-full h-36 object-contain rounded-xl bg-slate-50 border border-slate-200">
+                                    </div>
+                                    <div class="text-center space-y-1">
+                                        <span class="text-[10px] font-bold uppercase text-emerald-700">Studio Pro JEOAH</span>
+                                        <img id="jeoah-photo-after" src="" alt="Après" class="w-full h-36 object-contain rounded-xl bg-slate-50 border-2 border-emerald-400">
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <button type="button" onclick="approveEnhancedPhoto()" class="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold">✅ Approuver et remplacer ma Photo #1</button>
+                                    <button type="button" onclick="document.getElementById('jeoah-photo-pro-preview').classList.add('hidden')" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold">Garder l'originale</button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Guide Photo JEOAH (Éclairage & Positionnement) -->
@@ -1104,6 +1233,9 @@
                                     </button>
                                     <button type="button" id="jeoah-regen-video-btn" onclick="generateJeoahProductMiniVideo(true)" class="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-indigo-100 text-indigo-800 border border-indigo-300 text-xs font-extrabold rounded-xl transition">
                                         <i class="fas fa-rotate"></i> Changer de montage / Refaire
+                                    </button>
+                                    <button type="button" onclick="generateSocialAdVideoWithJeoah()" class="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white text-xs font-extrabold rounded-xl shadow transition">
+                                        <i class="fas fa-rocket"></i> Pub Vidéo IA Réseaux Sociaux (MP4)
                                     </button>
                                 </div>
                             </div>

@@ -320,11 +320,96 @@
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    const canUseWhisperMic = Boolean(navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== 'undefined');
     let isMicListening = false;
     let micSilenceTimer = null;
-    if (SpeechRecognition) {
+    let whisperRecorder = null;
+    let whisperStream = null;
+    let whisperChunks = [];
+    const defaultMicHtml = micButton.innerHTML;
+    const defaultInputPlaceholder = input.placeholder;
+
+    if (canUseWhisperMic) {
+      micButton.title = 'Appuyez pour parler (Créole, Français, Anglais, Espagnol), puis appuyez à nouveau pour envoyer';
+      micButton.addEventListener('click', async () => {
+        if (isMicListening && whisperRecorder) {
+          try { whisperRecorder.stop(); } catch (_) {}
+          return;
+        }
+        try {
+          stopAllSpeech();
+          lastInputWasVoice = true;
+          enableVoiceAutomatically();
+          whisperStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const mimeCandidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
+          const chosenMime = mimeCandidates.find(m => MediaRecorder.isTypeSupported(m)) || '';
+          whisperChunks = [];
+          whisperRecorder = chosenMime ? new MediaRecorder(whisperStream, { mimeType: chosenMime }) : new MediaRecorder(whisperStream);
+          whisperRecorder.ondataavailable = (ev) => { if (ev.data && ev.data.size > 0) whisperChunks.push(ev.data); };
+          whisperRecorder.onstop = async () => {
+            isMicListening = false;
+            micButton.style.background = '#fff';
+            micButton.style.color = '#7c3aed';
+            micButton.innerHTML = defaultMicHtml;
+            micButton.setAttribute('aria-pressed', 'false');
+            try { whisperStream?.getTracks().forEach(t => t.stop()); } catch (_) {}
+            whisperStream = null;
+
+            const audioBlob = new Blob(whisperChunks, { type: whisperRecorder?.mimeType || 'audio/webm' });
+            whisperRecorder = null;
+            if (!audioBlob.size || audioBlob.size < 800) {
+              input.placeholder = defaultInputPlaceholder;
+              return;
+            }
+            input.placeholder = '🎧 JEOAH transcrit votre voix (Créole / Français / EN / ES)...';
+            try {
+              const audioBase64 = await new Promise((resolve, reject) => {
+                const fr = new FileReader();
+                fr.onload = () => resolve(fr.result);
+                fr.onerror = reject;
+                fr.readAsDataURL(audioBlob);
+              });
+              const selectedLanguage = (!langSelect.value || langSelect.value === 'auto') ? '' : langSelect.value;
+              const resp = await fetch('/api/stt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ audioBase64, mimeType: audioBlob.type, languageHint: selectedLanguage })
+              });
+              const data = await resp.json().catch(() => null);
+              input.placeholder = defaultInputPlaceholder;
+              if (data?.ok && data.text) {
+                input.value = data.text;
+                if (!window.__jeoahIsSending) {
+                  lastInputWasVoice = true;
+                  form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true }));
+                }
+              } else {
+                appendMessage('JEOAH', 'Je n’ai pas bien capté l’audio. Parlez près du micro et réessayez.', false);
+              }
+            } catch (_) {
+              input.placeholder = defaultInputPlaceholder;
+              appendMessage('JEOAH', 'Erreur réseau lors de la reconnaissance vocale. Réessayez.', false);
+            }
+          };
+          whisperRecorder.start();
+          isMicListening = true;
+          micButton.style.background = '#be185d';
+          micButton.style.color = '#ffffff';
+          micButton.innerHTML = '<i class="fas fa-stop"></i>';
+          micButton.setAttribute('aria-pressed', 'true');
+          input.value = '';
+          input.placeholder = '🎙️ Parlez tranquillement… puis appuyez sur ■ pour envoyer';
+        } catch (err) {
+          isMicListening = false;
+          micButton.style.background = '#fff';
+          micButton.style.color = '#7c3aed';
+          micButton.innerHTML = defaultMicHtml;
+          input.placeholder = defaultInputPlaceholder;
+          appendMessage('JEOAH', 'Autorisez l’accès au microphone dans votre navigateur pour parler à JEOAH.', false);
+        }
+      });
+    } else if (SpeechRecognition) {
       recognition = new SpeechRecognition();
-      // Sur Android Chrome, continuous=true + interimResults=true duplique les mots ("bonsoir bonsoir...")
       recognition.continuous = !isMobileDevice;
       recognition.interimResults = !isMobileDevice;
       recognition.maxAlternatives = 1;
@@ -339,39 +424,14 @@
       };
       recognition.onresult = event => {
         let finalText = '';
-        let interimText = '';
         for (let i = 0; i < event.results.length; i++) {
-          const res = event.results[i];
-          const chunk = (res[0]?.transcript || '').trim();
-          if (!chunk) continue;
-          if (res.isFinal) {
-            finalText = isMobileDevice ? chunk : (finalText ? `${finalText} ${chunk}` : chunk);
-          } else {
-            interimText = chunk;
-          }
+          const chunk = (event.results[i][0]?.transcript || '').trim();
+          if (chunk) finalText = isMobileDevice ? chunk : (finalText ? `${finalText} ${chunk}` : chunk);
         }
-        const combined = `${finalText} ${interimText}`.replace(/\s+/g, ' ').trim();
-        if (combined) input.value = combined;
-        lastInputWasVoice = true;
-        if (!isMobileDevice) {
-          if (micSilenceTimer) clearTimeout(micSilenceTimer);
-          micSilenceTimer = setTimeout(() => {
-            if (isMicListening) {
-              try { recognition.stop(); } catch (_) {}
-            }
-          }, 2200);
-        }
-      };
-      recognition.onerror = (ev) => {
-        isMicListening = false;
-        if (micSilenceTimer) clearTimeout(micSilenceTimer);
-        if (ev?.error === 'aborted' || ev?.error === 'no-speech') return;
-        lastInputWasVoice = false;
-        appendMessage('JEOAH', 'Je n’ai pas pu entendre votre demande. Vérifiez l’autorisation du microphone et réessayez.', false);
+        if (finalText) input.value = finalText;
       };
       recognition.onend = () => {
         isMicListening = false;
-        if (micSilenceTimer) clearTimeout(micSilenceTimer);
         micButton.style.background = '#fff';
         micButton.style.color = '#7c3aed';
         micButton.setAttribute('aria-pressed', 'false');
@@ -381,16 +441,11 @@
         }
       };
       micButton.addEventListener('click', () => {
-        if (isMicListening) {
-          try { recognition.stop(); } catch (_) {}
-          return;
-        }
-        lastInputWasVoice = true;
-        enableVoiceAutomatically();
+        if (isMicListening) { try { recognition.stop(); } catch (_) {} return; }
         const selectedLanguage = (!langSelect.value || langSelect.value === 'auto') ? (localStorage.getItem('jeoahs-lang') || 'fr') : langSelect.value;
         recognition.lang = (languageConfig[selectedLanguage] || languageConfig.fr).locale || 'fr-FR';
         input.value = '';
-        try { recognition.start(); } catch (_) { }
+        try { recognition.start(); } catch (_) {}
       });
     } else {
       micButton.disabled = true;
